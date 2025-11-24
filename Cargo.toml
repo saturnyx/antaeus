@@ -8,7 +8,6 @@ authors = ["Harshal<saturnyx@disroot.org"]
 description = "A Versatile Framework for Vexide"
 repository = "https://github.com/Saturnyx/antaeus"
 categories = ["no-std", "science::robotics"]
-rust-version = "1.93.0-nightly"
 
 [lib]
 name = "antaeus"
