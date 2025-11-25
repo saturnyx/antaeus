@@ -1,0 +1,13 @@
+name: Publish
+
+on: [push, pull_request]
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish
+        uses: actions-rs/cargo@v1
+        with:
+          command: publish
