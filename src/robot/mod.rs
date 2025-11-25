@@ -1,1 +1,2 @@
 mod drivetrain;
+mod controller;
