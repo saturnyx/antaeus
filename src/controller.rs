@@ -32,7 +32,9 @@ use vexide::{
 /// }
 /// ```
 pub struct ControllerControl {
+    /// Controller State
     state:      ControllerState,
+    /// Control Button
     controlkey: ButtonState,
 }
 
@@ -65,16 +67,22 @@ impl ControllerControl {
     /// ```
     pub fn new(controller: &Controller, button: ControllerButton) -> Self {
         let state = get_state(controller);
-        let control_key = get_button_state(state, button);
+        let control_button = get_button_state(state, button);
 
         ControllerControl {
             state,
-            controlkey: control_key,
+            controlkey: control_button,
         }
     }
 
     /// Maps the output from a button to toggle one or more ADI Devices. A
     /// maximum of 8 ADI devices can be controlled at a time.
+    ///
+    /// # Arguments
+    /// - `button`: The Primary Button that will control the device.
+    /// - `adi_devices`: A `heapless::Vec` of ADI devices to control.
+    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
+    /// wish to press the control button and the primary button.
     ///
     /// # Example
     ///
@@ -88,6 +96,7 @@ impl ControllerControl {
     ///     master_control.button_to_adi_toggle(
     ///         ControllerButton::ButtonB,
     ///         heapless::Vec::from_array([&mut pistonleft, &mut pistonright]),
+    ///         false,
     ///     ); // Button B will control both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
     /// }
     /// ```
@@ -95,9 +104,10 @@ impl ControllerControl {
         &self,
         button: ControllerButton,
         adi_devices: Vec<&mut AdiDigitalOut, 8>,
+        ctrl: bool,
     ) {
         let button_state = get_button_state(self.state, button);
-        if button_state.is_now_released() && !self.controlkey.is_now_pressed() {
+        if button_state.is_now_released() && self.controlkey.is_pressed() == ctrl {
             for device in adi_devices {
                 device.toggle().unwrap_or_else(|e| {
                     warn!("ADI Toggle Error: {}", e);
@@ -108,6 +118,12 @@ impl ControllerControl {
 
     /// Maps the output from a button to set one or more ADI Devices to high. A
     /// maximum of 8 ADI devices can be controlled at a time.
+    ///
+    /// # Arguments
+    /// - `button`: The Primary Button that will control the device.
+    /// - `adi_devices`: A `heapless::Vec` of ADI devices to control.
+    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
+    /// wish to press the control button and the primary button.
     ///
     /// # Example
     ///
@@ -121,6 +137,7 @@ impl ControllerControl {
     ///     master_control.button_to_adi_high(
     ///         ControllerButton::ButtonB,
     ///         heapless::Vec::from_array([&mut pistonleft, &mut pistonright]),
+    ///         false,
     ///     ); // Button B will control both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
     /// }
     /// ```
@@ -128,12 +145,13 @@ impl ControllerControl {
         &self,
         button: ControllerButton,
         adi_devices: Vec<&mut AdiDigitalOut, 8>,
+        ctrl: bool,
     ) {
         let button_state = get_button_state(self.state, button);
-        if button_state.is_now_released() && !self.controlkey.is_now_pressed() {
+        if button_state.is_now_released() && self.controlkey.is_pressed() == ctrl {
             for device in adi_devices {
                 device.set_high().unwrap_or_else(|e| {
-                    warn!("ADI Toggle Error: {}", e);
+                    warn!("ADI Set High Error: {}", e);
                 });
             }
         }
@@ -141,6 +159,12 @@ impl ControllerControl {
 
     /// Maps the output from a button to set one or more ADI Devices to high. A
     /// maximum of 8 ADI devices can be controlled at a time.
+    ///
+    /// # Arguments
+    /// - `button`: The Primary Button that will control the device.
+    /// - `adi_devices`: A `heapless::Vec` of ADI devices to control.
+    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
+    /// wish to press the control button and the primary button.
     ///
     /// # Example
     ///
@@ -154,6 +178,7 @@ impl ControllerControl {
     ///     master_control.button_to_adi_low(
     ///         ControllerButton::ButtonB,
     ///         heapless::Vec::from_array([&mut pistonleft, &mut pistonright]),
+    ///         false,
     ///     ); // Button B will control both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
     /// }
     /// ```
@@ -161,12 +186,13 @@ impl ControllerControl {
         &self,
         button: ControllerButton,
         adi_devices: Vec<&mut AdiDigitalOut, 8>,
+        ctrl: bool,
     ) {
         let button_state = get_button_state(self.state, button);
-        if button_state.is_now_released() && !self.controlkey.is_now_pressed() {
+        if button_state.is_now_released() && self.controlkey.is_pressed() == ctrl {
             for device in adi_devices {
                 device.set_low().unwrap_or_else(|e| {
-                    warn!("ADI Toggle Error: {}", e);
+                    warn!("ADI Set Low Error: {}", e);
                 });
             }
         }
@@ -175,6 +201,13 @@ impl ControllerControl {
     /// Maps 2 Buttons to one or more ADI Devices. The High Button output a
     /// high value to the ADI Devices. A Low Button will output a low value to
     /// the ADI Devices. A maximum of 8 ADI devices can be controlled at a time.
+    ///
+    /// # Arguments
+    /// - `button_high`: The Button that will set the device to high.
+    /// - `button_low`: The Button that will set the device to low.
+    /// - `adi_devices`: A `heapless::Vec` of ADI devices to control.
+    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
+    /// wish to press the control button and another button.
     ///
     /// # Example
     ///
@@ -193,6 +226,7 @@ impl ControllerControl {
     ///         ControllerButton::ButtonL1,
     ///         ControllerButton::ButtonL2,
     ///         heapless::Vec::from_array([&mut pistonleft, &mut pistonright]),
+    ///         false,
     ///     );
     ///     // Button L1 will extend both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
     ///     // Button L2 will retract both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
@@ -202,10 +236,11 @@ impl ControllerControl {
         button_high: ControllerButton,
         button_low: ControllerButton,
         adi_devices: Vec<&mut AdiDigitalOut, 8>,
+        ctrl: bool,
     ) {
         let button_high_state = get_button_state(self.state, button_high);
         let button_low_state = get_button_state(self.state, button_low);
-        if self.controlkey.is_released() {
+        if self.controlkey.is_pressed() == ctrl {
             if button_high_state.is_now_released() {
                 for device in adi_devices {
                     device.set_high().unwrap_or_else(|e| {
@@ -225,6 +260,14 @@ impl ControllerControl {
     /// Maps a button to one or more motors. Pressing the button will run the
     /// Motor at Active Power. Otherwise, the Motor will run at passive power.
     /// A maximum of 8 ADI devices can be controlled at a time.
+    ///
+    /// # Arguments
+    /// - `button`: The Primary Button that will control the device.
+    /// - `motors`: A `heapless::Vec` of Motors to control.
+    /// - `active_pwr`: The power(in Volts) given to the Motor when button is pressed.
+    /// - `passive_pwr`: The power(in Volts) given to the Motor when button is not pressed.
+    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
+    /// wish to press the control button and the primary button.
     ///
     /// # Example
     ///
@@ -247,6 +290,7 @@ impl ControllerControl {
     ///         heapless::Vec::from_array([&mut intake_stage1, &mut intake_stage2]),
     ///         12.0,
     ///         -4.0,
+    ///         false,
     ///     );
     ///     // Button L1 will run both Intake Stage 1 and 2 Forward at 12 volts.
     ///     // If L1 is not pressed, Intake Stage 1 and 2 will run in reverse
@@ -259,9 +303,10 @@ impl ControllerControl {
         motors: Vec<&mut Motor, 8>,
         active_pwr: f64,
         passive_pwr: f64,
+        ctrl: bool,
     ) {
         let button_state = get_button_state(self.state, button);
-        if self.controlkey.is_released() {
+        if self.controlkey.is_pressed() == ctrl {
             if button_state.is_pressed() {
                 for motor in motors {
                     motor.set_voltage(active_pwr).unwrap_or_else(|e| {
@@ -281,6 +326,16 @@ impl ControllerControl {
     /// Maps 2 Buttons to one or more motors. The High Button output a high
     /// power to the Motors. A Low Button will output a low value to the Motors.
     /// A maximum of 8 Motors can be controlled at a time.
+    ///
+    /// # Arguments
+    /// - `button_high`: The Button that will give the High Power to the device.
+    /// - `button_low`: The Button that will give the Low Power to the device.
+    /// - `motors`: A `heapless::Vec` of Motors to control.
+    /// - `high_pwr`: The power(in Volts) given to the Motor when High Button is pressed.
+    /// - `low_pwr`: The power(in Volts) given to the Motor when Low Button is pressed.
+    /// - `passive_pwr`: The power(in Volts) given to the Motor when button is not pressed.
+    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
+    /// wish to press the control button and the primary button.
     ///
     /// # Example
     ///
@@ -305,6 +360,7 @@ impl ControllerControl {
     ///         12.0,
     ///         -12.0,
     ///         0.0,
+    ///         false,
     ///     );
     ///     // Button L1 will run both Intake Stage 1 and 2 Forward.
     ///     // Button L2 will run both Intake Stage 1 and 2 in Reverse.
@@ -318,11 +374,12 @@ impl ControllerControl {
         high_pwr: f64,
         low_pwr: f64,
         passive_pwr: f64,
+        ctrl: bool,
     ) {
         let button_high_state = get_button_state(self.state, button_high);
         let button_low_state = get_button_state(self.state, button_low);
 
-        if self.controlkey.is_released() {
+        if self.controlkey.is_pressed() == ctrl {
             if button_high_state.is_pressed() {
                 for motor in motors {
                     motor.set_voltage(high_pwr).unwrap_or_else(|e| {

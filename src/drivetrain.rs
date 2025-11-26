@@ -19,6 +19,7 @@ pub struct Differential {
 #[allow(dead_code)]
 impl Differential {
     /// Creates a new drivetrain with the provided left/right motors.
+    /// **Compatible with Evian**
     ///
     /// # Examples
     ///
@@ -62,8 +63,8 @@ impl Differential {
         let left_power = state.left_stick.y();
         let right_power = state.right_stick.y();
 
-        let left_voltage = left_power * 12.0 ;
-        let right_voltage = right_power * 12.0 ;
+        let left_voltage = left_power * 12.0;
+        let right_voltage = right_power * 12.0;
 
         if let Ok(mut left_motors) = self.left.try_borrow_mut() {
             for motor in left_motors.as_mut() {
@@ -213,7 +214,7 @@ impl Differential {
     }
 
     /// Creates a new drivetrain with shared ownership of the left/right motors.
-    ///
+    /// **Compatible with Evian**
     /// # Examples
     ///
     /// ```

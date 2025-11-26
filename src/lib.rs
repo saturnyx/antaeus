@@ -1,5 +1,5 @@
 #![no_std]
 extern crate alloc;
 
-/// Robot
-pub mod robot;
+pub mod controller;
+pub mod drivetrain;
