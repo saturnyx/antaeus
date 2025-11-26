@@ -1,2 +1,2 @@
-mod drivetrain;
-mod controller;
+pub mod controller;
+pub mod drivetrain;

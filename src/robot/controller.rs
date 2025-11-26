@@ -6,30 +6,6 @@ use vexide::{
 };
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Copy)]
-/// A list of Controller Buttons.
-///
-/// # Example
-///
-/// ```
-/// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA); 
-/// ```
-pub enum ControllerButton {
-    ButtonA,
-    ButtonB,
-    ButtonX,
-    ButtonY,
-    ButtonUp,
-    ButtonDown,
-    ButtonLeft,
-    ButtonRight,
-    ButtonL1,
-    ButtonL2,
-    ButtonR1,
-    ButtonR2,
-}
-
-#[allow(dead_code)]
 /// A ControllerControl Instance allows you to easily access and use controller
 /// buttons and functions.
 ///
@@ -55,7 +31,7 @@ pub enum ControllerButton {
 ///     };
 /// }
 /// ```
-struct ControllerControl {
+pub struct ControllerControl {
     state:      ControllerState,
     controlkey: ButtonState,
 }
@@ -109,17 +85,87 @@ impl ControllerControl {
     ///     let mut pistonright = AdiDigitalOut::new(Peripherals::steal().adi_b);
     ///
     ///     let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
-    ///     master_control.button_to_adi(
+    ///     master_control.button_to_adi_toggle(
     ///         ControllerButton::ButtonB,
     ///         heapless::Vec::from_array([&mut pistonleft, &mut pistonright]),
     ///     ); // Button B will control both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
     /// }
     /// ```
-    pub fn button_to_adi(&self, button: ControllerButton, adi_devices: Vec<&mut AdiDigitalOut, 8>) {
+    pub fn button_to_adi_toggle(
+        &self,
+        button: ControllerButton,
+        adi_devices: Vec<&mut AdiDigitalOut, 8>,
+    ) {
         let button_state = get_button_state(self.state, button);
         if button_state.is_now_released() && !self.controlkey.is_now_pressed() {
             for device in adi_devices {
                 device.toggle().unwrap_or_else(|e| {
+                    warn!("ADI Toggle Error: {}", e);
+                });
+            }
+        }
+    }
+
+    /// Maps the output from a button to set one or more ADI Devices to high. A
+    /// maximum of 8 ADI devices can be controlled at a time.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// pub unsafe fn run() {
+    ///     let master = Controller::new(ControllerId::Partner);
+    ///     let mut pistonleft = AdiDigitalOut::new(Peripherals::steal().adi_a);
+    ///     let mut pistonright = AdiDigitalOut::new(Peripherals::steal().adi_b);
+    ///
+    ///     let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
+    ///     master_control.button_to_adi_high(
+    ///         ControllerButton::ButtonB,
+    ///         heapless::Vec::from_array([&mut pistonleft, &mut pistonright]),
+    ///     ); // Button B will control both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
+    /// }
+    /// ```
+    pub fn button_to_adi_high(
+        &self,
+        button: ControllerButton,
+        adi_devices: Vec<&mut AdiDigitalOut, 8>,
+    ) {
+        let button_state = get_button_state(self.state, button);
+        if button_state.is_now_released() && !self.controlkey.is_now_pressed() {
+            for device in adi_devices {
+                device.set_high().unwrap_or_else(|e| {
+                    warn!("ADI Toggle Error: {}", e);
+                });
+            }
+        }
+    }
+
+    /// Maps the output from a button to set one or more ADI Devices to high. A
+    /// maximum of 8 ADI devices can be controlled at a time.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// pub unsafe fn run() {
+    ///     let master = Controller::new(ControllerId::Partner);
+    ///     let mut pistonleft = AdiDigitalOut::new(Peripherals::steal().adi_a);
+    ///     let mut pistonright = AdiDigitalOut::new(Peripherals::steal().adi_b);
+    ///
+    ///     let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
+    ///     master_control.button_to_adi_low(
+    ///         ControllerButton::ButtonB,
+    ///         heapless::Vec::from_array([&mut pistonleft, &mut pistonright]),
+    ///     ); // Button B will control both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
+    /// }
+    /// ```
+    pub fn button_to_adi_low(
+        &self,
+        button: ControllerButton,
+        adi_devices: Vec<&mut AdiDigitalOut, 8>,
+    ) {
+        let button_state = get_button_state(self.state, button);
+        if button_state.is_now_released() && !self.controlkey.is_now_pressed() {
+            for device in adi_devices {
+                device.set_low().unwrap_or_else(|e| {
                     warn!("ADI Toggle Error: {}", e);
                 });
             }
@@ -298,6 +344,30 @@ impl ControllerControl {
             }
         }
     }
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, Copy)]
+/// A list of Controller Buttons.
+///
+/// # Example
+///
+/// ```
+/// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA); 
+/// ```
+pub enum ControllerButton {
+    ButtonA,
+    ButtonB,
+    ButtonX,
+    ButtonY,
+    ButtonUp,
+    ButtonDown,
+    ButtonLeft,
+    ButtonRight,
+    ButtonL1,
+    ButtonL2,
+    ButtonR1,
+    ButtonR2,
 }
 
 fn get_button_state(state: ControllerState, button: ControllerButton) -> ButtonState {
