@@ -1,12 +1,12 @@
-use alloc::rc::Rc;
-use core::cell::RefCell;
+use std::{cell::RefCell, rc::Rc};
 
 use log::warn;
 use vexide::{
-    devices::controller::ControllerState,
+    controller::ControllerState,
     prelude::{Controller, Motor},
 };
 
+#[derive(Clone)]
 #[allow(dead_code)]
 pub struct Differential {
     /// Left motors.

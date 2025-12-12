@@ -1,7 +1,7 @@
 use heapless::Vec;
 use log::warn;
 use vexide::{
-    devices::controller::{ButtonState, ControllerState},
+    controller::{ButtonState, ControllerState},
     prelude::{AdiDigitalOut, Controller, Motor},
 };
 
