@@ -1,6 +1,13 @@
 use std::{f64::consts::PI, sync::Arc, time::Duration};
 
-use vexide::{smart::motor::BrakeMode, sync::Mutex, task::*, time::*};
+use log::warn;
+use vexide::{
+    math::Angle,
+    smart::{imu::*, motor::BrakeMode},
+    sync::Mutex,
+    task::*,
+    time::*,
+};
 
 use crate::{drivetrain, drivetrain::Differential};
 
@@ -138,6 +145,15 @@ impl PIDMovement {
     /// Initializes a PID Loop.
     /// The PID movements will require a PID loop to run as a seperate task or thread.
     /// It is necessary to initialize the PID before running any movements.
+    ///
+    /// # Examples
+    /// ```
+    /// async fn auton(pid: PIDMovement) {
+    ///     pid.init(); // Initialize the PID before any movements
+    ///     pid.set_maximum_power(12.0).await;
+    ///     pid.travel(100.0, 1000, 10).await;
+    /// }
+    /// ```
     pub fn init(&self) {
         let mutex_clone = self.pid_values.clone();
         let drivetrain = self.drivetrain.clone();
@@ -182,13 +198,13 @@ impl PIDMovement {
         sleep(Duration::from_millis(afterdelay)).await;
     }
 
-    /// Rotates the base by a certain number for degrees
+    /// Rotates the robot by a certain number for degrees
     pub async fn rotate(&self, degrees: f64, timeout: u64, afterdelay: u64) {
         let target = PI * self.drivetrain_config.track_width / (360.0 / degrees);
         self.rotate_raw(target, timeout, afterdelay).await;
     }
 
-    /// Rotates the base. The value should be in the number of inches
+    /// Rotates the robot. The value should be in the number of inches
     /// one side of the robot must rotate.
     pub async fn rotate_raw(&self, distance: f64, timeout: u64, afterdelay: u64) {
         let r = (distance *
@@ -210,14 +226,57 @@ impl PIDMovement {
         sleep(Duration::from_millis(afterdelay)).await;
     }
 
-    /// Swings the base by moving only one side of the robot forward or backward
+    /// Rotates the robot using the IMU (Inertial Sensor) for more accurate
+    /// and precise turning.
+    pub async fn rotate_imu(
+        &self,
+        degrees: f64,
+        imu: InertialSensor,
+        timeout: u64,
+        afterdelay: u64,
+    ) {
+        let start_time = user_uptime().as_millis();
+        let mut prev_angle = 0.0;
+        let mut delta_angle;
+        let mut angle;
+        let mut s = self.pid_values.lock().await;
+        s.active = true;
+        loop {
+            angle = degrees - get_heading(&imu);
+            delta_angle = angle - prev_angle;
+            prev_angle = angle;
+            let distance = PI * self.drivetrain_config.track_width / (360.0 / delta_angle);
+            let r = (distance *
+                (self.drivetrain_config.driving_gear / self.drivetrain_config.driven_gear) *
+                2.0 *
+                PI) /
+                self.drivetrain_config.wheel_diameter;
+            {
+                let mut s = self.pid_values.lock().await;
+                s.target_left += r;
+                s.target_right += -r;
+                if !s.active {
+                    break;
+                }
+            }
+            if user_uptime().as_millis() >= start_time + timeout as u128 {
+                let mut s = self.pid_values.lock().await;
+                s.active = false;
+                break;
+            }
+            sleep(Duration::from_millis(LOOPRATE)).await;
+        }
+        sleep(Duration::from_millis(afterdelay)).await;
+    }
+
+    /// Swings the robot by moving only one side of the robot forward or backward
     pub async fn swing(&self, degrees: f64, right: bool, timeout: u64, afterdelay: u64) {
         let target = 2.0 * PI * self.drivetrain_config.track_width / (360.0 / degrees);
         self.swing_raw(target.abs(), right, timeout, afterdelay)
             .await;
     }
 
-    /// Swings the base by moving only one side of the robot forward or backward with values in inches
+    /// Swings the robot by moving only one side of the robot forward or backward with values in inches
     /// The value should be in the number of inches the side of the robot must rotate.
     pub async fn swing_raw(&self, distance: f64, right: bool, timeout: u64, afterdelay: u64) {
         let r = (distance *
@@ -238,9 +297,56 @@ impl PIDMovement {
         }
         sleep(Duration::from_millis(afterdelay)).await;
     }
+
+    /// Swings the robot by moving only one side of the robot forward or backward
+    /// using the IMU (Inertial Sensor) for more accurate
+    /// and precise turning.
+    pub async fn swing_imu(
+        &self,
+        degrees: f64,
+        imu: InertialSensor,
+        right: bool,
+        timeout: u64,
+        afterdelay: u64,
+    ) {
+        let start_time = user_uptime().as_millis();
+        let mut prev_angle = 0.0;
+        let mut delta_angle;
+        let mut angle;
+        let mut s = self.pid_values.lock().await;
+        s.active = true;
+        loop {
+            angle = degrees - get_heading(&imu);
+            delta_angle = angle - prev_angle;
+            prev_angle = angle;
+            let distance = PI * self.drivetrain_config.track_width / (360.0 / delta_angle);
+            let r = (distance *
+                (self.drivetrain_config.driving_gear / self.drivetrain_config.driven_gear) *
+                2.0 *
+                PI) /
+                self.drivetrain_config.wheel_diameter;
+            {
+                let mut s = self.pid_values.lock().await;
+                s.target_left += r * if right { 1.0 } else { 0.0 };
+                s.target_right += r * if right { 0.0 } else { 1.0 };
+                if !s.active {
+                    break;
+                }
+            }
+            if user_uptime().as_millis() >= start_time + timeout as u128 {
+                let mut s = self.pid_values.lock().await;
+                s.active = false;
+                break;
+            }
+            sleep(Duration::from_millis(LOOPRATE)).await;
+        }
+        sleep(Duration::from_millis(afterdelay)).await;
+    }
 }
 
-/// The PID Movement Controller
+/// **The PID Movement Controller**
+///
+/// Initialize an instance of this to control the robot using PID.
 ///
 /// # Examples
 ///
@@ -314,24 +420,43 @@ pub struct DrivetrainConfig {
     track_width:    f64,
 }
 
-async fn timeout_wait(pidcontrol: &Arc<Mutex<PIDValues>>, timeout: u64) {
+async fn timeout_wait(pid_values: &Arc<Mutex<PIDValues>>, timeout: u64) {
     let start_time = user_uptime().as_millis();
 
     loop {
         {
-            let s = pidcontrol.lock().await;
+            let s = pid_values.lock().await;
             if !s.active {
                 break;
             }
         }
 
         if user_uptime().as_millis() >= start_time + timeout as u128 {
-            let mut s = pidcontrol.lock().await;
+            let mut s = pid_values.lock().await;
             s.active = false;
             break;
         }
 
         sleep(Duration::from_millis(LOOPRATE)).await;
+    }
+}
+
+fn get_heading(imu: &InertialSensor) -> f64 {
+    let is_calibrating = imu.is_calibrating().unwrap_or_else(|e| {
+        warn!("IMU Calibration State Error: {}", e);
+        true
+    });
+    if !is_calibrating {
+        let angle = imu
+            .heading()
+            .unwrap_or_else(|e| {
+                warn!("IMU Calibration State Error: {}", e);
+                Angle::from_degrees(0.0)
+            })
+            .as_degrees();
+        if angle > 180.0 { angle - 360.0 } else { angle }
+    } else {
+        0.0
     }
 }
 
