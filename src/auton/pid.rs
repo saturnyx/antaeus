@@ -1,8 +1,8 @@
-use std::{f64::consts::PI, sync::Arc, time::Duration};
+use std::{f64::consts::PI, marker::PhantomData, sync::Arc, time::Duration};
 
-use log::warn;
+use log::{info, warn};
 use vexide::{
-    math::Angle,
+    math::{Angle, EulerAngles},
     smart::{imu::*, motor::BrakeMode},
     sync::Mutex,
     task::*,
@@ -13,7 +13,8 @@ use crate::{drivetrain, drivetrain::Differential};
 
 const LOOPRATE: u64 = 5; // The PID will run with a loop rate of 5 millisecs
 
-async fn pid_loop(pidvalues: &Mutex<PIDValues>, drivetrain: drivetrain::Differential) {
+async fn pid_loop(pidvalues: &Arc<Mutex<PIDValues>>, drivetrain: drivetrain::Differential) {
+    info!("PID Control Loop Started");
     // Set brake mode and reset positions for left motors
     {
         let mut left_motors = drivetrain.left.borrow_mut();
@@ -231,7 +232,7 @@ impl PIDMovement {
     pub async fn rotate_imu(
         &self,
         degrees: f64,
-        imu: InertialSensor,
+        imu: &InertialSensor,
         timeout: u64,
         afterdelay: u64,
     ) {
@@ -304,7 +305,7 @@ impl PIDMovement {
     pub async fn swing_imu(
         &self,
         degrees: f64,
-        imu: InertialSensor,
+        imu: &InertialSensor,
         right: bool,
         timeout: u64,
         afterdelay: u64,
@@ -352,37 +353,39 @@ impl PIDMovement {
 ///
 /// Creating a PIDMovement Instance
 /// ```
-/// let dt = Differential::new(
-///     [
-///         Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
-///         Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
-///     ],
-///     [
-///         Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
-///         Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
-///     ],
-/// );
-/// let config = DrivetrainConfig {
-///     wheel_diameter: 3.25,
-///     driving_gear:   3.0,
-///     driven_gear:    5.0,
-///     track_width:    12.0,
-/// };
-/// let values = PIDValues {
-///     kp:           0.5,
-///     kd:           0.1,
-///     ki:           0.0,
-///     leeway:       0.02,
-///     maxpwr:       12.0,
-///     active:       true,
-///     target_left:  0.0,
-///     target_right: 0.0,
-/// };
-/// let PID_controller = PIDMovement {
-///     drivetrain:        dt,
-///     drivetrain_config: config,
-///     pid_values:        Arc::new(Mutex::new(values)),
-/// };
+/// fn new_pid() -> PIDMovement {
+///     let dt = Differential::new(
+///         [
+///             Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
+///             Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
+///         ],
+///         [
+///             Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
+///             Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
+///         ],
+///     );
+///     let config = DrivetrainConfig {
+///         wheel_diameter: 3.25,
+///         driving_gear:   3.0,
+///         driven_gear:    5.0,
+///         track_width:    12.0,
+///     };
+///     let values = PIDValues {
+///         kp:           0.5,
+///         kd:           0.1,
+///         ki:           0.0,
+///         leeway:       0.02,
+///         maxpwr:       12.0,
+///         active:       true,
+///         target_left:  0.0,
+///         target_right: 0.0,
+///     };
+///     let PID_controller = PIDMovement {
+///         drivetrain:        dt,
+///         drivetrain_config: config,
+///         pid_values:        Arc::new(Mutex::new(values)),
+///     };
+/// }
 /// ```
 pub struct PIDMovement {
     drivetrain:        Differential,
@@ -448,11 +451,17 @@ fn get_heading(imu: &InertialSensor) -> f64 {
     });
     if !is_calibrating {
         let angle = imu
-            .heading()
+            .euler()
             .unwrap_or_else(|e| {
                 warn!("IMU Calibration State Error: {}", e);
-                Angle::from_degrees(0.0)
+                EulerAngles {
+                    a:      (Angle::from_degrees(0.0)),
+                    b:      (Angle::from_degrees(0.0)),
+                    c:      (Angle::from_degrees(0.0)),
+                    marker: PhantomData,
+                }
             })
+            .b
             .as_degrees();
         if angle > 180.0 { angle - 360.0 } else { angle }
     } else {
