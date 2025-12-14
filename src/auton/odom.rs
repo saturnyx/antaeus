@@ -15,67 +15,6 @@ const LOOPRATE: u64 = 5;
 const TIMEOUT: u64 = 10000;
 const AFTERDELAY: u64 = 10;
 
-pub struct OdomValues {
-    global_x:       f64,
-    global_y:       f64,
-    global_heading: f64,
-}
-
-pub struct WheelTracker {
-    device:         AdiOpticalEncoder,
-    wheel_diameter: f64,
-    offset:         f64,
-}
-
-pub struct Trackers {
-    vertical:   WheelTracker,
-    horizontal: WheelTracker,
-    imu:        InertialSensor,
-}
-
-pub struct OdomTracker {
-    odometry_values: Arc<Mutex<OdomValues>>,
-    trackers:        Rc<RefCell<Trackers>>,
-    pid:             PIDMovement,
-}
-
-impl OdomTracker {
-    pub fn init(&self) {
-        let thread_clone = self.odometry_values.clone();
-        let thread_trackers = self.trackers.clone();
-        let mainloop = spawn(async move {
-            odom_tracker(&thread_clone, &thread_trackers).await;
-        });
-        mainloop.detach();
-    }
-
-    pub async fn face_point(&self, x: f64, y: f64, timeout: u64, afterdelay: u64) {
-        let cur_angle = self.odometry_values.lock().await.global_heading;
-        let delta_x = x - self.odometry_values.lock().await.global_x;
-        let delta_y = y - self.odometry_values.lock().await.global_y;
-        let angle = delta_y.atan2(delta_x).to_degrees();
-        let delta_angle = angle - cur_angle;
-        let imu = &self.trackers.borrow().imu;
-        self.pid
-            .rotate_imu(delta_angle, imu, timeout, afterdelay)
-            .await;
-    }
-
-    pub async fn goto_point(&self, x: f64, y: f64) {
-        let cur_angle = self.odometry_values.lock().await.global_heading;
-        let delta_x = x - self.odometry_values.lock().await.global_x;
-        let delta_y = y - self.odometry_values.lock().await.global_y;
-        let angle = delta_y.atan2(delta_x).to_degrees();
-        let delta_angle = angle - cur_angle;
-        let hyp = (delta_x.powi(2) + delta_y.powi(2)).sqrt();
-        let imu = &self.trackers.borrow().imu;
-        self.pid
-            .rotate_imu(delta_angle, imu, TIMEOUT, AFTERDELAY)
-            .await;
-        self.pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
-    }
-}
-
 async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Trackers>>) {
     info!("Odometry Tracking Started");
     let mut prev_dist_v = 0.0;
@@ -161,10 +100,78 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Tra
     }
 }
 
+impl OdomTracker {
+    pub fn init(&self) {
+        let thread_clone = self.odometry_values.clone();
+        let thread_trackers = self.trackers.clone();
+        let mainloop = spawn(async move {
+            odom_tracker(&thread_clone, &thread_trackers).await;
+        });
+        mainloop.detach();
+    }
+
+    pub async fn face_point(&self, x: f64, y: f64) {
+        let delta_x = x - self.odometry_values.lock().await.global_x;
+        let delta_y = y - self.odometry_values.lock().await.global_y;
+        let angle = delta_y.atan2(delta_x).to_degrees();
+        let imu = &self.trackers.borrow().imu;
+        self.pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+    }
+
+    pub async fn goto_point(&self, x: f64, y: f64) {
+        let delta_x = x - self.odometry_values.lock().await.global_x;
+        let delta_y = y - self.odometry_values.lock().await.global_y;
+        let angle = delta_y.atan2(delta_x).to_degrees();
+        let hyp = (delta_x.powi(2) + delta_y.powi(2)).sqrt();
+        let imu = &self.trackers.borrow().imu;
+        self.pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+        self.pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
+    }
+
+    pub async fn goto_pose(&self, x: f64, y: f64, heading: f64) {
+        let delta_x = x - self.odometry_values.lock().await.global_x;
+        let delta_y = y - self.odometry_values.lock().await.global_y;
+        let angle = delta_y.atan2(delta_x).to_degrees();
+        let hyp = (delta_x.powi(2) + delta_y.powi(2)).sqrt();
+        let imu = &self.trackers.borrow().imu;
+        self.pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+        self.pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
+        self.pid.rotate(heading, TIMEOUT, AFTERDELAY).await;
+    }
+}
+
 fn rotate_vector(angle: f64, x: f64, y: f64) -> (f64, f64) {
     let cos_theta = angle.cos();
     let sin_theta = angle.sin();
     let global_x = cos_theta * x - sin_theta * y;
     let global_y = sin_theta * x + cos_theta * y;
     (global_x, global_y)
+}
+
+/// Struct that will hold all Global Odometry Numbers
+pub struct OdomValues {
+    global_x:       f64,
+    global_y:       f64,
+    global_heading: f64,
+}
+
+/// Tracking Wheel Data
+pub struct WheelTracker {
+    device:         AdiOpticalEncoder,
+    wheel_diameter: f64,
+    offset:         f64,
+}
+
+/// Hardware that will be used by Odometry
+pub struct Trackers {
+    vertical:   WheelTracker,
+    horizontal: WheelTracker,
+    imu:        InertialSensor,
+}
+
+/// The main Odometry Instace
+pub struct OdomTracker {
+    odometry_values: Arc<Mutex<OdomValues>>,
+    trackers:        Rc<RefCell<Trackers>>,
+    pid:             PIDMovement,
 }
