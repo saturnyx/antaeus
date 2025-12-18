@@ -9,7 +9,7 @@ use vexide::{
     time::sleep,
 };
 
-use crate::auton::pid::PIDMovement;
+use crate::auton::{arcpid::ArcPIDMovement, pid::PIDMovement};
 
 const LOOPRATE: u64 = 5;
 const TIMEOUT: u64 = 10000;
@@ -118,7 +118,7 @@ impl OdomMovement {
         if let Some(pid) = &self.pid {
             pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
         } else {
-            warn!("Cannot face point without Movement Algorithm (PID or ArcPID needed)")
+            warn!("Cannot face point without Movement Algorithm (PID needed)")
         }
     }
 
@@ -132,7 +132,7 @@ impl OdomMovement {
             pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
             pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
         } else {
-            warn!("Cannot go to point without Movement Algorithm (PID or ArcPID needed)")
+            warn!("Cannot go to point without Movement Algorithm (PID needed)")
         }
     }
 
@@ -147,7 +147,23 @@ impl OdomMovement {
             pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
             pid.rotate(heading, TIMEOUT, AFTERDELAY).await;
         } else {
-            warn!("Cannot go to pose without Movement Algorithm (PID or ArcPID needed)")
+            warn!("Cannot go to pose without Movement Algorithm (PID needed)")
+        }
+    }
+
+    pub async fn travel(&self, distance: f64) {
+        if let Some(pid) = &self.pid {
+            pid.travel(distance, TIMEOUT, AFTERDELAY).await;
+        } else {
+            warn!("Cannot travel without Movement Algorithm (PID needed)")
+        }
+    }
+
+    pub async fn arc_travel(&self, distance: f64, offset: f64) {
+        if let Some(arc_pid) = &self.arc_pid {
+            arc_pid.travel(distance, offset, TIMEOUT, AFTERDELAY).await;
+        } else {
+            warn!("Cannot travel without Movement Algorithm (Arc PID needed)")
         }
     }
 }
@@ -186,4 +202,5 @@ pub struct OdomMovement {
     odometry_values: Arc<Mutex<OdomValues>>,
     trackers:        Rc<RefCell<Trackers>>,
     pid:             Option<PIDMovement>,
+    arc_pid:         Option<ArcPIDMovement>,
 }
