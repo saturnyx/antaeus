@@ -100,7 +100,7 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Tra
     }
 }
 
-impl OdomTracker {
+impl OdomMovement {
     pub fn init(&self) {
         let thread_clone = self.odometry_values.clone();
         let thread_trackers = self.trackers.clone();
@@ -115,7 +115,11 @@ impl OdomTracker {
         let delta_y = y - self.odometry_values.lock().await.global_y;
         let angle = delta_y.atan2(delta_x).to_degrees();
         let imu = &self.trackers.borrow().imu;
-        self.pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+        if let Some(pid) = &self.pid {
+            pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+        } else {
+            warn!("Cannot face point without Movement Algorithm (PID or ArcPID needed)")
+        }
     }
 
     pub async fn goto_point(&self, x: f64, y: f64) {
@@ -124,8 +128,12 @@ impl OdomTracker {
         let angle = delta_y.atan2(delta_x).to_degrees();
         let hyp = (delta_x.powi(2) + delta_y.powi(2)).sqrt();
         let imu = &self.trackers.borrow().imu;
-        self.pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
-        self.pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
+        if let Some(pid) = &self.pid {
+            pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+            pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
+        } else {
+            warn!("Cannot go to point without Movement Algorithm (PID or ArcPID needed)")
+        }
     }
 
     pub async fn goto_pose(&self, x: f64, y: f64, heading: f64) {
@@ -134,9 +142,13 @@ impl OdomTracker {
         let angle = delta_y.atan2(delta_x).to_degrees();
         let hyp = (delta_x.powi(2) + delta_y.powi(2)).sqrt();
         let imu = &self.trackers.borrow().imu;
-        self.pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
-        self.pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
-        self.pid.rotate(heading, TIMEOUT, AFTERDELAY).await;
+        if let Some(pid) = &self.pid {
+            pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+            pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
+            pid.rotate(heading, TIMEOUT, AFTERDELAY).await;
+        } else {
+            warn!("Cannot go to pose without Movement Algorithm (PID or ArcPID needed)")
+        }
     }
 }
 
@@ -170,8 +182,8 @@ pub struct Trackers {
 }
 
 /// The main Odometry Instace
-pub struct OdomTracker {
+pub struct OdomMovement {
     odometry_values: Arc<Mutex<OdomValues>>,
     trackers:        Rc<RefCell<Trackers>>,
-    pid:             PIDMovement,
+    pid:             Option<PIDMovement>,
 }
