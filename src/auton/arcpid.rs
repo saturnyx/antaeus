@@ -1,13 +1,7 @@
-use std::{f64::consts::PI, marker::PhantomData, sync::Arc, time::Duration};
+use std::{f64::consts::PI, sync::Arc, time::Duration};
 
-use log::{info, warn};
-use vexide::{
-    math::{Angle, EulerAngles},
-    smart::{imu::*, motor::BrakeMode},
-    sync::Mutex,
-    task::*,
-    time::*,
-};
+use log::info;
+use vexide::{smart::motor::BrakeMode, sync::Mutex, task::*, time::*};
 
 use crate::{drivetrain, drivetrain::Differential};
 
@@ -74,9 +68,9 @@ async fn arcpid_loop(
         let error = target - currs;
 
         ierror += error * dt;
-        let mut u;
-        let mut u_left;
-        let mut u_right;
+        let u;
+        let u_left;
+        let u_right;
         let ki = ki;
         if ki != 0.0 {
             let i_max = pwr.abs() / ki.abs();
@@ -202,14 +196,37 @@ impl ArcPIDMovement {
         sleep(Duration::from_millis(afterdelay)).await;
     }
 
-    pub async fn local_coords(
-        &self,
-        track_width: f64,
-        x: f64,
-        y: f64,
-        timeout: u64,
-        afterdelay: u64,
-    ) {
+    pub async fn abs_travel(&self, distance: f64, offset: f64, timeout: u64, afterdelay: u64) {
+        let r = (distance *
+            (self.drivetrain_config.driving_gear / self.drivetrain_config.driven_gear) *
+            2.0 *
+            PI) /
+            self.drivetrain_config.wheel_diameter;
+        let mut s = self.arcpid_values.lock().await;
+        s.active = true;
+        s.target = r;
+        s.offset = offset;
+        timeout_wait(&self.arcpid_values, timeout).await;
+        {
+            let mut s = self.arcpid_values.lock().await;
+            s.active = false;
+        }
+        sleep(Duration::from_millis(afterdelay)).await;
+    }
+
+    pub async fn local_coords(&self, x: f64, y: f64, timeout: u64, afterdelay: u64) {
+        let track_width = self.drivetrain_config.track_width;
+        let offset;
+        let (radius, angle) = get_arc(x, y);
+        if angle > 0.0 {
+            offset = ((2.0 * radius) - track_width) / ((2.0 * radius) + track_width);
+        } else if angle < 0.0 {
+            offset = ((2.0 * radius) + track_width) / ((2.0 * radius) - track_width);
+        } else {
+            offset = 0.0;
+        }
+        let distance = radius * angle;
+        self.abs_travel(distance, offset, timeout, afterdelay).await;
     }
 }
 
@@ -312,31 +329,6 @@ async fn timeout_wait(arcpid_values: &Arc<Mutex<ArcPIDValues>>, timeout: u64) {
     }
 }
 
-fn get_heading(imu: &InertialSensor) -> f64 {
-    let is_calibrating = imu.is_calibrating().unwrap_or_else(|e| {
-        warn!("IMU Calibration State Error: {}", e);
-        true
-    });
-    if !is_calibrating {
-        let angle = imu
-            .euler()
-            .unwrap_or_else(|e| {
-                warn!("IMU Calibration State Error: {}", e);
-                EulerAngles {
-                    a:      (Angle::from_degrees(0.0)),
-                    b:      (Angle::from_degrees(0.0)),
-                    c:      (Angle::from_degrees(0.0)),
-                    marker: PhantomData,
-                }
-            })
-            .b
-            .as_degrees();
-        if angle > 180.0 { angle - 360.0 } else { angle }
-    } else {
-        0.0
-    }
-}
-
 fn abscap(val: f64, cap: f64) -> f64 {
     let result: f64;
     if val > cap {
@@ -347,4 +339,13 @@ fn abscap(val: f64, cap: f64) -> f64 {
         result = val;
     }
     result
+}
+
+/// Warning! This fn is not as easy as you think...
+/// Calculate arc radius and turn angle from (0,0) heading north to (x,y)
+/// Returns (radius, turn_angle_radians). Positive angle = right turn, negative = left turn
+fn get_arc(x: f64, y: f64) -> (f64, f64) {
+    let r = (x * x + y * y) / (2.0 * x);
+    let angle = ((y / x).atan()).abs();
+    (r.abs(), angle * r.signum())
 }
