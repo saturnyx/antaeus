@@ -178,9 +178,9 @@ fn rotate_vector(angle: f64, x: f64, y: f64) -> (f64, f64) {
 
 /// Struct that will hold all Global Odometry Numbers
 pub struct OdomValues {
-    global_x:       f64,
-    global_y:       f64,
-    global_heading: f64,
+    pub global_x:       f64,
+    pub global_y:       f64,
+    pub global_heading: f64,
 }
 
 /// Tracking Wheel Data
@@ -199,8 +199,8 @@ pub struct Trackers {
 
 /// The main Odometry Instace
 pub struct OdomMovement {
-    odometry_values: Arc<Mutex<OdomValues>>,
-    trackers:        Rc<RefCell<Trackers>>,
-    pid:             Option<PIDMovement>,
-    arc_pid:         Option<ArcPIDMovement>,
+    pub odometry_values: Arc<Mutex<OdomValues>>,
+    trackers:            Rc<RefCell<Trackers>>,
+    pub pid:             Option<PIDMovement>,
+    pub arc_pid:         Option<ArcPIDMovement>,
 }
