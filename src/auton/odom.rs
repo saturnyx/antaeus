@@ -166,6 +166,29 @@ impl OdomMovement {
             warn!("Cannot travel without Movement Algorithm (Arc PID needed)")
         }
     }
+
+    pub async fn arc_point(&self, x: f64, y: f64) {
+        // Get current robot position and heading
+        let (current_x, current_y, current_heading) = {
+            let odom = self.odometry_values.lock().await;
+            (odom.global_x, odom.global_y, odom.global_heading)
+        };
+
+        // Calculate difference in global coordinates
+        let delta_x = x - current_x;
+        let delta_y = y - current_y;
+
+        // Convert heading from degrees to radians and rotate to get local coordinates
+        let heading_rad = current_heading.to_radians();
+        let (local_x, local_y) = rotate_vector(-heading_rad, delta_x, delta_y);
+
+        // Use ArcPID to move to the local coordinates
+        if let Some(arc_pid) = &self.arc_pid {
+            arc_pid.local_coords(local_x, local_y).await;
+        } else {
+            warn!("Cannot arc to point without Movement Algorithm (Arc PID needed)")
+        }
+    }
 }
 
 fn rotate_vector(angle: f64, x: f64, y: f64) -> (f64, f64) {
@@ -200,7 +223,7 @@ pub struct Trackers {
 /// The main Odometry Instace
 pub struct OdomMovement {
     pub odometry_values: Arc<Mutex<OdomValues>>,
-    trackers:            Rc<RefCell<Trackers>>,
+    pub trackers:        Rc<RefCell<Trackers>>,
     pub pid:             Option<PIDMovement>,
     pub arc_pid:         Option<ArcPIDMovement>,
 }

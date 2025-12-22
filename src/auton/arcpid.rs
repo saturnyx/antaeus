@@ -33,15 +33,14 @@ async fn arcpid_loop(
     }
 
     let mut perror = 0.0;
-    let mut ierror = 0.0;
 
     // seconds per loop from configured looprate in ms
     let dt = (LOOPRATE as f64) / 1000.0;
 
     loop {
-        let (target, offset, pwr, kp, kd, ki, leeway) = {
+        let (target, offset, pwr, kp, kd, leeway) = {
             let s = arcpidvalues.lock().await;
-            (s.target, s.offset, s.maxpwr, s.kp, s.kd, s.ki, s.leeway)
+            (s.target, s.offset, s.maxpwr, s.kp, s.kd, s.leeway)
         };
 
         let currs_left = {
@@ -67,19 +66,13 @@ async fn arcpid_loop(
         let currs = (currs_left + currs_right) / 2.0;
         let error = target - currs;
 
-        ierror += error * dt;
         let u;
         let u_left;
         let u_right;
-        let ki = ki;
-        if ki != 0.0 {
-            let i_max = pwr.abs() / ki.abs();
-            ierror = ierror.clamp(-i_max, i_max);
-        }
 
         let derror = (error - perror) / dt;
 
-        u = kp * error + ki * ierror + kd * derror;
+        u = kp * error + kd * derror;
 
         if offset > 0.0 {
             u_left = abscap(u, pwr.abs());
@@ -131,8 +124,6 @@ async fn arcpid_loop(
                     let _ = motor.set_voltage(0.0);
                 }
             }
-
-            ierror = 0.0;
         }
         perror = error;
         sleep(Duration::from_millis(LOOPRATE)).await;
@@ -161,11 +152,10 @@ impl ArcPIDMovement {
         mainloop.detach();
     }
 
-    /// Set the Leeway, Kp, Ki and Kd Values for ArcPID. The values are in radians.
-    pub async fn tune(&self, kp: f64, ki: f64, kd: f64, leeway: f64) {
+    /// Set the Leeway, Kp, and Kd Values for ArcPD. The values are in radians.
+    pub async fn tune(&self, kp: f64, kd: f64, leeway: f64) {
         let mut arcpid_values = self.arcpid_values.lock().await;
         arcpid_values.kp = kp;
-        arcpid_values.ki = ki;
         arcpid_values.kd = kd;
         arcpid_values.leeway = leeway;
     }
@@ -196,7 +186,7 @@ impl ArcPIDMovement {
         sleep(Duration::from_millis(afterdelay)).await;
     }
 
-    pub async fn abs_travel(&self, distance: f64, offset: f64, timeout: u64, afterdelay: u64) {
+    pub async fn abs_travel(&self, distance: f64, offset: f64) {
         let r = (distance *
             (self.drivetrain_config.driving_gear / self.drivetrain_config.driven_gear) *
             2.0 *
@@ -206,15 +196,9 @@ impl ArcPIDMovement {
         s.active = true;
         s.target = r;
         s.offset = offset;
-        timeout_wait(&self.arcpid_values, timeout).await;
-        {
-            let mut s = self.arcpid_values.lock().await;
-            s.active = false;
-        }
-        sleep(Duration::from_millis(afterdelay)).await;
     }
 
-    pub async fn local_coords(&self, x: f64, y: f64, timeout: u64, afterdelay: u64) {
+    pub async fn local_coords(&self, x: f64, y: f64) {
         let track_width = self.drivetrain_config.track_width;
         let offset;
         let (radius, angle) = get_arc(x, y);
@@ -226,19 +210,19 @@ impl ArcPIDMovement {
             offset = 0.0;
         }
         let distance = radius * angle;
-        self.abs_travel(distance, offset, timeout, afterdelay).await;
+        self.abs_travel(distance, offset).await;
     }
 }
 
-/// **The ArcPID Movement Controller**
+/// **The ArcPD Movement Controller**
 ///
-/// Initialize an instance of this to control the robot using ArcPID.
+/// Initialize an instance of this to control the robot using ArcPD.
 ///
 /// # Examples
 ///
-/// Creating a ArcPIDMovement Instance
+/// Creating a ArcPDMovement Instance
 /// ```
-/// fn new_arcpid() -> ArcPIDMovement {
+/// fn new_arcpd() -> ArcPIDMovement {
 ///     let dt = Differential::new(
 ///         [
 ///             Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
@@ -258,39 +242,40 @@ impl ArcPIDMovement {
 ///     let values = ArcPIDValues {
 ///         kp:           0.5,
 ///         kd:           0.1,
-///         ki:           0.0,
 ///         leeway:       0.02,
 ///         maxpwr:       12.0,
 ///         active:       true,
 ///         target_left:  0.0,
 ///         target_right: 0.0,
 ///     };
-///     let ArcPID_controller = ArcPIDMovement {
+///     let ArcPD_controller = ArcPIDMovement {
 ///         drivetrain:        dt,
 ///         drivetrain_config: config,
 ///         arcpid_values:     Arc::new(Mutex::new(values)),
 ///     };
 /// }
 /// ```
+#[derive(Clone)]
 pub struct ArcPIDMovement {
-    drivetrain:        Differential,
-    drivetrain_config: DrivetrainConfig,
-    arcpid_values:     Arc<Mutex<ArcPIDValues>>,
+    pub drivetrain:        Differential,
+    pub drivetrain_config: DrivetrainConfig,
+    pub arcpid_values:     Arc<Mutex<ArcPIDValues>>,
 }
 
-/// A Struct for ArcPID values that will be altered throughout the Autonomous
+/// A Struct for ArcPD values that will be altered throughout the Autonomous
+#[derive(Clone, Copy)]
 pub struct ArcPIDValues {
-    kp:     f64,
-    ki:     f64,
-    kd:     f64,
-    leeway: f64,
-    maxpwr: f64,
-    active: bool,
-    target: f64,
-    offset: f64,
+    pub kp:     f64,
+    pub kd:     f64,
+    pub leeway: f64,
+    pub maxpwr: f64,
+    pub active: bool,
+    pub target: f64,
+    pub offset: f64,
 }
 
 /// The Drivtrain's Physical Configuration that will be used for calculations
+#[derive(Clone, Copy)]
 pub struct DrivetrainConfig {
     /// The wheel diameter in inches.
     /// Most teams use 2.75", 3.25" or sometimes 4".

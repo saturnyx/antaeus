@@ -3,11 +3,6 @@ use std::f64::{EPSILON, MAX};
 use log::{error, info};
 
 use super::geo;
-pub struct PurePursuit {
-    pub lookahead: f64,
-}
-
-impl PurePursuit {}
 
 fn point_in_circle(p: &geo::Point, cir: &geo::Circle) -> bool {
     let h = cir.x;
@@ -93,7 +88,7 @@ fn prox_point_on_path(path: &geo::Path, point: geo::Point) -> (geo::Point, f64) 
     (prox_pt, dist)
 }
 
-fn get_canditates(path: &geo::Path, cir: geo::Circle) -> Vec<geo::Point> {
+fn get_candidates(path: &geo::Path, cir: geo::Circle) -> Vec<geo::Point> {
     let mut c: Vec<geo::Point> = Vec::new();
     for p in path.waypoints.clone() {
         if point_in_circle(&p, &cir) {
@@ -161,6 +156,6 @@ fn get_target(candidates: Vec<geo::Point>, path: geo::Path) -> geo::Point {
 }
 
 pub fn pp_target(path: geo::Path, cir: geo::Circle) -> geo::Point {
-    let candidates = get_canditates(&path, cir);
+    let candidates = get_candidates(&path, cir);
     get_target(candidates, path)
 }
