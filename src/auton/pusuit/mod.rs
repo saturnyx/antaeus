@@ -16,7 +16,7 @@ impl PurePursuit {
                 y: y,
                 r: lookahead,
             };
-            let target = algorithm::pp_target(path.clone(), cir);
+            let target = algorithm::pursuit_target(path.clone(), cir);
             odom.arc_point(target.x, target.y).await;
 
             if let Some(arcpid) = odom.arc_pid.clone() {

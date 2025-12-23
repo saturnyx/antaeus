@@ -1,15 +1,16 @@
-/// **Pure Pursuit Point**
+/// **Pursuit Point**
 ///
 /// Contains 3 values:
 /// - `x`: The x-coordinate
 /// - `y`: The y-coordinate
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point {
     /// The x-coordinate
     pub x: f64,
     /// The y-coordinate
     pub y: f64,
 }
+/// A Vector of Points
 #[derive(Clone)]
 pub struct Path {
     /// A vector of Waypoints that make up the path.
@@ -55,4 +56,24 @@ impl Path {
         }
         lines
     }
+}
+
+impl Line {
+    pub fn new(x1: f64, y1: f64, x2: f64, y2: f64) -> Line {
+        Line {
+            point1: Point { x: (x1), y: (y1) },
+            point2: Point { x: (x2), y: (y2) },
+        }
+    }
+
+    pub fn from_pts(point1: Point, point2: Point) -> Line {
+        Line {
+            point1: point1,
+            point2: point2,
+        }
+    }
+}
+
+impl Circle {
+    pub fn new(x: f64, y: f64, r: f64) -> Circle { Circle { x: x, y: y, r: r } }
 }

@@ -70,8 +70,9 @@ fn prox_point_on_line(line: geo::Line, point: geo::Point) -> (geo::Point, f64) {
     let t = (dot_product / line_length_squared).clamp(0.0, 1.0);
     let closest_point =
         geo::Point::new(line.point1.x + t * line_vec_x, line.point1.y + t * line_vec_y);
-    let distance =
-        ((point.x - closest_point.x).powi(2) + (point.y - closest_point.y).powi(2)).sqrt();
+    let distance = ((point.x - closest_point.x).powi(2) + (point.y - closest_point.y).powi(2))
+        .sqrt()
+        .abs();
     (closest_point, distance)
 }
 
@@ -155,7 +156,286 @@ fn get_target(candidates: Vec<geo::Point>, path: geo::Path) -> geo::Point {
     target
 }
 
-pub fn pp_target(path: geo::Path, cir: geo::Circle) -> geo::Point {
+pub fn pursuit_target(path: geo::Path, cir: geo::Circle) -> geo::Point {
     let candidates = get_candidates(&path, cir);
     get_target(candidates, path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::geo;
+    use crate::auton::pusuit::{
+        algorithm::*,
+        geo::{Circle, Point},
+    };
+
+    #[test]
+    fn point_circle_test() {
+        let cir = Circle::new(0.0, 0.0, 1.0);
+        let pt = Point::new(-0.3, -0.3);
+        assert!(point_in_circle(&pt, &cir));
+    }
+
+    #[test]
+    fn line_circ_intersect_test() {
+        let point1 = geo::Point::new(-1.0, -1.0);
+        let point2 = geo::Point::new(1.0, 1.0);
+        let line = geo::Line::from_pts(point1, point2);
+        let cir = Circle::new(0.0, 0.0, 1.0);
+        let intersect = line_circ_intersect(line, &cir);
+        let mut right = Vec::new();
+        right.push(Point {
+            x: -0.7071067811865476,
+            y: -0.7071067811865476,
+        });
+        right.push(Point {
+            x: 0.7071067811865475,
+            y: 0.7071067811865475,
+        });
+        assert_eq!(intersect, right)
+    }
+    #[test]
+    fn path_circ_intersect_test_basic() {
+        let pt1 = geo::Point::new(-1.0, 1.0);
+        let pt2 = geo::Point::new(-1.0, -1.0);
+        let pt3 = geo::Point::new(1.0, -1.0);
+        let pt4 = geo::Point::new(1.0, 1.0);
+        let mut vec = Vec::new();
+        vec.push(pt1);
+        vec.push(pt2);
+        vec.push(pt3);
+        vec.push(pt4);
+        let path = geo::Path::new(vec);
+        let cir = geo::Circle::new(0.0, 0.0, 0.5);
+        let pts = path_circ_intersect(&path, cir);
+        let right = Vec::new();
+        assert_eq!(pts, right)
+    }
+    #[test]
+    fn path_circ_intersect_test_inter() {
+        let pt1 = geo::Point::new(-1.0, 1.0);
+        let pt2 = geo::Point::new(-1.0, 0.0);
+        let pt3 = geo::Point::new(1.0, 0.0);
+        let pt4 = geo::Point::new(1.0, 1.0);
+        let mut vec = Vec::new();
+        vec.push(pt1);
+        vec.push(pt2);
+        vec.push(pt3);
+        vec.push(pt4);
+        let path = geo::Path::new(vec);
+        let cir = geo::Circle::new(0.0, 0.0, 0.5);
+        let pts = path_circ_intersect(&path, cir);
+        let right = vec![geo::Point::new(-0.5, 0.0), geo::Point::new(0.5, 0.0)];
+        assert_eq!(pts, right)
+    }
+
+    #[test]
+    fn path_circ_intersect_test_adv() {
+        let pt1 = geo::Point::new(-2.0, 0.5);
+        let pt2 = geo::Point::new(2.0, 0.5);
+        let pt3 = geo::Point::new(2.0, -0.5);
+        let pt4 = geo::Point::new(-2.0, -0.5);
+        let mut vec = Vec::new();
+        vec.push(pt1);
+        vec.push(pt2);
+        vec.push(pt3);
+        vec.push(pt4);
+        let path = geo::Path::new(vec);
+        let cir = geo::Circle::new(0.0, 0.0, 1.0);
+        let pts = path_circ_intersect(&path, cir);
+        let right = vec![
+            geo::Point::new(-0.8660254037844386, 0.5),
+            geo::Point::new(0.8660254037844384, 0.5),
+            geo::Point::new(0.8660254037844386, -0.5),
+            geo::Point::new(-0.8660254037844384, -0.5),
+        ];
+        assert_eq!(pts, right)
+    }
+
+    #[test]
+    fn prox_point_on_line_test_basic() {
+        let pt1 = geo::Point::new(-1.0, 1.0);
+        let pt2 = geo::Point::new(1.0, 1.0);
+        let line = geo::Line::from_pts(pt1, pt2);
+        let o = geo::Point::new(0.0, 0.0);
+        let d = prox_point_on_line(line, o);
+        assert_eq!(d, (geo::Point::new(0.0, 1.0), 1.0))
+    }
+
+    #[test]
+    fn prox_point_on_line_test_inter() {
+        let pt1 = geo::Point::new(-1.0, 2.0);
+        let pt2 = geo::Point::new(0.0, 1.0);
+        let line = geo::Line::from_pts(pt1, pt2);
+        let o = geo::Point::new(0.0, 0.0);
+        let d = prox_point_on_line(line, o);
+        assert_eq!(d, (geo::Point::new(0.0, 1.0), 1.0))
+    }
+
+    #[test]
+    fn prox_point_on_line_test_adv() {
+        let pt1 = geo::Point::new(-1.0, 2.0);
+        let pt2 = geo::Point::new(1.0, 0.0);
+        let line = geo::Line::from_pts(pt1, pt2);
+        let o = geo::Point::new(0.0, 0.0);
+        let d = prox_point_on_line(line, o);
+        assert_eq!(d, (geo::Point::new(0.5, 0.5), 0.7071067811865476))
+    }
+
+    #[test]
+    fn prox_point_on_path_test_basic() {
+        let pt1 = geo::Point::new(-2.0, 2.5);
+        let pt2 = geo::Point::new(2.0, 2.5);
+        let pt3 = geo::Point::new(2.0, 1.5);
+        let pt4 = geo::Point::new(-2.0, 1.5);
+        let path = geo::Path::new(vec![pt1, pt2, pt3, pt4]);
+        let o = geo::Point::new(0.0, 0.0);
+        let d = prox_point_on_path(&path, o);
+        assert_eq!(d, (geo::Point::new(0.0, 1.5), 1.5))
+    }
+
+    #[test]
+    fn prox_point_on_path_test_adv() {
+        let pt1 = geo::Point::new(-2.0, 2.5);
+        let pt2 = geo::Point::new(-2.0, -2.5);
+        let pt3 = geo::Point::new(2.0, -2.5);
+        let pt4 = geo::Point::new(2.0, 2.5);
+        let path = geo::Path::new(vec![pt1, pt2, pt3, pt4]);
+        let o = geo::Point::new(0.0, 0.0);
+        let d = prox_point_on_path(&path, o);
+        assert_eq!(d, (geo::Point::new(-2.0, 0.0), 2.0))
+    }
+
+    #[test]
+    fn get_candidates_test() {
+        let pt1 = geo::Point::new(-1.0, 1.0);
+        let pt2 = geo::Point::new(-1.0, -1.0);
+        let pt3 = geo::Point::new(1.0, 1.0);
+        let pt4 = geo::Point::new(1.0, -1.0);
+        let pt5 = geo::Point::new(0.3, -0.3);
+        let path = geo::Path::new(vec![pt1, pt2, pt3, pt4, pt5]);
+        let cir = Circle::new(0.0, 0.0, 1.0);
+        let d = get_candidates(&path, cir);
+        let right = vec![
+            Point { x: 0.3, y: -0.3 },
+            Point { x: -1.0, y: 0.0 },
+            Point {
+                x: -0.7071067811865476,
+                y: -0.7071067811865476,
+            },
+            Point {
+                x: 0.7071067811865475,
+                y: 0.7071067811865475,
+            },
+            Point { x: 1.0, y: 0.0 },
+            Point {
+                x: 0.7071067811865475,
+                y: -0.7071067811865475,
+            },
+            Point { x: 0.0, y: 0.0 },
+        ];
+        assert_eq!(d, right)
+    }
+
+    #[test]
+    fn point_t_on_line_test_basic() {
+        let pt1 = geo::Point::new(-1.0, 1.0);
+        let pt2 = geo::Point::new(1.0, 1.0);
+        let pt3 = geo::Point::new(0.0, 0.0);
+        let ln = geo::Line::from_pts(pt1, pt2);
+        let t = point_t_on_line(pt3, ln);
+        assert_eq!(t, None)
+    }
+
+    #[test]
+    fn point_t_on_line_test_adv() {
+        let pt1 = geo::Point::new(-1.0, 0.0);
+        let pt2 = geo::Point::new(1.0, 0.0);
+        let pt3 = geo::Point::new(0.0, 0.0);
+        let ln = geo::Line::from_pts(pt1, pt2);
+        let t = point_t_on_line(pt3, ln);
+        assert_eq!(t, Some(0.5))
+    }
+
+    #[test]
+    fn get_t_test() {
+        let pt1 = geo::Point::new(-2.0, 0.0);
+        let pt2 = geo::Point::new(-1.0, 0.0);
+        let pt3 = geo::Point::new(1.0, 0.0);
+        let pt4 = geo::Point::new(2.0, 0.0);
+        let pt5 = geo::Point::new(0.0, 0.0);
+        let path = geo::Path::new(vec![pt1, pt2, pt3, pt4]);
+        let t = get_t(pt5, &path);
+        assert_eq!(t, Some(1.5))
+    }
+
+    #[test]
+    fn get_target_test() {
+        let pt1 = geo::Point::new(-1.0, 1.0);
+        let pt2 = geo::Point::new(-1.0, -1.0);
+        let pt3 = geo::Point::new(1.0, 1.0);
+        let pt4 = geo::Point::new(1.0, -1.0);
+        let pt5 = geo::Point::new(0.3, -0.3);
+        let path = geo::Path::new(vec![pt1, pt2, pt3, pt4, pt5]);
+        let candidates = vec![
+            Point { x: 0.3, y: -0.3 },
+            Point { x: -1.0, y: 0.0 },
+            Point {
+                x: -0.7071067811865476,
+                y: -0.7071067811865476,
+            },
+            Point {
+                x: 0.7071067811865475,
+                y: 0.7071067811865475,
+            },
+            Point { x: 1.0, y: 0.0 },
+            Point {
+                x: 0.7071067811865475,
+                y: -0.7071067811865475,
+            },
+            Point { x: 0.0, y: 0.0 },
+        ];
+        let pt = get_target(candidates, path);
+        assert_eq!(pt, Point { x: 0.3, y: -0.3 })
+    }
+
+    #[test]
+    // Default
+    fn pursuit_target_test1() {
+        let pt1 = geo::Point::new(-1.0, 1.0);
+        let pt2 = geo::Point::new(-1.0, -1.0);
+        let pt3 = geo::Point::new(1.0, 1.0);
+        let pt4 = geo::Point::new(1.0, -1.0);
+        let pt5 = geo::Point::new(0.3, -0.3);
+        let path = geo::Path::new(vec![pt1, pt2, pt3, pt4, pt5]);
+        let cir = geo::Circle::new(0.0, 0.0, 1.0);
+        let pt = pursuit_target(path, cir);
+        assert_eq!(pt, Point { x: 0.3, y: -0.3 })
+    }
+
+    #[test]
+    // Endpoint test
+    fn pursuit_target_test2() {
+        let pt1 = geo::Point::new(-3.0, 0.0);
+        let pt2 = geo::Point::new(-2.0, 0.0);
+        let pt3 = geo::Point::new(-1.0, 0.0);
+        let pt4 = geo::Point::new(0.0, 0.0);
+        let path = geo::Path::new(vec![pt1, pt2, pt3, pt4]);
+        let cir = geo::Circle::new(-0.1, 0.0, 1.0);
+        let pt = pursuit_target(path, cir);
+        assert_eq!(pt, Point { x: 0.0, y: 0.0 })
+    }
+
+    #[test]
+    // Out of look distance
+    fn pursuit_target_test3() {
+        let pt1 = geo::Point::new(-2.0, 1.0);
+        let pt2 = geo::Point::new(-1.0, 1.0);
+        let pt3 = geo::Point::new(0.0, 1.0);
+        let pt4 = geo::Point::new(1.0, 1.0);
+        let path = geo::Path::new(vec![pt1, pt2, pt3, pt4]);
+        let cir = geo::Circle::new(0.0, 0.0, 0.5);
+        let pt = pursuit_target(path, cir);
+        assert_eq!(pt, Point { x: 0.0, y: 1.0 })
+    }
 }
