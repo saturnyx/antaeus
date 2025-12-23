@@ -388,21 +388,21 @@ impl PIDMovement {
 /// }
 /// ```
 pub struct PIDMovement {
-    drivetrain:        Differential,
-    drivetrain_config: DrivetrainConfig,
-    pid_values:        Arc<Mutex<PIDValues>>,
+    pub drivetrain:        Differential,
+    pub drivetrain_config: DrivetrainConfig,
+    pub pid_values:        Arc<Mutex<PIDValues>>,
 }
 
 /// A Struct for PID values that will be altered throughout the Autonomous
 pub struct PIDValues {
-    kp:           f64,
-    ki:           f64,
-    kd:           f64,
-    leeway:       f64,
-    maxpwr:       f64,
-    active:       bool,
-    target_left:  f64,
-    target_right: f64,
+    pub kp:           f64,
+    pub ki:           f64,
+    pub kd:           f64,
+    pub leeway:       f64,
+    pub maxpwr:       f64,
+    pub active:       bool,
+    pub target_left:  f64,
+    pub target_right: f64,
 }
 
 /// The Drivtrain's Physical Configuration that will be used for calculations
@@ -410,17 +410,17 @@ pub struct DrivetrainConfig {
     /// The wheel diameter in inches.
     /// Most teams use 2.75", 3.25" or sometimes 4".
     /// The older large omni wheels were 4.15".
-    wheel_diameter: f64,
+    pub wheel_diameter: f64,
     /// The size of the driving gear. This can
     /// be in any units as long as the same units
     /// are used for the driven gear value.
-    driving_gear:   f64,
+    pub driving_gear:   f64,
     /// The size of the driven gear. This can
     /// be in any units as long as the same units
     /// are used for the driving gear value.
-    driven_gear:    f64,
+    pub driven_gear:    f64,
     // The width from the right wheels to the left.
-    track_width:    f64,
+    pub track_width:    f64,
 }
 
 async fn timeout_wait(pid_values: &Arc<Mutex<PIDValues>>, timeout: u64) {

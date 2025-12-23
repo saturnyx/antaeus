@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc, sync::Arc, time::Duration};
 use log::{info, warn};
 use vexide::{
     math::Angle,
-    prelude::{AdiOpticalEncoder, InertialSensor},
+    prelude::{InertialSensor, RotationSensor},
     sync::Mutex,
     task::spawn,
     time::sleep,
@@ -39,6 +39,9 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Tra
         // Getting delta theta (needed later)
         let delta_heading = abs_rotation - prev_heading;
 
+        // Get reverse multiplier
+        let reverse_multiplier = if trackers.borrow().reverse { -1.0 } else { 1.0 };
+
         // Vertical Tracking Wheel Calculations
         let (vertical_rad, delta_v, wheel_dia_v, offset_v);
         {
@@ -52,7 +55,8 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Tra
                 })
                 .as_radians()
                 .clone();
-            delta_v = (vertical_rad * vertical.wheel_diameter / 2.0) - prev_dist_v;
+            delta_v =
+                ((vertical_rad * vertical.wheel_diameter / 2.0) - prev_dist_v) * reverse_multiplier;
             wheel_dia_v = vertical.wheel_diameter.clone();
             offset_v = vertical.offset.clone();
         }
@@ -70,7 +74,8 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Tra
                 })
                 .as_radians()
                 .clone();
-            delta_h = (horizontal_rad * horizontal.wheel_diameter / 2.0) - prev_dist_h;
+            delta_h = ((horizontal_rad * horizontal.wheel_diameter / 2.0) - prev_dist_h) *
+                reverse_multiplier;
             wheel_dia_h = horizontal.wheel_diameter.clone();
             offset_h = horizontal.offset.clone();
         }
@@ -208,7 +213,7 @@ pub struct OdomValues {
 
 /// Tracking Wheel Data
 pub struct WheelTracker {
-    device:         AdiOpticalEncoder,
+    device:         RotationSensor,
     wheel_diameter: f64,
     offset:         f64,
 }
@@ -218,6 +223,7 @@ pub struct Trackers {
     vertical:   WheelTracker,
     horizontal: WheelTracker,
     imu:        InertialSensor,
+    reverse:    bool,
 }
 
 /// The main Odometry Instace
