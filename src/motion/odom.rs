@@ -9,7 +9,7 @@ use vexide::{
     time::sleep,
 };
 
-use crate::motion::{arcpid::ArcPIDMovement, pid::PIDMovement};
+use crate::motion::pid::{arcpid::ArcPIDMovement, pid::PIDMovement};
 
 const LOOPRATE: u64 = 5;
 const TIMEOUT: u64 = 10000;

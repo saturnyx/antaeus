@@ -1,13 +1,13 @@
 [package]
 name = "antaeus"
-version = "0.2.6-alpha.1"
+version = "0.2.6-alpha.2"
 edition = "2024"
 readme = "README.md"
 license = "AGPL-3.0-only"
 authors = ["Harshal<saturnyx@disroot.org"]
 description = "A Versatile Framework for Vexide"
 repository = "https://github.com/Saturnyx/antaeus"
-categories = ["no-std", "science::robotics"]
+categories = ["science::robotics"]
 
 [lib]
 name = "antaeus"
