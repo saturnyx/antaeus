@@ -167,7 +167,7 @@ pub fn pursuit_target(path: geo::Path, cir: geo::Circle) -> geo::Point {
 #[cfg(test)]
 mod tests {
     use super::geo;
-    use crate::auton::pusuit::{
+    use crate::motion::pusuit::{
         algorithm::*,
         geo::{Circle, Point},
     };

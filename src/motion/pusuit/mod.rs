@@ -1,8 +1,8 @@
 /// Math calculations for CBP-Algorithm
-pub mod algorithm;
+mod algorithm;
 /// A small geometry library
 pub mod geo;
-use crate::auton::odom::OdomMovement;
+use crate::motion::odom::OdomMovement;
 
 /// # Candidate-Based Pusuit Algorithm
 /// A more robust variant of pure pusuit
