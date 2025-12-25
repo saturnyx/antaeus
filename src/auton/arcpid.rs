@@ -334,17 +334,3 @@ fn get_arc(x: f64, y: f64) -> (f64, f64) {
     let angle = ((y / x).atan()).abs();
     (r.abs(), angle * r.signum())
 }
-
-#[cfg(test)]
-mod tests {
-    use vexide::{
-        math::Direction,
-        peripherals::Peripherals,
-        prelude::{Gearset, Motor},
-    };
-    #[vexide::test]
-    async fn async_test(p: Peripherals) {
-        let mut motor = Motor::new(p.port_1, Gearset::Blue, Direction::Forward);
-        let _ = motor.set_voltage(12.0);
-    }
-}
