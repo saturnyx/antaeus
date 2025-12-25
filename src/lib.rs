@@ -1,6 +1,6 @@
-/// All Auton related stuff like PID.
-/// Still in progress as of late 2025
+/// Robot Controls for Auton
 pub mod auton;
-
+/// Drivtrain
 pub mod drivetrain;
+/// Module for Driver-Control
 pub mod opcontrol;

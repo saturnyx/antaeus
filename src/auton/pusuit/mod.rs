@@ -1,12 +1,21 @@
+/// Math calculations for CBP-Algorithm
 pub mod algorithm;
+/// A small geometry library
 pub mod geo;
 use crate::auton::odom::OdomMovement;
-pub struct PurePursuit {
+
+/// # Candidate-Based Pusuit Algorithm
+/// A more robust variant of pure pusuit
+pub struct Pursuit {
     pub lookahead: f64,
 }
 
-impl PurePursuit {
-    pub async fn follow(odom: OdomMovement, path: geo::Path, lookahead: f64) {
+impl Pursuit {
+    /// The main function of the CBP-Algorithm.
+    ///
+    /// It uses an instance of `OdomMovement`, and lookahead distance
+    /// to follow a path.
+    pub async fn follow(&self, odom: OdomMovement, path: geo::Path) {
         let mut run = true;
         while run {
             let odometry_values = odom.odometry_values.lock().await;
@@ -14,7 +23,7 @@ impl PurePursuit {
             let cir = geo::Circle {
                 x: x,
                 y: y,
-                r: lookahead,
+                r: self.lookahead,
             };
             let target = algorithm::pursuit_target(path.clone(), cir);
             odom.arc_point(target.x, target.y).await;

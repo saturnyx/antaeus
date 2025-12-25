@@ -39,9 +39,6 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Tra
         // Getting delta theta (needed later)
         let delta_heading = abs_rotation - prev_heading;
 
-        // Get reverse multiplier
-        let reverse_multiplier = if trackers.borrow().reverse { -1.0 } else { 1.0 };
-
         // Vertical Tracking Wheel Calculations
         let (vertical_rad, delta_v, wheel_dia_v, offset_v);
         {
@@ -55,8 +52,12 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Tra
                 })
                 .as_radians()
                 .clone();
-            delta_v =
-                ((vertical_rad * vertical.wheel_diameter / 2.0) - prev_dist_v) * reverse_multiplier;
+            let raw_delta_v = (vertical_rad * vertical.wheel_diameter / 2.0) - prev_dist_v;
+            delta_v = if vertical.reverse {
+                -raw_delta_v
+            } else {
+                raw_delta_v
+            };
             wheel_dia_v = vertical.wheel_diameter.clone();
             offset_v = vertical.offset.clone();
         }
@@ -74,8 +75,12 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Tra
                 })
                 .as_radians()
                 .clone();
-            delta_h = ((horizontal_rad * horizontal.wheel_diameter / 2.0) - prev_dist_h) *
-                reverse_multiplier;
+            let raw_delta_h = (horizontal_rad * horizontal.wheel_diameter / 2.0) - prev_dist_h;
+            delta_h = if horizontal.reverse {
+                -raw_delta_h
+            } else {
+                raw_delta_h
+            };
             wheel_dia_h = horizontal.wheel_diameter.clone();
             offset_h = horizontal.offset.clone();
         }
@@ -106,6 +111,8 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Tra
 }
 
 impl OdomMovement {
+    /// Initialize OdomMovement
+    /// It is important to do this before starting any movements
     pub fn init(&self) {
         let thread_clone = self.odometry_values.clone();
         let thread_trackers = self.trackers.clone();
@@ -115,6 +122,7 @@ impl OdomMovement {
         mainloop.detach();
     }
 
+    /// Rotates the robot to face a point
     pub async fn face_point(&self, x: f64, y: f64) {
         let delta_x = x - self.odometry_values.lock().await.global_x;
         let delta_y = y - self.odometry_values.lock().await.global_y;
@@ -127,6 +135,7 @@ impl OdomMovement {
         }
     }
 
+    /// Rotates the robot and moves to a certain point
     pub async fn goto_point(&self, x: f64, y: f64) {
         let delta_x = x - self.odometry_values.lock().await.global_x;
         let delta_y = y - self.odometry_values.lock().await.global_y;
@@ -141,6 +150,7 @@ impl OdomMovement {
         }
     }
 
+    /// Rotates the robot and moves to a point and rotates again
     pub async fn goto_pose(&self, x: f64, y: f64, heading: f64) {
         let delta_x = x - self.odometry_values.lock().await.global_x;
         let delta_y = y - self.odometry_values.lock().await.global_y;
@@ -156,6 +166,7 @@ impl OdomMovement {
         }
     }
 
+    /// Moves in a straight line
     pub async fn travel(&self, distance: f64) {
         if let Some(pid) = &self.pid {
             pid.travel(distance, TIMEOUT, AFTERDELAY).await;
@@ -164,6 +175,7 @@ impl OdomMovement {
         }
     }
 
+    /// Moves in an arc
     pub async fn arc_travel(&self, distance: f64, offset: f64) {
         if let Some(arc_pid) = &self.arc_pid {
             arc_pid.travel(distance, offset, TIMEOUT, AFTERDELAY).await;
@@ -172,6 +184,7 @@ impl OdomMovement {
         }
     }
 
+    /// Moves in an arc to coordinates. Do not use as it updates absolute values.
     pub async fn arc_point(&self, x: f64, y: f64) {
         // Get current robot position and heading
         let (current_x, current_y, current_heading) = {
@@ -213,23 +226,56 @@ pub struct OdomValues {
 
 /// Tracking Wheel Data
 pub struct WheelTracker {
+    /// Peripheral Port for the Rotation Sensor
     device:         RotationSensor,
+    /// Tracking Wheel Diameter
     wheel_diameter: f64,
+    /// Offset from center of tracking
     offset:         f64,
+    /// Whether to reverse the tracking wheel readings
+    reverse:        bool,
+}
+
+impl WheelTracker {
+    /// Creates a new WheelTracker
+    pub fn new(device: RotationSensor, wheel_diameter: f64, offset: f64, reverse: bool) -> Self {
+        Self {
+            device,
+            wheel_diameter,
+            offset,
+            reverse,
+        }
+    }
+
+    /// Creates a new WheelTracker with reverse set to false
+    pub fn new_normal(device: RotationSensor, wheel_diameter: f64, offset: f64) -> Self {
+        Self::new(device, wheel_diameter, offset, false)
+    }
+
+    /// Creates a new WheelTracker with reverse set to true
+    pub fn new_reversed(device: RotationSensor, wheel_diameter: f64, offset: f64) -> Self {
+        Self::new(device, wheel_diameter, offset, true)
+    }
 }
 
 /// Hardware that will be used by Odometry
 pub struct Trackers {
+    /// Vertical Tracking Wheel
     vertical:   WheelTracker,
+    /// Horizontal Tracking Wheel
     horizontal: WheelTracker,
+    /// IMU or Intertial Senor
     imu:        InertialSensor,
-    reverse:    bool,
 }
 
-/// The main Odometry Instace
+/// The main Odometry Instance
 pub struct OdomMovement {
+    /// A Mutex of Odometry Values
     pub odometry_values: Arc<Mutex<OdomValues>>,
+    /// Sharable Tracking Wheels
     pub trackers:        Rc<RefCell<Trackers>>,
+    /// Optional PID Instance
     pub pid:             Option<PIDMovement>,
+    /// Optional ArcPID Instance
     pub arc_pid:         Option<ArcPIDMovement>,
 }
