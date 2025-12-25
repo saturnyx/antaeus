@@ -44,9 +44,9 @@ async fn pid_loop(pidvalues: &Arc<Mutex<PIDValues>>, drivetrain: drivetrain::Dif
     let dt = (LOOPRATE as f64) / 1000.0;
 
     loop {
-        let (target_left, target_right, pwr, kp, kd, ki, leeway) = {
+        let (target_left, target_right, pwr, kp, kd, ki, tolerance) = {
             let s = pidvalues.lock().await;
-            (s.target_left, s.target_right, s.maxpwr, s.kp, s.kd, s.ki, s.leeway)
+            (s.target_left, s.target_right, s.maxpwr, s.kp, s.kd, s.ki, s.tolerance)
         };
 
         let currs_left = {
@@ -109,7 +109,7 @@ async fn pid_loop(pidvalues: &Arc<Mutex<PIDValues>>, drivetrain: drivetrain::Dif
             }
         }
         let in_band;
-        in_band = error_left.abs() < leeway && error_right.abs() < leeway;
+        in_band = error_left.abs() < tolerance && error_right.abs() < tolerance;
 
         if in_band {
             let mut s = pidvalues.lock().await;
@@ -164,13 +164,13 @@ impl PIDMovement {
         mainloop.detach();
     }
 
-    /// Set the Leeway, Kp, Ki and Kd Values for PID. The values are in radians.
-    pub async fn tune(&self, kp: f64, ki: f64, kd: f64, leeway: f64) {
+    /// Set the tolerance, Kp, Ki and Kd Values for PID. The values are in radians.
+    pub async fn tune(&self, kp: f64, ki: f64, kd: f64, tolerance: f64) {
         let mut pid_values = self.pid_values.lock().await;
         pid_values.kp = kp;
         pid_values.ki = ki;
         pid_values.kd = kd;
-        pid_values.leeway = leeway;
+        pid_values.tolerance = tolerance;
     }
 
     /// Sets the maximum power the robot should move at. The maximum value is 12.0
@@ -374,7 +374,7 @@ impl PIDMovement {
 ///         kp:           0.5,
 ///         kd:           0.1,
 ///         ki:           0.0,
-///         leeway:       0.02,
+///         tolerance:    0.02,
 ///         maxpwr:       12.0,
 ///         active:       true,
 ///         target_left:  0.0,
@@ -398,7 +398,7 @@ pub struct PIDValues {
     pub kp:           f64,
     pub ki:           f64,
     pub kd:           f64,
-    pub leeway:       f64,
+    pub tolerance:    f64,
     pub maxpwr:       f64,
     pub active:       bool,
     pub target_left:  f64,

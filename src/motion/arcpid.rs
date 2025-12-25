@@ -38,9 +38,9 @@ async fn arcpid_loop(
     let dt = (LOOPRATE as f64) / 1000.0;
 
     loop {
-        let (target, offset, pwr, kp, kd, leeway) = {
+        let (target, offset, pwr, kp, kd, tolerance) = {
             let s = arcpidvalues.lock().await;
-            (s.target, s.offset, s.maxpwr, s.kp, s.kd, s.leeway)
+            (s.target, s.offset, s.maxpwr, s.kp, s.kd, s.tolerance)
         };
 
         let currs_left = {
@@ -101,7 +101,7 @@ async fn arcpid_loop(
             }
         }
         let in_band;
-        in_band = error.abs() < leeway;
+        in_band = error.abs() < tolerance;
 
         if in_band {
             let mut s = arcpidvalues.lock().await;
@@ -152,12 +152,12 @@ impl ArcPIDMovement {
         mainloop.detach();
     }
 
-    /// Set the Leeway, Kp, and Kd Values for ArcPD. The values are in radians.
-    pub async fn tune(&self, kp: f64, kd: f64, leeway: f64) {
+    /// Set the tolerance, Kp, and Kd Values for ArcPD. The values are in radians.
+    pub async fn tune(&self, kp: f64, kd: f64, tolerance: f64) {
         let mut arcpid_values = self.arcpid_values.lock().await;
         arcpid_values.kp = kp;
         arcpid_values.kd = kd;
-        arcpid_values.leeway = leeway;
+        arcpid_values.tolerance = tolerance;
     }
 
     /// Sets the maximum power the robot should move at. The maximum value is 12.0
@@ -242,7 +242,7 @@ impl ArcPIDMovement {
 ///     let values = ArcPIDValues {
 ///         kp:           0.5,
 ///         kd:           0.1,
-///         leeway:       0.02,
+///         tolerance:    0.02,
 ///         maxpwr:       12.0,
 ///         active:       true,
 ///         target_left:  0.0,
@@ -265,13 +265,13 @@ pub struct ArcPIDMovement {
 /// A Struct for ArcPD values that will be altered throughout the Autonomous
 #[derive(Clone, Copy)]
 pub struct ArcPIDValues {
-    pub kp:     f64,
-    pub kd:     f64,
-    pub leeway: f64,
-    pub maxpwr: f64,
-    pub active: bool,
-    pub target: f64,
-    pub offset: f64,
+    pub kp:        f64,
+    pub kd:        f64,
+    pub tolerance: f64,
+    pub maxpwr:    f64,
+    pub active:    bool,
+    pub target:    f64,
+    pub offset:    f64,
 }
 
 /// The Drivtrain's Physical Configuration that will be used for calculations
