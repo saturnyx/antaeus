@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "antaeus"
-version = "0.2.7"
+version = "0.2.7-rc.1"
 dependencies = [
  "heapless",
  "log",

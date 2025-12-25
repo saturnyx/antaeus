@@ -4,6 +4,7 @@ use log::warn;
 use vexide::{
     controller::ControllerState,
     prelude::{Controller, Motor},
+    smart::motor::BrakeMode,
 };
 
 #[derive(Clone)]
@@ -209,6 +210,23 @@ impl Differential {
         if let Ok(mut right_motors) = self.right.try_borrow_mut() {
             for motor in right_motors.as_mut() {
                 let _ = motor.set_voltage(right_voltage);
+            }
+        }
+    }
+
+    /// Sets the brakemode for the drivetrain
+    pub fn set_brakemode(&self, brakemode: BrakeMode) {
+        let left = self.left.try_borrow_mut();
+        let right = self.right.try_borrow_mut();
+
+        if let Ok(mut motors) = left {
+            for motor in motors.as_mut() {
+                let _ = motor.brake(brakemode);
+            }
+        }
+        if let Ok(mut motors) = right {
+            for motor in motors.as_mut() {
+                let _ = motor.brake(brakemode);
             }
         }
     }
