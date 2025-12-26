@@ -6,3 +6,5 @@ pub mod fs;
 pub mod motion;
 /// Module for Driver-Control
 pub mod opcontrol;
+
+pub mod display;
