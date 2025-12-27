@@ -30,8 +30,8 @@ fn get_logo() -> Result<Bmp<'static, Rgb888>, ParseError> {
     Bmp::<Rgb888>::from_slice(data)
 }
 
-pub fn print_shield(display: &mut DisplayDriver) {
-    let bmp = get_shield();
+pub fn print_badge(display: &mut DisplayDriver) {
+    let bmp = get_badge();
     if let Ok(img) = bmp {
         let logo = Image::new(
             &img,
@@ -48,8 +48,8 @@ pub fn print_shield(display: &mut DisplayDriver) {
     }
 }
 
-fn get_shield() -> Result<Bmp<'static, Rgb888>, ParseError> {
-    let data = include_bytes!("../../assets/img/logo/bmp/shield-xtra-large.bmp");
+fn get_badge() -> Result<Bmp<'static, Rgb888>, ParseError> {
+    let data = include_bytes!("../../assets/img/badge/bmp/badge-xtra-large.bmp");
     Bmp::<Rgb888>::from_slice(data)
 }
 
@@ -94,31 +94,31 @@ mod tests {
 
     #[test]
     #[ignore = "manual verification needed (popup display)"]
-    fn shield_test() -> Result<(), core::convert::Infallible> {
+    fn badge_test() -> Result<(), core::convert::Infallible> {
         // Create a simulator display
         let mut display: SimulatorDisplay<Rgb888> = SimulatorDisplay::new(Size::new(
             Display::HORIZONTAL_RESOLUTION as u32,
             Display::VERTICAL_RESOLUTION as u32,
         ));
 
-        let bmp = crate::display::logo::get_shield();
+        let bmp = crate::display::logo::get_badge();
 
         if let Ok(img) = bmp {
-            let shield = Image::new(
+            let badge = Image::new(
                 &img,
                 Point::new(
                     Display::HORIZONTAL_RESOLUTION as i32 / 2 - 100,
                     Display::VERTICAL_RESOLUTION as i32 / 2 - 100,
                 ),
             );
-            shield.draw(&mut display)?;
+            badge.draw(&mut display)?;
         } else {
-            panic!("Failed to load shield BMP");
+            panic!("Failed to load badge BMP");
         }
 
         // Show the result
         let output_settings = OutputSettingsBuilder::new().build();
-        Window::new("Shield Test", &output_settings).show_static(&display);
+        Window::new("badge Test", &output_settings).show_static(&display);
 
         Ok(())
     }
