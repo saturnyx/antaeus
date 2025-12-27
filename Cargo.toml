@@ -1,6 +1,6 @@
 [package]
 name = "antaeus"
-version = "0.2.7-rc.1"
+version = "0.2.7-beta.3"
 edition = "2024"
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -14,9 +14,12 @@ keywords = ["Robotics", "bindings", "vex", "v5"]
 name = "antaeus"
 
 [dependencies]
+embedded-graphics = "0.8.1"
 embedded-graphics-core = "0.4.0"
+embedded-graphics-simulator = "0.8.0"
 heapless = "0.9.2"
 log = "0.4.28"
+tinybmp = "0.6.0"
 vex-sdk = "0.28.0"
 
 vexide = { version = "0.8.0" }
