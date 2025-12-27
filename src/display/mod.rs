@@ -6,7 +6,7 @@ use vexide::display::Display;
 use crate::display::graphics::DisplayDriver;
 
 pub fn print_logo(display: &mut DisplayDriver) {
-    let data = include_bytes!("../../assets/logo-large.bmp");
+    let data = include_bytes!("../../assets/img/logo/bmp/logo-large.bmp");
     let bmp = Bmp::<Rgb888>::from_slice(data);
     if let Ok(img) = bmp {
         let logo = Image::new(
