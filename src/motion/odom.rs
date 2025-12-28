@@ -3,13 +3,16 @@ use std::{cell::RefCell, rc::Rc, sync::Arc, time::Duration};
 use log::{info, warn};
 use vexide::{
     math::Angle,
-    prelude::{InertialSensor, RotationSensor},
+    prelude::{AdiOpticalEncoder, InertialSensor, RotationSensor},
     sync::Mutex,
     task::spawn,
     time::sleep,
 };
 
-use crate::motion::pid::{arcpid::ArcPIDMovement, pid::PIDMovement};
+use crate::{
+    drivetrain::Differential,
+    motion::pid::{arcpid::ArcPIDMovement, pid::PIDMovement},
+};
 
 const LOOPRATE: u64 = 5;
 const TIMEOUT: u64 = 10000;
@@ -43,15 +46,7 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Tra
         let (vertical_rad, delta_v, wheel_dia_v, offset_v);
         {
             let vertical = &trackers.borrow().vertical;
-            vertical_rad = vertical
-                .device
-                .position()
-                .unwrap_or_else(|e| {
-                    warn!("ADI Encoder Error: {}", e);
-                    Angle::from_radians(0.0)
-                })
-                .as_radians()
-                .clone();
+            vertical_rad = vertical.device.position().as_radians().clone();
             let raw_delta_v = (vertical_rad * vertical.wheel_diameter / 2.0) - prev_dist_v;
             delta_v = if vertical.reverse {
                 -raw_delta_v
@@ -66,15 +61,7 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Rc<RefCell<Tra
         let (horizontal_rad, delta_h, wheel_dia_h, offset_h);
         {
             let horizontal = &trackers.borrow().horizontal;
-            horizontal_rad = horizontal
-                .device
-                .position()
-                .unwrap_or_else(|e| {
-                    warn!("ADI Encoder Error: {}", e);
-                    Angle::from_radians(0.0)
-                })
-                .as_radians()
-                .clone();
+            horizontal_rad = horizontal.device.position().as_radians().clone();
             let raw_delta_h = (horizontal_rad * horizontal.wheel_diameter / 2.0) - prev_dist_h;
             delta_h = if horizontal.reverse {
                 -raw_delta_h
@@ -224,10 +211,36 @@ pub struct OdomValues {
     pub global_heading: f64,
 }
 
+/// The device used to measure Tracking Wheel Rotation
+pub enum TrackingDevice {
+    AdiOpticalEncoder(AdiOpticalEncoder),
+    RotationSensor(RotationSensor),
+    Differential(Differential),
+    None,
+}
+
+impl TrackingDevice {
+    /// Get the position of the Tracking Device
+    pub fn position(&self) -> Angle {
+        match self {
+            TrackingDevice::AdiOpticalEncoder(encoder) => encoder.position().unwrap_or_else(|e| {
+                warn!("ADI Optical Sensor Error: {}", e);
+                Angle::from_radians(0.0)
+            }),
+            TrackingDevice::RotationSensor(encoder) => encoder.position().unwrap_or_else(|e| {
+                warn!("Rotation Sensor Error: {}", e);
+                Angle::from_radians(0.0)
+            }),
+            TrackingDevice::Differential(dt) => dt.position(),
+            TrackingDevice::None => Angle::from_radians(0.0),
+        }
+    }
+}
+
 /// Tracking Wheel Data
 pub struct WheelTracker {
     /// Peripheral Port for the Rotation Sensor
-    device:         RotationSensor,
+    device:         TrackingDevice,
     /// Tracking Wheel Diameter
     wheel_diameter: f64,
     /// Offset from center of tracking
@@ -238,7 +251,7 @@ pub struct WheelTracker {
 
 impl WheelTracker {
     /// Creates a new WheelTracker
-    pub fn new(device: RotationSensor, wheel_diameter: f64, offset: f64, reverse: bool) -> Self {
+    pub fn new(device: TrackingDevice, wheel_diameter: f64, offset: f64, reverse: bool) -> Self {
         Self {
             device,
             wheel_diameter,
@@ -248,12 +261,12 @@ impl WheelTracker {
     }
 
     /// Creates a new WheelTracker with reverse set to false
-    pub fn new_normal(device: RotationSensor, wheel_diameter: f64, offset: f64) -> Self {
+    pub fn new_normal(device: TrackingDevice, wheel_diameter: f64, offset: f64) -> Self {
         Self::new(device, wheel_diameter, offset, false)
     }
 
     /// Creates a new WheelTracker with reverse set to true
-    pub fn new_reversed(device: RotationSensor, wheel_diameter: f64, offset: f64) -> Self {
+    pub fn new_reversed(device: TrackingDevice, wheel_diameter: f64, offset: f64) -> Self {
         Self::new(device, wheel_diameter, offset, true)
     }
 }
