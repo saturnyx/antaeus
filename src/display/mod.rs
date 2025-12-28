@@ -50,6 +50,7 @@
 //!
 //! [`embedded-graphics` docs]: https://docs.rs/embedded-graphics/latest/embedded_graphics/examples/index.html
 
+pub mod fonts;
 pub mod logo;
 
 use core::convert::Infallible;
