@@ -1,10 +1,8 @@
-<div style="text-align: center;">
-    <img src="assets/img/logo/readme/logo-white-cropped.png" alt="" style="width:20%; height: 20%;">
+<br><br>
+<div align="center">
+    <img src="assets/img/logo/readme/logo-white-cropped.png" alt="Antaeus Logo" width="15%" style="margin-bottom: -50px;">
 </div>
-
-<h1 style="text-align: center">
-  ANTÆUS
-</h1>
+<h1 align="center" style="margin-top: -50px;">ANTÆUS</h1>
 
 Antaeus is a versatile framework based on [Vexide](https://vexide.dev)
 that aims to be powerful for experts while still being easy to use for beginners.
