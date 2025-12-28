@@ -1,3 +1,29 @@
+//! Controller input mapping for operator control.
+//!
+//! This module provides utilities for mapping controller button presses
+//! to motor voltages and ADI digital outputs. It supports:
+//!
+//! - **Toggle controls**: Button press toggles a state (e.g., open/close piston).
+//! - **Momentary controls**: Button held activates, release deactivates.
+//! - **Dual-button controls**: Two buttons for forward/reverse or extend/retract.
+//! - **Control button modifiers**: Require a "shift" button to be held.
+//!
+//! # Example
+//!
+//! ```ignore
+//! use antaeus::opcontrol::controller::{ControllerControl, ControllerButton};
+//!
+//! let control = ControllerControl::new(&controller, ControllerButton::ButtonA);
+//!
+//! // R1/R2 controls intake forward/reverse
+//! control.dual_button_to_motors(
+//!     ControllerButton::ButtonR1,
+//!     ControllerButton::ButtonR2,
+//!     heapless::Vec::from_array([&mut intake]),
+//!     12.0, -12.0, 0.0, false,
+//! );
+//! ```
+
 use heapless::Vec;
 use log::warn;
 use vexide::{
@@ -5,36 +31,33 @@ use vexide::{
     prelude::{AdiDigitalOut, Controller, Motor},
 };
 
+/// Controller input mapper for operator control.
+///
+/// This struct captures the current controller state and a designated
+/// "control button" that acts as a modifier (like a shift key).
+///
+/// # Control Button
+///
+/// The control button enables extended controls. When `ctrl: true` is
+/// passed to mapping methods, the action only triggers if the control
+/// button is also held. This effectively doubles the available controls.
+///
+/// # Example
+///
+/// ```ignore
+/// let control = ControllerControl::new(&controller, ControllerButton::ButtonA);
+///
+/// // ButtonB triggers normally
+/// control.button_to_adi_toggle(ControllerButton::ButtonB, pistons, false);
+///
+/// // ButtonB + ButtonA (ctrl) triggers a different action
+/// control.button_to_adi_toggle(ControllerButton::ButtonB, other_pistons, true);
+/// ```
 #[allow(dead_code)]
-/// A ControllerControl Instance allows you to easily access and use controller
-/// buttons and functions.
-///
-/// # Examples
-///
-/// ```
-/// pub unsafe fn run() {
-///     let master = Controller::new(ControllerId::Partner);
-///     let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
-/// }
-/// ```
-///
-/// or, if you prefer using a struct:
-///
-/// ```
-/// pub unsafe fn run() {
-///     let master = Controller::new(ControllerId::Partner);
-///     // The above method will log unwrap errors, this would not.
-///     let master_state = master.state().unwrap_or_default();
-///     let master_control = ControllerControl {
-///         state:      master_state,
-///         controlkey: master_state.button_a,
-///     };
-/// }
-/// ```
 pub struct ControllerControl {
-    /// Controller State
+    /// The current state of all controller buttons and sticks.
     state:      ControllerState,
-    /// Control Button
+    /// The button designated as the control/modifier button.
     controlkey: ButtonState,
 }
 

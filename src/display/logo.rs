@@ -1,4 +1,17 @@
-//! Display the Antaeus Logo on the V5 Brain
+//! Antaeus logo and badge display utilities.
+//!
+//! This module provides functions to display the Antaeus logo and badge
+//! on the V5 Brain display. These are useful for branding screens, splash
+//! screens, or team identification.
+//!
+//! # Example
+//!
+//! ```ignore
+//! use antaeus::display::{DisplayDriver, logo};
+//!
+//! let mut display = DisplayDriver::new(peripherals.display);
+//! logo::print_logo(&mut display);
+//! ```
 
 use embedded_graphics::{Drawable, image::Image, pixelcolor::Rgb888, prelude::Point};
 use log::warn;
@@ -7,6 +20,24 @@ use vexide::display::Display;
 
 use crate::display::DisplayDriver;
 
+/// Displays the Antaeus logo centered on the screen.
+///
+/// The logo is loaded from an embedded BMP image and drawn at the center
+/// of the display. If the image fails to parse, a warning is logged and
+/// nothing is drawn.
+///
+/// # Arguments
+///
+/// * `display` - A mutable reference to the [`DisplayDriver`].
+///
+/// # Example
+///
+/// ```ignore
+/// use antaeus::display::{DisplayDriver, logo};
+///
+/// let mut display = DisplayDriver::new(peripherals.display);
+/// logo::print_logo(&mut display);
+/// ```
 pub fn print_logo(display: &mut DisplayDriver) {
     let bmp = get_logo();
     if let Ok(img) = bmp {
@@ -25,11 +56,36 @@ pub fn print_logo(display: &mut DisplayDriver) {
     }
 }
 
+/// Retrieves the embedded Antaeus logo as a BMP image.
+///
+/// Returns a parsed BMP image that can be drawn to a display target.
 fn get_logo() -> Result<Bmp<'static, Rgb888>, ParseError> {
     let data = include_bytes!("../../assets/img/logo/bmp/logo-xtra-large.bmp");
     Bmp::<Rgb888>::from_slice(data)
 }
 
+/// Displays the Antaeus badge centered on the screen.
+///
+/// The badge is a smaller branding element than the full logo.
+/// Unlike [`print_logo`], this function will panic if the image
+/// fails to parse, as this indicates a build-time error.
+///
+/// # Arguments
+///
+/// * `display` - A mutable reference to the [`DisplayDriver`].
+///
+/// # Panics
+///
+/// Panics if the embedded badge BMP cannot be parsed.
+///
+/// # Example
+///
+/// ```ignore
+/// use antaeus::display::{DisplayDriver, logo};
+///
+/// let mut display = DisplayDriver::new(peripherals.display);
+/// logo::print_badge(&mut display);
+/// ```
 pub fn print_badge(display: &mut DisplayDriver) {
     let bmp = get_badge();
     if let Ok(img) = bmp {
@@ -48,6 +104,9 @@ pub fn print_badge(display: &mut DisplayDriver) {
     }
 }
 
+/// Retrieves the embedded Antaeus badge as a BMP image.
+///
+/// Returns a parsed BMP image that can be drawn to a display target.
 fn get_badge() -> Result<Bmp<'static, Rgb888>, ParseError> {
     let data = include_bytes!("../../assets/img/badge/bmp/badge-xtra-large.bmp");
     Bmp::<Rgb888>::from_slice(data)

@@ -1,3 +1,37 @@
+//! Differential drivetrain control.
+//!
+//! This module provides the `Differential` struct for controlling robots with
+//! separate left and right motor groups, commonly known as a "tank drive" or
+//! "differential drive" configuration.
+//!
+//! # Supported Drive Modes
+//!
+//! - **Tank**: Each joystick directly controls one side of the drivetrain.
+//! - **Arcade**: One stick for forward/backward, another for turning.
+//! - **Reverse Tank/Arcade**: Inverted controls for intuitive driving in reverse.
+//!
+//! # Example
+//!
+//! ```ignore
+//! use antaeus::drivetrain::Differential;
+//! use vexide::prelude::*;
+//!
+//! let drivetrain = Differential::new(
+//!     [
+//!         Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
+//!         Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
+//!     ],
+//!     [
+//!         Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
+//!         Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
+//!     ],
+//! );
+//!
+//! // In your control loop:
+//! let controller = Controller::new(ControllerId::Primary);
+//! drivetrain.tank(&controller);
+//! ```
+
 use std::{cell::RefCell, rc::Rc};
 
 use log::warn;
@@ -8,13 +42,45 @@ use vexide::{
     smart::motor::BrakeMode,
 };
 
+/// A differential drivetrain controller.
+///
+/// This struct manages a robot with separate left and right motor groups.
+/// It provides methods for various control schemes during driver control,
+/// as well as utility functions for autonomous operation.
+///
+/// The motors are stored in reference-counted cells to allow shared ownership
+/// with other systems (e.g., PID controllers, odometry).
+///
+/// # Motor Configuration
+///
+/// Motors on opposite sides of the drivetrain typically need to spin in
+/// opposite directions to move the robot forward. Configure motor directions
+/// appropriately when creating the motors.
+///
+/// # Example
+///
+/// ```ignore
+/// let drivetrain = Differential::new(
+///     [motor_left_1, motor_left_2],
+///     [motor_right_1, motor_right_2],
+/// );
+/// ```
 #[derive(Clone)]
 #[allow(dead_code)]
 pub struct Differential {
-    /// Left motors.
+    /// The left motor group.
+    ///
+    /// Contains all motors on the left side of the drivetrain.
+    /// These motors should be configured to spin in the same direction
+    /// relative to each other.
     pub left: Rc<RefCell<dyn AsMut<[Motor]>>>,
 
-    /// Right motors.
+    /// The right motor group.
+    ///
+    /// Contains all motors on the right side of the drivetrain.
+    /// These motors should be configured to spin in the same direction
+    /// relative to each other (typically opposite to the left side for
+    /// forward movement).
     pub right: Rc<RefCell<dyn AsMut<[Motor]>>>,
 }
 
@@ -215,7 +281,22 @@ impl Differential {
         }
     }
 
-    /// Sets the brakemode for the drivetrain
+    /// Sets the brake mode for all motors in the drivetrain.
+    ///
+    /// The brake mode determines how motors behave when no voltage is applied:
+    ///
+    /// - [`BrakeMode::Coast`]: Motors spin freely.
+    /// - [`BrakeMode::Brake`]: Motors actively resist rotation.
+    /// - [`BrakeMode::Hold`]: Motors actively hold their position.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// use vexide::smart::motor::BrakeMode;
+    ///
+    /// // Set motors to brake mode for better control
+    /// drivetrain.set_brakemode(BrakeMode::Brake);
+    /// ```
     pub fn set_brakemode(&self, brakemode: BrakeMode) {
         let left = self.left.try_borrow_mut();
         let right = self.right.try_borrow_mut();
@@ -232,6 +313,24 @@ impl Differential {
         }
     }
 
+    /// Returns the average encoder position of all motors in the drivetrain.
+    ///
+    /// This method reads the position from each motor's integrated encoder
+    /// and returns the average. The result is returned as an [`Angle`], which
+    /// can be converted to degrees or radians.
+    ///
+    /// # Errors
+    ///
+    /// If reading a motor's position fails, that motor is excluded from the
+    /// average and a warning is logged. If the mutex cannot be borrowed,
+    /// a warning is logged.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let position = drivetrain.position();
+    /// println!("Drivetrain position: {} degrees", position.as_degrees());
+    /// ```
     pub fn position(&self) -> Angle {
         let left = self.left.try_borrow_mut();
         let right = self.right.try_borrow_mut();
