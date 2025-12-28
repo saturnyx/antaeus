@@ -236,12 +236,15 @@ impl Differential {
         let left = self.left.try_borrow_mut();
         let right = self.right.try_borrow_mut();
         let mut angle: Angle = Angle::from_degrees(0.0);
+        let mut denom: f64 = 0.0;
         if let Ok(mut motors) = left {
             for motor in motors.as_mut() {
                 angle += motor.position().unwrap_or_else(|e| {
                     warn!("Error Getting Motor Encoder Position: {}", e);
+                    denom -= 1.0;
                     Angle::from_radians(0.0)
                 });
+                denom += 1.0;
             }
         } else if let Err(e) = left {
             warn!("Error Borrowing Mutex: {}", e);
@@ -252,15 +255,17 @@ impl Differential {
             for motor in motors.as_mut() {
                 angle += motor.position().unwrap_or_else(|e| {
                     warn!("Error Getting Motor Encoder Position: {}", e);
+                    denom -= 1.0;
                     Angle::from_radians(0.0)
                 });
+                denom += 1.0;
             }
         } else if let Err(e) = right {
             warn!("Error Borrowing Mutex: {}", e);
         } else {
             warn!("Error Borrowing Mutex");
         }
-        angle / 6.0
+        angle / denom
     }
 
     /// Creates a new drivetrain with shared ownership of the left/right motors.
