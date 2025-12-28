@@ -1,3 +1,33 @@
+//! Arc PID controller for curved robot movements.
+//!
+//! This module provides a PID controller that allows the robot to move
+//! in arcs rather than stopping to turn. It's useful for smooth movements
+//! but less precise than standard PID.
+//!
+//! # How It Works
+//!
+//! The Arc PID controller applies different power ratios to the left and
+//! right motor groups based on an "offset" value. This causes the robot
+//! to curve while moving forward.
+//!
+//! # When to Use
+//!
+//! - Path following where smooth curves are preferred over stop-and-turn.
+//! - Time-critical autonomous routines where turning in place is too slow.
+//! - Approaches to game elements where a curved path is more efficient.
+//!
+//! # Example
+//!
+//! ```ignore
+//! use antaeus::motion::pid::arcpid::ArcPIDMovement;
+//!
+//! let arc_pid = ArcPIDMovement { /* ... */ };
+//! arc_pid.init();
+//!
+//! // Travel in a curve: positive offset = curve right
+//! arc_pid.travel(24.0, 0.5, 2000, 100).await;
+//! ```
+
 use std::{f64::consts::PI, sync::Arc, time::Duration};
 
 use log::info;
@@ -5,7 +35,8 @@ use vexide::{smart::motor::BrakeMode, sync::Mutex, task::*, time::*};
 
 use crate::{drivetrain, drivetrain::Differential};
 
-const LOOPRATE: u64 = 5; // The ArcPID will run with a loop rate of 5 millisecs
+/// Loop rate for the Arc PID control task in milliseconds.
+const LOOPRATE: u64 = 5;
 
 async fn arcpid_loop(
     arcpidvalues: &Arc<Mutex<ArcPIDValues>>,
@@ -262,34 +293,51 @@ pub struct ArcPIDMovement {
     pub arcpid_values:     Arc<Mutex<ArcPIDValues>>,
 }
 
-/// A Struct for ArcPD values that will be altered throughout the Autonomous
+/// Runtime values for the Arc PID controller.
+///
+/// These values are updated during movement commands and
+/// read by the background control loop.
 #[derive(Clone, Copy)]
 pub struct ArcPIDValues {
+    /// Proportional gain for the PD controller.
     pub kp:        f64,
+    /// Derivative gain for the PD controller.
     pub kd:        f64,
+    /// Error tolerance in radians.
+    ///
+    /// Movement completes when error is below this value.
     pub tolerance: f64,
+    /// Maximum motor voltage (0-12 volts).
     pub maxpwr:    f64,
+    /// Whether a movement is currently active.
     pub active:    bool,
+    /// Target motor position in radians.
     pub target:    f64,
+    /// Curvature offset for arc movements.
+    ///
+    /// - Positive values: curve right (left motors faster).
+    /// - Negative values: curve left (right motors faster).
+    /// - Zero: straight line movement.
     pub offset:    f64,
 }
 
-/// The Drivtrain's Physical Configuration that will be used for calculations
+/// Physical configuration of the drivetrain for arc calculations.
+///
+/// Same as the PID [`DrivetrainConfig`](super::pid::DrivetrainConfig)
+/// but includes track width for arc radius calculations.
 #[derive(Clone, Copy)]
 pub struct DrivetrainConfig {
     /// The wheel diameter in inches.
-    /// Most teams use 2.75", 3.25" or sometimes 4".
-    /// The older large omni wheels were 4.15".
+    ///
+    /// Common sizes: 2.75", 3.25", 4".
     wheel_diameter: f64,
-    /// The size of the driving gear. This can
-    /// be in any units as long as the same units
-    /// are used for the driven gear value.
+    /// The number of teeth on the driving (motor-side) gear.
     driving_gear:   f64,
-    /// The size of the driven gear. This can
-    /// be in any units as long as the same units
-    /// are used for the driving gear value.
+    /// The number of teeth on the driven (wheel-side) gear.
     driven_gear:    f64,
-    // The width from the right wheels to the left.
+    /// The distance between left and right wheels in inches.
+    ///
+    /// Used for calculating arc radii.
     track_width:    f64,
 }
 

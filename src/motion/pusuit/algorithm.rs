@@ -156,9 +156,21 @@ fn get_target(candidates: Vec<geo::Point>, path: geo::Path) -> geo::Point {
     target
 }
 
-/// This is an internal function that will
-/// get the target point using the Path and a Circle
-/// (`x` & `y` coords are global robot coords while `r` is lookahead dist)
+/// Calculates the optimal target point for the pursuit algorithm.
+///
+/// This is the core function of the Candidate-Based Pursuit algorithm.
+/// It finds all candidate points (waypoints in the circle, intersections,
+/// and the closest point on the path), then selects the one furthest
+/// along the path.
+///
+/// # Arguments
+///
+/// * `path` - The path being followed.
+/// * `cir` - A circle centered on the robot with radius = lookahead distance.
+///
+/// # Returns
+///
+/// The point the robot should drive toward.
 pub fn pursuit_target(path: geo::Path, cir: geo::Circle) -> geo::Point {
     let candidates = get_candidates(&path, cir);
     get_target(candidates, path)

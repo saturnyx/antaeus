@@ -2,16 +2,16 @@
 //!
 //! [`embedded-graphics`]: https://crates.io/crates/embedded-graphics
 //!
-//! This crate provides a [`DrawTarget`] implementation for the VEX V5 brain display,
+//! This module provides a `DrawTarget` implementation for the VEX V5 brain display,
 //! allowing you to draw to the display using the `embedded-graphics` ecosystem.
 //!
 //! # Usage
 //!
-//! To begin, turn your `display` peripheral into a [`DisplayDriver`]:
+//! To begin, turn your `display` peripheral into a `DisplayDriver`:
 //!
-//! ```
+//! ```ignore
 //! use vexide::prelude::*;
-//! use vexide_embedded_graphics::DisplayDriver;
+//! use antaeus::display::DisplayDriver;
 //!
 //! #[vexide::main]
 //! async fn main(peripherals: Peripherals) {
@@ -19,10 +19,10 @@
 //! }
 //! ```
 //!
-//! [`DisplayDriver`] is a [`DrawTarget`] that the `embedded-graphics` crate is
+//! `DisplayDriver` is a `DrawTarget` that the `embedded-graphics` crate is
 //! able to draw to.
 //!
-//! ```
+//! ```ignore
 //! #![no_std]
 //! #![no_main]
 //!
@@ -33,7 +33,7 @@
 //!     text::Text,
 //! };
 //! use vexide::prelude::*;
-//! use vexide_embedded_graphics::DisplayDriver;
+//! use antaeus::display::DisplayDriver;
 //!
 //! #[vexide::main]
 //! async fn main(peripherals: Peripherals) {
@@ -50,7 +50,14 @@
 //!
 //! [`embedded-graphics` docs]: https://docs.rs/embedded-graphics/latest/embedded_graphics/examples/index.html
 
+/// Pre-loaded TrueType fonts for text rendering.
+///
+/// See the `fonts` module documentation for available fonts and usage examples.
 pub mod fonts;
+
+/// Antaeus logo and badge display utilities.
+///
+/// Functions for displaying the Antaeus branding on the V5 Brain screen.
 pub mod logo;
 
 use core::convert::Infallible;
