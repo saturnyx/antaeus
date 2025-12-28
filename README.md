@@ -1,5 +1,5 @@
 <div style="text-align: center;">
-    <img src="assets/img/logo/readme/logo-white.png" alt="" style="width:20%; height: 20%;">
+    <img src="assets/img/logo/readme/logo-white-cropped.png" alt="" style="width:20%; height: 20%;">
 </div>
 
 <h1 style="text-align: center">
