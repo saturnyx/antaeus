@@ -1,37 +1,66 @@
+//! Geometry primitives for path definition and calculations.
+//!
+//! This module provides simple geometric types used by the pursuit
+//! algorithm for path representation and intersection calculations.
+//!
+//! # Types
+//!
+//! - `Point`: A 2D point with x and y coordinates.
+//! - `Line`: A line segment between two points.
+//! - `Path`: A sequence of waypoints forming a path.
+//! - `Circle`: A circle defined by center and radius.
+
 use std::vec;
 
-/// **Pursuit Point**
+/// A 2D point in the coordinate system.
 ///
-/// Contains 3 values:
-/// - `x`: The x-coordinate
-/// - `y`: The y-coordinate
+/// Used to represent waypoints, robot positions, and intersection points.
+///
+/// # Example
+///
+/// ```ignore
+/// let waypoint = Point::new(24.0, 12.0);
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point {
-    /// The x-coordinate
+    /// The x-coordinate in inches.
     pub x: f64,
-    /// The y-coordinate
+    /// The y-coordinate in inches.
     pub y: f64,
 }
-/// A Vector of Points
+
+/// A sequence of waypoints forming a path.
+///
+/// The robot will travel through these points in order during
+/// path following.
 #[derive(Clone)]
 pub struct Path {
-    /// A vector of Waypoints that make up the path.
+    /// The ordered list of waypoints.
     pub waypoints: Vec<Point>,
 }
 
-/// A Line Segment (Not a Infinfite Line)
-/// Used 2 points to create a line
+/// A line segment between two points.
+///
+/// Used internally for path calculations. Not an infinite line—
+/// only the segment between `point1` and `point2`.
 #[derive(Clone, Copy)]
 pub struct Line {
+    /// The starting point of the segment.
     pub point1: Point,
+    /// The ending point of the segment.
     pub point2: Point,
 }
 
-/// A Full Circle using `x`, `y`, and `r` (radius)
+/// A circle defined by center coordinates and radius.
+///
+/// Used as the lookahead circle in the pursuit algorithm.
 #[derive(Clone, Copy)]
 pub struct Circle {
+    /// X-coordinate of the circle center.
     pub x: f64,
+    /// Y-coordinate of the circle center.
     pub y: f64,
+    /// Radius of the circle in inches.
     pub r: f64,
 }
 

@@ -1,3 +1,29 @@
+//! Standalone PID controller for single motor groups.
+//!
+//! This module provides a PID controller for mechanisms that operate
+//! independently from the drivetrain, such as arms, lifts, or flywheels.
+//!
+//! # Use Cases
+//!
+//! - **Arms/Lifts**: Position control for mechanisms that move to set heights.
+//! - **Flywheels**: Speed control for shooting mechanisms (using velocity as position).
+//! - **Intakes**: Position control for deploy/retract sequences.
+//!
+//! # Example
+//!
+//! ```ignore
+//! use antaeus::motion::pid::singlepid::{SinglePIDMovement, SinglePIDValues};
+//!
+//! let arm_pid = SinglePIDMovement { /* ... */ };
+//! arm_pid.init();
+//!
+//! // Tune for the mechanism
+//! arm_pid.tune(0.8, 0.0, 0.2, 0.01).await;
+//!
+//! // Move to target position (in radians)
+//! arm_pid.set_target(3.14).await;
+//! ```
+
 use std::{cell::RefCell, rc::Rc, sync::Arc, time::Duration};
 
 use log::info;
@@ -8,7 +34,8 @@ use vexide::{
     time::*,
 };
 
-const LOOPRATE: u64 = 5; // The PID will run with a loop rate of 5 millisecs
+/// Loop rate for the PID control task in milliseconds.
+const LOOPRATE: u64 = 5;
 
 async fn single_pid_loop(
     pidvalues: &Arc<Mutex<SinglePIDValues>>,
@@ -125,7 +152,14 @@ impl SinglePIDMovement {
         pid_values.maxpwr = maximum_power;
     }
 
-    /// Sets the target that the motor should move to
+    /// Sets the target position for the motor group.
+    ///
+    /// The motors will move to this position and hold. The target
+    /// is specified in radians of motor rotation.
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - Target position in radians.
     pub async fn set_target(&self, target: f64) {
         {
             let mut s = self.pid_values.lock().await;
@@ -135,25 +169,49 @@ impl SinglePIDMovement {
     }
 }
 
-/// **The PID Movement Controller**
+/// PID controller for a single motor group.
 ///
-/// Initialize an instance of this to control the robot using PID.
+/// Unlike [`PIDMovement`](super::pid::PIDMovement), which controls
+/// a differential drivetrain, this controller manages a single group
+/// of motors moving together.
+///
+/// # Example
+///
+/// ```ignore
+/// let arm = SinglePIDMovement {
+///     motorgroup: Rc::new(RefCell::new([arm_motor_1, arm_motor_2])),
+///     pid_values: Arc::new(Mutex::new(SinglePIDValues { /* ... */ })),
+/// };
+/// arm.init();
+/// ```
 pub struct SinglePIDMovement {
+    /// The motor group to control.
     pub motorgroup: Rc<RefCell<dyn AsMut<[Motor]>>>,
+    /// Thread-safe container for PID runtime values.
     pub pid_values: Arc<Mutex<SinglePIDValues>>,
 }
 
-/// A Struct for PID values that will be altered throughout the Autonomous
+/// Runtime values for the single motor PID controller.
+///
+/// These values control the PID behavior and are updated during operation.
 pub struct SinglePIDValues {
+    /// Proportional gain.
     pub kp:        f64,
+    /// Integral gain.
     pub ki:        f64,
+    /// Derivative gain.
     pub kd:        f64,
+    /// Error tolerance in radians.
     pub tolerance: f64,
+    /// Maximum motor voltage (0-12 volts).
     pub maxpwr:    f64,
+    /// Whether a movement is currently active.
     pub active:    bool,
+    /// Target motor position in radians.
     pub target:    f64,
 }
 
+/// Clamps a value to the range [-cap, cap].
 fn abscap(val: f64, cap: f64) -> f64 {
     let result: f64;
     if val > cap {

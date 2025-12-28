@@ -1,3 +1,33 @@
+//! Standard PID controller for differential drivetrains.
+//!
+//! This module provides a PID controller that manages left and right motor
+//! groups independently, allowing for precise linear movement, rotation,
+//! and swing turns.
+//!
+//! # Architecture
+//!
+//! The PID controller runs as a background task that continuously:
+//! 1. Reads motor encoder positions.
+//! 2. Calculates error (difference from target).
+//! 3. Computes PID output.
+//! 4. Applies voltage to motors.
+//!
+//! # Usage
+//!
+//! ```ignore
+//! use antaeus::motion::pid::pid::{PIDMovement, PIDValues, DrivetrainConfig};
+//!
+//! let pid = PIDMovement { /* ... */ };
+//! pid.init();  // Start the PID control loop
+//!
+//! // Configure PID gains
+//! pid.tune(0.5, 0.0, 0.1, 0.02).await;
+//!
+//! // Execute movements
+//! pid.travel(24.0, 2000, 100).await;   // Move 24 inches forward
+//! pid.rotate(90.0, 2000, 100).await;   // Turn 90 degrees right
+//! ```
+
 use std::{f64::consts::PI, marker::PhantomData, sync::Arc, time::Duration};
 
 use log::{info, warn};
@@ -11,7 +41,8 @@ use vexide::{
 
 use crate::{drivetrain, drivetrain::Differential};
 
-const LOOPRATE: u64 = 5; // The PID will run with a loop rate of 5 millisecs
+/// Loop rate for the PID control task in milliseconds.
+const LOOPRATE: u64 = 5;
 
 async fn pid_loop(pidvalues: &Arc<Mutex<PIDValues>>, drivetrain: drivetrain::Differential) {
     info!("PID Control Loop Started");
@@ -394,32 +425,63 @@ pub struct PIDMovement {
 }
 
 /// A Struct for PID values that will be altered throughout the Autonomous
+///
+/// These values control the behavior of the PID controller and are
+/// updated during movement commands.
 pub struct PIDValues {
+    /// Proportional gain.
+    ///
+    /// Higher values increase response speed but may cause overshoot.
+    /// Start tuning with this value.
     pub kp:           f64,
+    /// Integral gain.
+    ///
+    /// Helps eliminate steady-state error. Usually set to 0 unless
+    /// the robot consistently undershoots targets.
     pub ki:           f64,
+    /// Derivative gain.
+    ///
+    /// Dampens oscillations and reduces overshoot. Add after Kp is tuned.
     pub kd:           f64,
+    /// Error tolerance in radians.
+    ///
+    /// The movement is considered complete when error is below this value.
     pub tolerance:    f64,
+    /// Maximum motor voltage (0-12 volts).
+    ///
+    /// Limits the output power for safety and control.
     pub maxpwr:       f64,
+    /// Whether a movement is currently active.
+    ///
+    /// Set to `true` when a movement starts, `false` when complete.
     pub active:       bool,
+    /// Target position for left motors in radians.
     pub target_left:  f64,
+    /// Target position for right motors in radians.
     pub target_right: f64,
 }
 
-/// The Drivtrain's Physical Configuration that will be used for calculations
+/// Physical configuration of the drivetrain for distance calculations.
+///
+/// These values are used to convert between motor rotations and
+/// linear distance traveled by the robot.
 pub struct DrivetrainConfig {
     /// The wheel diameter in inches.
-    /// Most teams use 2.75", 3.25" or sometimes 4".
-    /// The older large omni wheels were 4.15".
+    ///
+    /// Common sizes: 2.75", 3.25", 4". The older large omni wheels were 4.15".
     pub wheel_diameter: f64,
-    /// The size of the driving gear. This can
-    /// be in any units as long as the same units
-    /// are used for the driven gear value.
+    /// The number of teeth on the driving (motor-side) gear.
+    ///
+    /// Can be in any units as long as consistent with `driven_gear`.
     pub driving_gear:   f64,
-    /// The size of the driven gear. This can
-    /// be in any units as long as the same units
-    /// are used for the driving gear value.
+    /// The number of teeth on the driven (wheel-side) gear.
+    ///
+    /// Can be in any units as long as consistent with `driving_gear`.
     pub driven_gear:    f64,
-    // The width from the right wheels to the left.
+    /// The distance between left and right wheels in inches.
+    ///
+    /// Measured from the center of the left wheels to the center of
+    /// the right wheels. Used for rotation calculations.
     pub track_width:    f64,
 }
 
