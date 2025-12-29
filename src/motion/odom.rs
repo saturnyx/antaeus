@@ -400,20 +400,20 @@ impl TrackingDevice {
 /// configuration of a tracking wheel.
 pub struct WheelTracker {
     /// The sensor device measuring wheel rotation.
-    device:         TrackingDevice,
+    pub device:         TrackingDevice,
     /// The diameter of the tracking wheel in inches.
     ///
     /// Common sizes are 2.75", 3.25", and 4".
-    wheel_diameter: f64,
+    pub wheel_diameter: f64,
     /// The perpendicular distance from the tracking center in inches.
     ///
     /// For vertical wheels, this is the horizontal offset.
     /// For horizontal wheels, this is the vertical offset.
-    offset:         f64,
+    pub offset:         f64,
     /// Whether to reverse the encoder readings.
     ///
     /// Set to `true` if the wheel reads negative when moving forward.
-    reverse:        bool,
+    pub reverse:        bool,
 }
 
 impl WheelTracker {
@@ -456,11 +456,11 @@ impl WheelTracker {
 /// needed for position estimation.
 pub struct Trackers {
     /// The vertical (forward/backward) tracking wheel.
-    vertical:   WheelTracker,
+    pub vertical:   WheelTracker,
     /// The horizontal (left/right) tracking wheel.
-    horizontal: WheelTracker,
+    pub horizontal: WheelTracker,
     /// The inertial sensor for heading measurement.
-    imu:        InertialSensor,
+    pub imu:        InertialSensor,
 }
 
 /// The main odometry-based movement controller.
