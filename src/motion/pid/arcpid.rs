@@ -330,15 +330,15 @@ pub struct DrivetrainConfig {
     /// The wheel diameter in inches.
     ///
     /// Common sizes: 2.75", 3.25", 4".
-    wheel_diameter: f64,
+    pub wheel_diameter: f64,
     /// The number of teeth on the driving (motor-side) gear.
-    driving_gear:   f64,
+    pub driving_gear:   f64,
     /// The number of teeth on the driven (wheel-side) gear.
-    driven_gear:    f64,
+    pub driven_gear:    f64,
     /// The distance between left and right wheels in inches.
     ///
     /// Used for calculating arc radii.
-    track_width:    f64,
+    pub track_width:    f64,
 }
 
 async fn timeout_wait(arcpid_values: &Arc<Mutex<ArcPIDValues>>, timeout: u64) {
