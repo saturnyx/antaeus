@@ -13,7 +13,13 @@
 //! logo::print_logo(&mut display);
 //! ```
 
-use embedded_graphics::{Drawable, image::Image, pixelcolor::Rgb888, prelude::Point};
+use embedded_graphics::{
+    Drawable,
+    geometry::Dimensions,
+    image::Image,
+    pixelcolor::Rgb888,
+    prelude::Point,
+};
 use log::warn;
 use tinybmp::{Bmp, ParseError};
 use vexide::display::Display;
@@ -41,11 +47,12 @@ use crate::display::DisplayDriver;
 pub fn print_logo(display: &mut DisplayDriver) {
     let bmp = get_logo();
     if let Ok(img) = bmp {
+        let image_size = img.bounding_box().size;
         let logo = Image::new(
             &img,
             Point::new(
-                Display::HORIZONTAL_RESOLUTION as i32 / 2 - 60,
-                Display::VERTICAL_RESOLUTION as i32 / 2 - 60,
+                Display::HORIZONTAL_RESOLUTION as i32 / 2 - image_size.width as i32 / 2,
+                Display::VERTICAL_RESOLUTION as i32 / 2 - image_size.height as i32 / 3 * 2,
             ),
         );
         let _ = logo.draw(display);
@@ -89,11 +96,12 @@ fn get_logo() -> Result<Bmp<'static, Rgb888>, ParseError> {
 pub fn print_badge(display: &mut DisplayDriver) {
     let bmp = get_badge();
     if let Ok(img) = bmp {
+        let image_size = img.bounding_box().size;
         let logo = Image::new(
             &img,
             Point::new(
-                Display::HORIZONTAL_RESOLUTION as i32 / 2 - 60,
-                Display::VERTICAL_RESOLUTION as i32 / 2 - 60,
+                Display::HORIZONTAL_RESOLUTION as i32 / 2 - image_size.width as i32 / 2,
+                Display::VERTICAL_RESOLUTION as i32 / 2 - image_size.height as i32 / 3 * 2,
             ),
         );
         let _ = logo.draw(display);

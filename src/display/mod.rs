@@ -70,7 +70,8 @@ use vexide::display::{Display, RenderMode, TouchEvent};
 /// Currently, this does not support touch detection like the regular [`Display`] API.
 pub struct DisplayDriver {
     display: Display,
-    buffer:  [u32; Display::HORIZONTAL_RESOLUTION as usize * Display::VERTICAL_RESOLUTION as usize],
+    buffer:
+        Box<[u32; Display::HORIZONTAL_RESOLUTION as usize * Display::VERTICAL_RESOLUTION as usize]>,
 }
 
 impl DisplayDriver {
@@ -83,9 +84,10 @@ impl DisplayDriver {
     pub fn new(display: Display) -> Self {
         Self {
             display,
-            #[allow(clippy::large_stack_arrays)] // we got plenty
-            buffer: [0; Display::HORIZONTAL_RESOLUTION as usize
-                * Display::VERTICAL_RESOLUTION as usize],
+            buffer: Box::new(
+                [0; Display::HORIZONTAL_RESOLUTION as usize *
+                    Display::VERTICAL_RESOLUTION as usize],
+            ),
         }
     }
 
