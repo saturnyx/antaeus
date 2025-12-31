@@ -33,7 +33,7 @@ use std::{f64::consts::PI, sync::Arc, time::Duration};
 use log::info;
 use vexide::{smart::motor::BrakeMode, sync::Mutex, task::*, time::*};
 
-use crate::{drivetrain, drivetrain::Differential};
+use crate::peripherals::{drivetrain, drivetrain::Differential};
 
 /// Loop rate for the Arc PID control task in milliseconds.
 const LOOPRATE: u64 = 5;

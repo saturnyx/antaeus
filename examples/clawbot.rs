@@ -7,7 +7,10 @@
 
 use std::sync::Arc;
 
-use antaeus::{drivetrain::Differential, motion::pid::pid::*, opcontrol::controller::*};
+use antaeus::{
+    motion::pid::pid::*,
+    peripherals::{controller::*, drivetrain::Differential},
+};
 use heapless::Vec;
 use vexide::{prelude::*, sync::Mutex};
 struct Clawbot {

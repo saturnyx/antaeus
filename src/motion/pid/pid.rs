@@ -39,7 +39,7 @@ use vexide::{
     time::*,
 };
 
-use crate::{drivetrain, drivetrain::Differential};
+use crate::peripherals::{drivetrain, drivetrain::Differential};
 
 /// Loop rate for the PID control task in milliseconds.
 const LOOPRATE: u64 = 5;

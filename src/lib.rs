@@ -46,16 +46,6 @@
 //! - [`opcontrol`]: Controller input mapping to motors and pneumatics.
 //! - [`fs`]: Filesystem utilities including logging.
 
-/// Differential drivetrain control module.
-///
-/// Provides the [`Differential`](drivetrain::Differential) struct for controlling
-/// robots with left and right motor groups. Supports multiple control schemes:
-///
-/// - **Tank**: Each joystick controls one side of the robot.
-/// - **Arcade**: Left stick for forward/backward, right stick for turning.
-/// - **Reverse**: Inverted controls for driving in reverse.
-pub mod drivetrain;
-
 /// Filesystem utilities module.
 ///
 /// Contains logging functionality for recording robot telemetry and debug
@@ -78,7 +68,7 @@ pub mod motion;
 /// Simplifies controller input handling during driver control periods.
 /// Maps controller buttons to motor voltages and ADI digital outputs
 /// with support for toggle, momentary, and dual-button controls.
-pub mod opcontrol;
+pub mod peripherals;
 
 /// V5 Brain display graphics module.
 ///

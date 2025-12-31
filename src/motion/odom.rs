@@ -48,8 +48,8 @@ use vexide::{
 };
 
 use crate::{
-    drivetrain::Differential,
     motion::pid::{arcpid::ArcPIDMovement, pid::PIDMovement},
+    peripherals::drivetrain::Differential,
 };
 
 /// Loop rate for the odometry tracking task in milliseconds.

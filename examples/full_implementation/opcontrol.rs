@@ -1,4 +1,4 @@
-use antaeus::{fs::logger, opcontrol::controller::*};
+use antaeus::{fs::logger, peripherals::controller::*};
 use heapless::Vec;
 use log::{LevelFilter, info};
 
