@@ -33,7 +33,11 @@ use std::{f64::consts::PI, sync::Arc, time::Duration};
 use log::info;
 use vexide::{smart::motor::BrakeMode, sync::Mutex, task::*, time::*};
 
-use crate::peripherals::{drivetrain, drivetrain::Differential};
+use crate::{
+    motion::pid::DrivetrainConfig,
+    peripherals::drivetrain::{self, Differential},
+    to_mutex,
+};
 
 /// Loop rate for the Arc PID control task in milliseconds.
 const LOOPRATE: u64 = 5;
@@ -293,6 +297,20 @@ pub struct ArcPIDMovement {
     pub arcpid_values:     Arc<Mutex<ArcPIDValues>>,
 }
 
+impl ArcPIDMovement {
+    pub fn new(
+        dt: drivetrain::Differential,
+        dt_config: DrivetrainConfig,
+        arcpid_values: ArcPIDValues,
+    ) -> Self {
+        ArcPIDMovement {
+            drivetrain:        dt,
+            drivetrain_config: dt_config,
+            arcpid_values:     to_mutex(arcpid_values),
+        }
+    }
+}
+
 /// Runtime values for the Arc PID controller.
 ///
 /// These values are updated during movement commands and
@@ -321,24 +339,31 @@ pub struct ArcPIDValues {
     pub offset:    f64,
 }
 
-/// Physical configuration of the drivetrain for arc calculations.
-///
-/// Same as the PID [`DrivetrainConfig`](super::pid::DrivetrainConfig)
-/// but includes track width for arc radius calculations.
-#[derive(Clone, Copy)]
-pub struct DrivetrainConfig {
-    /// The wheel diameter in inches.
-    ///
-    /// Common sizes: 2.75", 3.25", 4".
-    pub wheel_diameter: f64,
-    /// The number of teeth on the driving (motor-side) gear.
-    pub driving_gear:   f64,
-    /// The number of teeth on the driven (wheel-side) gear.
-    pub driven_gear:    f64,
-    /// The distance between left and right wheels in inches.
-    ///
-    /// Used for calculating arc radii.
-    pub track_width:    f64,
+impl ArcPIDValues {
+    /// Uses default ArcPID Values
+    pub fn default() -> ArcPIDValues {
+        ArcPIDValues {
+            kp:        0.5,
+            kd:        0.0,
+            tolerance: 0.1,
+            maxpwr:    12.0,
+            active:    true,
+            target:    0.0,
+            offset:    0.0,
+        }
+    }
+
+    pub fn new(kp: f64, kd: f64, tolerance: f64, maxpwr: f64) -> ArcPIDValues {
+        ArcPIDValues {
+            kp,
+            kd,
+            tolerance,
+            maxpwr,
+            active: true,
+            target: 0.0,
+            offset: 0.0,
+        }
+    }
 }
 
 async fn timeout_wait(arcpid_values: &Arc<Mutex<ArcPIDValues>>, timeout: u64) {

@@ -1,9 +1,7 @@
-use std::{cell::RefCell, rc::Rc};
-
 use antaeus::motion::{pusuit::geo, *};
 
 use crate::hardware::Robot;
-pub fn main_auton(robot: Robot) {
+pub fn main_auton(robot: &mut Robot) {
     let mut path = pusuit::geo::Path::origin();
     path.add(geo::Point::new(20.0, 20.0));
     path.add(geo::Point::new(-20.0, 20.0));
@@ -19,7 +17,7 @@ pub fn main_auton(robot: Robot) {
         offset:    0.0,
     };
 
-    let dtc = pid::arcpid::DrivetrainConfig {
+    let dtc = pid::DrivetrainConfig {
         wheel_diameter: 3.25,
         driving_gear:   3.0,
         driven_gear:    4.0,
@@ -33,29 +31,23 @@ pub fn main_auton(robot: Robot) {
     };
 
     let vertical = odom::WheelTracker {
-        device:         odom::TrackingDevice::RotationSensor(Rc::new(RefCell::new(
-            robot.v_tracker,
-        ))),
+        device:         odom::TrackingDevice::RotationSensor(robot.v_tracker.clone()),
         offset:         0.0,
         wheel_diameter: 3.25,
         reverse:        false,
     };
 
     let horizontal = odom::WheelTracker {
-        device:         odom::TrackingDevice::RotationSensor(Rc::new(RefCell::new(
-            robot.h_tracker,
-        ))),
+        device:         odom::TrackingDevice::RotationSensor(robot.h_tracker.clone()),
         offset:         0.0,
         wheel_diameter: 3.25,
         reverse:        false,
     };
 
-    let imu = robot.imu;
-
     let trackers = odom::Trackers {
         horizontal: horizontal,
         vertical:   vertical,
-        imu:        Rc::new(RefCell::new(imu)),
+        imu:        robot.imu.clone(),
     };
 
     let odom_values = odom::OdomValues {

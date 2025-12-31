@@ -191,6 +191,15 @@ pub struct SinglePIDMovement {
     pub pid_values: Arc<Mutex<SinglePIDValues>>,
 }
 
+impl SinglePIDMovement {
+    pub fn new(motorgroup: Vec<Motor>, pid_values: SinglePIDValues) -> SinglePIDMovement {
+        SinglePIDMovement {
+            motorgroup: Rc::new(RefCell::new(motorgroup)),
+            pid_values: Arc::new(Mutex::new(pid_values)),
+        }
+    }
+}
+
 /// Runtime values for the single motor PID controller.
 ///
 /// These values control the PID behavior and are updated during operation.
@@ -209,6 +218,33 @@ pub struct SinglePIDValues {
     pub active:    bool,
     /// Target motor position in radians.
     pub target:    f64,
+}
+
+impl SinglePIDValues {
+    /// Uses default ArcPID Values
+    pub fn default() -> SinglePIDValues {
+        SinglePIDValues {
+            kp:        0.5,
+            ki:        0.0,
+            kd:        0.0,
+            tolerance: 0.1,
+            maxpwr:    12.0,
+            active:    true,
+            target:    0.0,
+        }
+    }
+
+    pub fn new(kp: f64, ki: f64, kd: f64, tolerance: f64, maxpwr: f64) -> SinglePIDValues {
+        SinglePIDValues {
+            kp,
+            ki,
+            kd,
+            tolerance,
+            maxpwr,
+            active: true,
+            target: 0.0,
+        }
+    }
 }
 
 /// Clamps a value to the range [-cap, cap].

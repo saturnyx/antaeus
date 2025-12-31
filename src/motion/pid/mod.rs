@@ -45,3 +45,38 @@ pub mod pid;
 /// Useful for controlling mechanisms like arms, lifts, or flywheels
 /// independently from the drivetrain.
 pub mod singlepid;
+/// Physical configuration of the drivetrain for distance calculations.
+///
+/// These values are used to convert between motor rotations and
+/// linear distance traveled by the robot.#[derive(Clone, Copy)]
+#[derive(Clone, Copy)]
+pub struct DrivetrainConfig {
+    /// The wheel diameter in inches.
+    ///
+    /// Common sizes: 2.75", 3.25", 4".
+    pub wheel_diameter: f64,
+    /// The number of teeth on the driving (motor-side) gear.
+    pub driving_gear:   f64,
+    /// The number of teeth on the driven (wheel-side) gear.
+    pub driven_gear:    f64,
+    /// The distance between left and right wheels in inches.
+    ///
+    /// Used for calculating arc radii.
+    pub track_width:    f64,
+}
+
+impl DrivetrainConfig {
+    pub fn new(
+        wheel_diameter: f64,
+        driving_gear: f64,
+        driven_gear: f64,
+        track_width: f64,
+    ) -> DrivetrainConfig {
+        DrivetrainConfig {
+            wheel_diameter,
+            driving_gear,
+            driven_gear,
+            track_width,
+        }
+    }
+}

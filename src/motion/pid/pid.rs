@@ -39,7 +39,11 @@ use vexide::{
     time::*,
 };
 
-use crate::peripherals::{drivetrain, drivetrain::Differential};
+use crate::{
+    motion::pid::DrivetrainConfig,
+    peripherals::{drivetrain, drivetrain::Differential},
+    to_mutex,
+};
 
 /// Loop rate for the PID control task in milliseconds.
 const LOOPRATE: u64 = 5;
@@ -424,6 +428,20 @@ pub struct PIDMovement {
     pub pid_values:        Arc<Mutex<PIDValues>>,
 }
 
+impl PIDMovement {
+    pub fn new(
+        dt: drivetrain::Differential,
+        dt_config: DrivetrainConfig,
+        pid_values: PIDValues,
+    ) -> Self {
+        PIDMovement {
+            drivetrain:        dt,
+            drivetrain_config: dt_config,
+            pid_values:        to_mutex(pid_values),
+        }
+    }
+}
+
 /// A Struct for PID values that will be altered throughout the Autonomous
 ///
 /// These values control the behavior of the PID controller and are
@@ -461,28 +479,33 @@ pub struct PIDValues {
     pub target_right: f64,
 }
 
-/// Physical configuration of the drivetrain for distance calculations.
-///
-/// These values are used to convert between motor rotations and
-/// linear distance traveled by the robot.
-pub struct DrivetrainConfig {
-    /// The wheel diameter in inches.
-    ///
-    /// Common sizes: 2.75", 3.25", 4". The older large omni wheels were 4.15".
-    pub wheel_diameter: f64,
-    /// The number of teeth on the driving (motor-side) gear.
-    ///
-    /// Can be in any units as long as consistent with `driven_gear`.
-    pub driving_gear:   f64,
-    /// The number of teeth on the driven (wheel-side) gear.
-    ///
-    /// Can be in any units as long as consistent with `driving_gear`.
-    pub driven_gear:    f64,
-    /// The distance between left and right wheels in inches.
-    ///
-    /// Measured from the center of the left wheels to the center of
-    /// the right wheels. Used for rotation calculations.
-    pub track_width:    f64,
+impl PIDValues {
+    /// Uses default ArcPID Values
+    pub fn default() -> PIDValues {
+        PIDValues {
+            kp:           0.5,
+            ki:           0.0,
+            kd:           0.0,
+            tolerance:    0.1,
+            maxpwr:       12.0,
+            active:       true,
+            target_left:  0.0,
+            target_right: 0.0,
+        }
+    }
+
+    pub fn new(kp: f64, ki: f64, kd: f64, tolerance: f64, maxpwr: f64) -> PIDValues {
+        PIDValues {
+            kp,
+            ki,
+            kd,
+            tolerance,
+            maxpwr,
+            active: true,
+            target_left: 0.0,
+            target_right: 0.0,
+        }
+    }
 }
 
 async fn timeout_wait(pid_values: &Arc<Mutex<PIDValues>>, timeout: u64) {

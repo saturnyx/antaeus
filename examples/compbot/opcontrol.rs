@@ -1,16 +1,10 @@
-use antaeus::{fs::logger, peripherals::controller::*};
+use antaeus::peripherals::controller::*;
 use heapless::Vec;
-use log::{LevelFilter, info};
 
 use crate::hardware::Robot;
 
 pub fn opcontrol(robot: &mut Robot) {
-    info!("Opcontrol Started");
-    let _ = logger::init(LevelFilter::Info);
-    antaeus::display::logo::print_badge(&mut robot.display);
     let cc = ControllerControl::new(&robot.main_con, ControllerButton::ButtonRight);
-
-    info!("Opcontrol Loop Started");
     loop {
         robot.dt.tank(&robot.main_con);
         cc.dual_button_to_motors(

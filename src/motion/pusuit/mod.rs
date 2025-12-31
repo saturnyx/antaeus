@@ -58,6 +58,13 @@ pub struct Pursuit {
 }
 
 impl Pursuit {
+    /// Creates a new `Pursuit` instance with the specified lookahead distance.
+    ///
+    /// # Arguments
+    ///
+    /// * `lookahead` - The lookahead distance in inches, used as the radius for target point calculations.
+    pub fn new(lookahead: f64) -> Self { Self { lookahead } }
+
     /// Follows a path using the Candidate-Based Pursuit algorithm.
     ///
     /// This method continuously calculates target points and commands

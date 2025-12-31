@@ -49,7 +49,4 @@ pub mod controller;
 /// - **Reverse**: Inverted controls for driving in reverse.
 pub mod drivetrain;
 
-use std::{cell::RefCell, rc::Rc};
-
-/// Makes an object clonable by wrapping it in `Rc` and `RefCell`
-pub fn make_cloneable<T>(t: T) -> Rc<RefCell<T>> { Rc::new(RefCell::new(t)) }
+pub mod motorgroup;

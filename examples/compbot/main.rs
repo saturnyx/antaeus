@@ -1,17 +1,12 @@
-use log::info;
 use vexide::prelude::*;
 pub mod auton;
 pub mod hardware;
 pub mod opcontrol;
 
 impl Compete for hardware::Robot {
-    async fn autonomous(&mut self) {
-        info!("Autonomous Started")
-    }
+    async fn autonomous(&mut self) { auton::main_auton(self); }
 
-    async fn driver(&mut self) {
-        opcontrol::opcontrol(self);
-    }
+    async fn driver(&mut self) { opcontrol::opcontrol(self); }
 }
 
 #[vexide::main]

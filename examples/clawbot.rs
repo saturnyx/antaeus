@@ -8,7 +8,7 @@
 use std::sync::Arc;
 
 use antaeus::{
-    motion::pid::pid::*,
+    motion::pid::{DrivetrainConfig, pid::*},
     peripherals::{controller::*, drivetrain::Differential},
 };
 use heapless::Vec;

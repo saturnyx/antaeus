@@ -46,6 +46,10 @@
 //! - [`opcontrol`]: Controller input mapping to motors and pneumatics.
 //! - [`fs`]: Filesystem utilities including logging.
 
+use std::{cell::RefCell, rc::Rc, sync::Arc};
+
+use vexide::sync::Mutex;
+
 /// Filesystem utilities module.
 ///
 /// Contains logging functionality for recording robot telemetry and debug
@@ -79,3 +83,9 @@ pub mod peripherals;
 /// - Pre-loaded TTF fonts for text rendering.
 /// - Antaeus logo and badge display utilities.
 pub mod display;
+
+/// Makes an object clonable by wrapping it in `Rc` and `RefCell`
+pub fn make_cloneable<T>(v: T) -> Rc<RefCell<T>> { Rc::new(RefCell::new(v)) }
+
+/// Turns a object into a mutex
+pub fn to_mutex<T>(v: T) -> Arc<Mutex<T>> { Arc::new(Mutex::new(v)) }

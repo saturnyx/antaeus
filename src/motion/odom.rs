@@ -36,7 +36,7 @@
 //! odom.goto_point(24.0, 24.0).await;
 //! ```
 
-use std::{borrow::Borrow, cell::RefCell, rc::Rc, sync::Arc, time::Duration};
+use std::{borrow::Borrow, sync::Arc, time::Duration};
 
 use log::{info, warn};
 use vexide::{
@@ -69,24 +69,18 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Trackers) {
 
     loop {
         // The absolute number of radians turned by the robot
-        let mut abs_rotation = 0.0;
-        let mut euler_heading = 0.0;
+        let abs_rotation;
+        let euler_heading;
         {
-            let imu = &trackers.imu.try_borrow();
-            if let Ok(s) = imu {
-                abs_rotation = s
-                    .rotation()
-                    .unwrap_or_else(|e| {
-                        warn!("Inertial Sensor Error: {}", e);
-                        Angle::from_degrees(0.0)
-                    })
-                    .as_radians();
-                euler_heading = s.euler().unwrap().b.as_degrees();
-            } else if let Err(e) = imu {
-                warn!("Inertial Sensor Error: {}", e);
-            } else {
-                warn!("Inertial Sensor Error");
-            }
+            let imu = &trackers.imu.lock().await;
+            abs_rotation = imu
+                .rotation()
+                .unwrap_or_else(|e| {
+                    warn!("Inertial Sensor Error: {}", e);
+                    Angle::from_degrees(0.0)
+                })
+                .as_radians();
+            euler_heading = imu.euler().unwrap().b.as_degrees();
         }
         // Getting delta theta (needed later)
         let delta_heading = abs_rotation - prev_heading;
@@ -95,7 +89,7 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Trackers) {
         let (vertical_rad, delta_v, wheel_dia_v, offset_v);
         {
             let vertical = &trackers.borrow().vertical;
-            vertical_rad = vertical.device.position().as_radians().clone();
+            vertical_rad = vertical.device.position().await.as_radians().clone();
             let raw_delta_v = (vertical_rad * vertical.wheel_diameter / 2.0) - prev_dist_v;
             delta_v = if vertical.reverse {
                 -raw_delta_v
@@ -110,7 +104,7 @@ async fn odom_tracker(values: &Arc<Mutex<OdomValues>>, trackers: &Trackers) {
         let (horizontal_rad, delta_h, wheel_dia_h, offset_h);
         {
             let horizontal = &trackers.borrow().horizontal;
-            horizontal_rad = horizontal.device.position().as_radians().clone();
+            horizontal_rad = horizontal.device.position().await.as_radians().clone();
             let raw_delta_h = (horizontal_rad * horizontal.wheel_diameter / 2.0) - prev_dist_h;
             delta_h = if horizontal.reverse {
                 -raw_delta_h
@@ -188,12 +182,8 @@ impl OdomMovement {
         let delta_y = y - self.odometry_values.lock().await.global_y;
         let angle = delta_y.atan2(delta_x).to_degrees();
         if let Some(pid) = &self.pid {
-            let imu = &self.trackers.imu.try_borrow();
-            if let Ok(s) = imu {
-                pid.rotate_imu(angle, s, TIMEOUT, AFTERDELAY).await;
-            } else if let Err(e) = imu {
-                warn!("IMU Error: {}", e)
-            }
+            let imu = &self.trackers.imu.lock().await;
+            pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
         } else {
             warn!("Cannot go to point without Movement Algorithm (PID needed)")
         }
@@ -218,13 +208,9 @@ impl OdomMovement {
         let angle = delta_y.atan2(delta_x).to_degrees();
         let hyp = (delta_x.powi(2) + delta_y.powi(2)).sqrt();
         if let Some(pid) = &self.pid {
-            let imu = &self.trackers.imu.try_borrow();
-            if let Ok(s) = imu {
-                pid.rotate_imu(angle, s, TIMEOUT, AFTERDELAY).await;
-                pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
-            } else if let Err(e) = imu {
-                warn!("IMU Error: {}", e)
-            }
+            let imu = &self.trackers.imu.lock().await;
+            pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+            pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
         } else {
             warn!("Cannot go to point without Movement Algorithm (PID needed)")
         }
@@ -252,14 +238,10 @@ impl OdomMovement {
         let angle = delta_y.atan2(delta_x).to_degrees();
         let hyp = (delta_x.powi(2) + delta_y.powi(2)).sqrt();
         if let Some(pid) = &self.pid {
-            let imu = &self.trackers.imu.try_borrow();
-            if let Ok(s) = imu {
-                pid.rotate_imu(angle, s, TIMEOUT, AFTERDELAY).await;
-                pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
-                pid.rotate(heading, TIMEOUT, AFTERDELAY).await;
-            } else if let Err(e) = imu {
-                warn!("IMU Error: {}", e)
-            }
+            let imu = &self.trackers.imu.lock().await;
+            pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+            pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
+            pid.rotate(heading, TIMEOUT, AFTERDELAY).await;
         } else {
             warn!("Cannot go to pose without Movement Algorithm (PID needed)")
         }
@@ -369,6 +351,30 @@ pub struct OdomValues {
     /// The robot's global heading in degrees.
     pub global_heading: f64,
 }
+impl OdomValues {
+    /// Creates a new `OdomValues` instance with the specified position and heading.
+    ///
+    /// # Arguments
+    ///
+    /// * `x` - Initial X coordinate in inches.
+    /// * `y` - Initial Y coordinate in inches.
+    /// * `heading` - Initial heading in degrees.
+    pub fn new(x: f64, y: f64, heading: f64) -> Self {
+        Self {
+            global_x:       x,
+            global_y:       y,
+            global_heading: heading,
+        }
+    }
+
+    pub fn origin() -> Self {
+        Self {
+            global_x:       0.0,
+            global_y:       0.0,
+            global_heading: 0.0,
+        }
+    }
+}
 
 /// Represents a device that can measure rotational position.
 ///
@@ -377,9 +383,9 @@ pub struct OdomValues {
 #[derive(Clone)]
 pub enum TrackingDevice {
     /// An ADI (3-wire) optical shaft encoder.
-    AdiOpticalEncoder(Rc<RefCell<AdiOpticalEncoder>>),
+    AdiOpticalEncoder(Arc<Mutex<AdiOpticalEncoder>>),
     /// A V5 rotation sensor (high-resolution encoder).
-    RotationSensor(Rc<RefCell<RotationSensor>>),
+    RotationSensor(Arc<Mutex<RotationSensor>>),
     /// Uses the drivetrain motors' integrated encoders.
     Differential(Differential),
     /// No tracking device (placeholder for optional tracking).
@@ -396,28 +402,20 @@ impl TrackingDevice {
     ///
     /// The position as an [`Angle`]. Returns zero if the device
     /// encounters an error (a warning is logged).
-    pub fn position(&self) -> Angle {
+    pub async fn position(&self) -> Angle {
         match self {
-            TrackingDevice::AdiOpticalEncoder(encoder) => match encoder.try_borrow() {
-                Ok(borrowed_encoder) => borrowed_encoder.position().unwrap_or_else(|e| {
+            TrackingDevice::AdiOpticalEncoder(encoder) => {
+                encoder.lock().await.position().unwrap_or_else(|e| {
                     warn!("ADI Optical Sensor Position Error: {}", e);
                     Angle::from_radians(0.0)
-                }),
-                Err(e) => {
-                    warn!("ADI Optical Sensor Borrow Error: {}", e);
-                    Angle::from_radians(0.0)
-                }
-            },
-            TrackingDevice::RotationSensor(encoder) => match encoder.try_borrow() {
-                Ok(borrowed_encoder) => borrowed_encoder.position().unwrap_or_else(|e| {
+                })
+            }
+            TrackingDevice::RotationSensor(encoder) => {
+                encoder.lock().await.position().unwrap_or_else(|e| {
                     warn!("ADI Optical Sensor Position Error: {}", e);
                     Angle::from_radians(0.0)
-                }),
-                Err(e) => {
-                    warn!("ADI Optical Sensor Borrow Error: {}", e);
-                    Angle::from_radians(0.0)
-                }
-            },
+                })
+            }
             TrackingDevice::Differential(dt) => dt.position(),
             TrackingDevice::None => Angle::from_radians(0.0),
         }
@@ -493,9 +491,38 @@ pub struct Trackers {
     /// The horizontal (left/right) tracking wheel.
     pub horizontal: WheelTracker,
     /// The inertial sensor for heading measurement.
-    pub imu:        Rc<RefCell<InertialSensor>>,
+    pub imu:        Arc<Mutex<InertialSensor>>,
 }
-
+impl Trackers {
+    /// Creates a new hardware configuration for odometry tracking.
+    ///
+    /// # Arguments
+    ///
+    /// * `vertical` - The vertical (forward/backward) tracking wheel.
+    /// * `horizontal` - The horizontal (left/right) tracking wheel.
+    /// * `imu` - The inertial sensor for heading measurement.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let vertical = WheelTracker::new_normal(/* ... */);
+    /// let horizontal = WheelTracker::new_normal(/* ... */);
+    /// let imu = Rc::new(RefCell::new(InertialSensor::new(/* ... */)));
+    ///
+    /// let trackers = Trackers::new(vertical, horizontal, imu);
+    /// ```
+    pub fn new(
+        vertical: WheelTracker,
+        horizontal: WheelTracker,
+        imu: Arc<Mutex<InertialSensor>>,
+    ) -> Self {
+        Self {
+            vertical,
+            horizontal,
+            imu,
+        }
+    }
+}
 /// The main odometry-based movement controller.
 ///
 /// Combines position tracking with movement algorithms to enable
@@ -530,4 +557,46 @@ pub struct OdomMovement {
     pub pid:             Option<PIDMovement>,
     /// Optional Arc PID controller for curved movements.
     pub arc_pid:         Option<ArcPIDMovement>,
+}
+
+impl OdomMovement {
+    /// Creates a new odometry movement controller.
+    ///
+    /// Sets up position tracking with the specified hardware configuration.
+    /// The robot's initial position is set to (0, 0) with heading 0°.
+    ///
+    /// # Arguments
+    ///
+    /// * `trackers` - Hardware configuration for tracking wheels and IMU.
+    /// * `pid` - Optional PID controller for linear movements.
+    /// * `arc_pid` - Optional Arc PID controller for curved movements.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let trackers = Trackers { /* ... */ };
+    /// let pid = Some(PIDMovement::new(/* ... */));
+    /// let arc_pid = Some(ArcPIDMovement::new(/* ... */));
+    ///
+    /// let odom = OdomMovement::new(trackers, pid, arc_pid);
+    /// odom.init();  // Start tracking
+    /// ```
+    pub fn new(
+        trackers: Trackers,
+        pid: Option<PIDMovement>,
+        arc_pid: Option<ArcPIDMovement>,
+    ) -> Self {
+        let odometry_values = Arc::new(Mutex::new(OdomValues {
+            global_x:       0.0,
+            global_y:       0.0,
+            global_heading: 0.0,
+        }));
+
+        Self {
+            odometry_values,
+            trackers,
+            pid,
+            arc_pid,
+        }
+    }
 }

@@ -1,19 +1,17 @@
-use antaeus::{
-    display::{self, DisplayDriver},
-    *,
-};
-use vexide::prelude::*;
+use std::sync::Arc;
+
+use antaeus::*;
+use vexide::{prelude::*, sync::Mutex};
 
 pub struct Robot {
     pub main_con: Controller,
     pub dt:       peripherals::drivetrain::Differential,
     pub intake1:  Motor,
     pub intake2:  Motor,
-    pub display:  display::DisplayDriver,
 
-    pub h_tracker: RotationSensor,
-    pub v_tracker: RotationSensor,
-    pub imu:       InertialSensor,
+    pub h_tracker: Arc<Mutex<RotationSensor>>,
+    pub v_tracker: Arc<Mutex<RotationSensor>>,
+    pub imu:       Arc<Mutex<InertialSensor>>,
 }
 
 impl Robot {
@@ -35,11 +33,9 @@ impl Robot {
             intake1:  Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
             intake2:  Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
 
-            h_tracker: RotationSensor::new(peripherals.port_9, Direction::Forward),
-            v_tracker: RotationSensor::new(peripherals.port_10, Direction::Forward),
-            imu:       InertialSensor::new(peripherals.port_11),
-
-            display: DisplayDriver::new(peripherals.display),
+            h_tracker: to_mutex(RotationSensor::new(peripherals.port_9, Direction::Forward)),
+            v_tracker: to_mutex(RotationSensor::new(peripherals.port_10, Direction::Forward)),
+            imu:       to_mutex(InertialSensor::new(peripherals.port_12)),
         }
     }
 }
