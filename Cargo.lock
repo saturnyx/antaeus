@@ -25,7 +25,7 @@ checksum = "250f629c0161ad8107cf89319e990051fae62832fd343083bea452d93e2205fd"
 
 [[package]]
 name = "antaeus"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "embedded-graphics",
  "embedded-graphics-core",
