@@ -166,16 +166,20 @@ async fn arcpid_loop(
 }
 
 impl ArcPIDMovement {
-    /// Initializes a ArcPID Loop.
-    /// The ArcPID movements will require a ArcPID loop to run as a seperate task or thread.
+    /// Initializes an ArcPID loop.
+    ///
+    /// The ArcPID movements require an ArcPID loop to run as a separate task or thread.
     /// It is necessary to initialize the ArcPID before running any movements.
     ///
     /// # Examples
-    /// ```
+    ///
+    /// ```ignore
+    /// use antaeus::motion::pid::arcpid::ArcPIDMovement;
+    ///
     /// async fn auton(arcpid: ArcPIDMovement) {
     ///     arcpid.init(); // Initialize the ArcPID before any movements
     ///     arcpid.set_maximum_power(12.0).await;
-    ///     arcpid.travel(100.0, 1000, 10).await;
+    ///     arcpid.travel(100.0, 0.5, 1000, 10).await;
     /// }
     /// ```
     pub fn init(&self) {
@@ -187,7 +191,13 @@ impl ArcPIDMovement {
         mainloop.detach();
     }
 
-    /// Set the tolerance, Kp, and Kd Values for ArcPD. The values are in radians.
+    /// Sets the tolerance, Kp, and Kd values for ArcPD.
+    ///
+    /// # Arguments
+    ///
+    /// * `kp` - Proportional gain.
+    /// * `kd` - Derivative gain.
+    /// * `tolerance` - Error tolerance in radians.
     pub async fn tune(&self, kp: f64, kd: f64, tolerance: f64) {
         let mut arcpid_values = self.arcpid_values.lock().await;
         arcpid_values.kp = kp;
@@ -195,8 +205,13 @@ impl ArcPIDMovement {
         arcpid_values.tolerance = tolerance;
     }
 
-    /// Sets the maximum power the robot should move at. The maximum value is 12.0
-    /// while the minimum value is -12.0 (reverse).
+    /// Sets the maximum power the robot should move at.
+    ///
+    /// The maximum value is 12.0 while the minimum value is -12.0 (reverse).
+    ///
+    /// # Arguments
+    ///
+    /// * `maximum_power` - The maximum motor voltage (0-12 volts).
     pub async fn set_maximum_power(&self, maximum_power: f64) {
         let mut arcpid_values = self.arcpid_values.lock().await;
         arcpid_values.maxpwr = maximum_power;
@@ -264,55 +279,50 @@ impl ArcPIDMovement {
     }
 }
 
-/// **The ArcPD Movement Controller**
+/// The ArcPD Movement Controller.
 ///
 /// Initialize an instance of this to control the robot using ArcPD.
+/// ArcPD allows the robot to move in curved arcs rather than stopping
+/// to turn, which is useful for smooth path following.
 ///
 /// # Examples
 ///
-/// Creating a ArcPDMovement Instance
-/// ```
-/// fn new_arcpd() -> ArcPIDMovement {
-///     let dt = Differential::new(
-///         [
-///             Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
-///             Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
-///         ],
-///         [
-///             Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
-///             Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
-///         ],
-///     );
-///     let config = DrivetrainConfig {
-///         wheel_diameter: 3.25,
-///         driving_gear:   3.0,
-///         driven_gear:    5.0,
-///         track_width:    12.0,
-///     };
-///     let values = ArcPIDValues {
-///         kp:           0.5,
-///         kd:           0.1,
-///         tolerance:    0.02,
-///         maxpwr:       12.0,
-///         active:       true,
-///         target_left:  0.0,
-///         target_right: 0.0,
-///     };
-///     let ArcPD_controller = ArcPIDMovement {
-///         drivetrain:        dt,
-///         drivetrain_config: config,
-///         arcpid_values:     Arc::new(Mutex::new(values)),
-///     };
-/// }
+/// Creating an ArcPIDMovement instance:
+///
+/// ```ignore
+/// use antaeus::motion::pid::arcpid::{ArcPIDMovement, ArcPIDValues};
+/// use antaeus::motion::pid::DrivetrainConfig;
+/// use antaeus::peripherals::drivetrain::Differential;
+/// use vexide::prelude::*;
+///
+/// let dt = Differential::new(
+///     [Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward)],
+///     [Motor::new(peripherals.port_2, Gearset::Green, Direction::Reverse)],
+/// );
+/// let config = DrivetrainConfig::new(3.25, 3.0, 5.0, 12.0);
+/// let values = ArcPIDValues::new(0.5, 0.1, 0.02, 12.0);
+///
+/// let arcpd_controller = ArcPIDMovement::new(dt, config, values);
+/// arcpd_controller.init();
 /// ```
 #[derive(Clone)]
 pub struct ArcPIDMovement {
+    /// The differential drivetrain to control.
     pub drivetrain:        Differential,
+    /// Physical configuration of the drivetrain.
     pub drivetrain_config: DrivetrainConfig,
+    /// Thread-safe container for ArcPID runtime values.
     pub arcpid_values:     Arc<Mutex<ArcPIDValues>>,
 }
 
 impl ArcPIDMovement {
+    /// Creates a new ArcPIDMovement controller.
+    ///
+    /// # Arguments
+    ///
+    /// * `dt` - The differential drivetrain to control.
+    /// * `dt_config` - Physical configuration of the drivetrain.
+    /// * `arcpid_values` - Initial ArcPID values for the controller.
     pub fn new(
         dt: drivetrain::Differential,
         dt_config: DrivetrainConfig,

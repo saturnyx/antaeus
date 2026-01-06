@@ -1,3 +1,27 @@
+//! Point-and-shoot navigation using odometry.
+//!
+//! This module provides the [`PointShoot`] struct which combines odometry
+//! tracking with PID control to enable simple point-to-point navigation.
+//!
+//! The "point-and-shoot" approach rotates to face the target, then drives
+//! straight to it. This is simpler than arc-based pursuit but may be slower.
+//!
+//! # Example
+//!
+//! ```ignore
+//! use antaeus::motion::odom::ptsht::PointShoot;
+//! use antaeus::motion::odom::tracker::OdomTracker;
+//! use antaeus::motion::pid::pid::PIDMovement;
+//!
+//! let point_shoot = PointShoot { odom, pid };
+//!
+//! // Navigate to a point
+//! point_shoot.goto_point(24.0, 24.0).await;
+//!
+//! // Navigate to a pose (position + heading)
+//! point_shoot.goto_pose(48.0, 0.0, 90.0).await;
+//! ```
+
 use crate::motion::{odom::tracker::OdomTracker, pid::pid::PIDMovement};
 
 /// Default timeout for movement operations in milliseconds.
@@ -6,7 +30,38 @@ const TIMEOUT: u64 = 10000;
 /// Default delay after movement completion in milliseconds.
 const AFTERDELAY: u64 = 10;
 
+/// Point-and-shoot navigation controller.
+///
+/// Combines odometry tracking with PID control for simple point-to-point
+/// navigation. The robot rotates to face the target, then drives straight
+/// to it.
+///
+/// # Example
+///
+/// ```ignore
+/// use antaeus::motion::odom::ptsht::PointShoot;
+///
+/// let point_shoot = PointShoot { odom, pid };
+/// point_shoot.goto_point(24.0, 24.0).await;
+/// ```
+pub struct PointShoot {
+    /// The odometry tracker for position feedback.
+    pub odom: OdomTracker,
+    /// The PID controller for movement execution.
+    pub pid:  PIDMovement,
+}
+
 impl PointShoot {
+    /// Creates a new PointShoot controller.
+    ///
+    /// # Arguments
+    ///
+    /// * `odom` - The odometry tracker for position feedback.
+    /// * `pid` - The PID controller for movement execution.
+    pub fn new(odom: OdomTracker, pid: PIDMovement) -> Self {
+        Self { odom, pid }
+    }
+
     /// Rotates the robot to face a specific point on the field.
     ///
     /// Calculates the angle to the target point and rotates the robot
@@ -16,10 +71,6 @@ impl PointShoot {
     ///
     /// * `x` - Target X coordinate in inches.
     /// * `y` - Target Y coordinate in inches.
-    ///
-    /// # Panics
-    ///
-    /// Logs a warning and returns early if no PID controller is configured.
     pub async fn face_point(&self, x: f64, y: f64) {
         let delta_x = x - self.odom.global_pose.lock().await.x;
         let delta_y = y - self.odom.global_pose.lock().await.y;
@@ -38,10 +89,6 @@ impl PointShoot {
     ///
     /// * `x` - Target X coordinate in inches.
     /// * `y` - Target Y coordinate in inches.
-    ///
-    /// # Panics
-    ///
-    /// Logs a warning and returns early if no PID controller is configured.
     pub async fn goto_point(&self, x: f64, y: f64) {
         let delta_x = x - self.odom.global_pose.lock().await.x;
         let delta_y = y - self.odom.global_pose.lock().await.y;
@@ -65,10 +112,6 @@ impl PointShoot {
     /// * `x` - Target X coordinate in inches.
     /// * `y` - Target Y coordinate in inches.
     /// * `heading` - Final heading in degrees.
-    ///
-    /// # Panics
-    ///
-    /// Logs a warning and returns early if no PID controller is configured.
     pub async fn goto_pose(&self, x: f64, y: f64, heading: f64) {
         let delta_x = x - self.odom.global_pose.lock().await.x;
         let delta_y = y - self.odom.global_pose.lock().await.y;
@@ -88,16 +131,7 @@ impl PointShoot {
     /// # Arguments
     ///
     /// * `distance` - Distance to travel in inches.
-    ///
-    /// # Panics
-    ///
-    /// Logs a warning and returns early if no PID controller is configured.
     pub async fn travel(&self, distance: f64) {
         self.pid.travel(distance, TIMEOUT, AFTERDELAY).await;
     }
-}
-
-pub struct PointShoot {
-    pub odom: OdomTracker,
-    pub pid:  PIDMovement,
 }
