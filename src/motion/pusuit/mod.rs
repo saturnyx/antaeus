@@ -42,13 +42,19 @@ mod algorithm;
 /// used by the pursuit algorithm.
 pub mod geo;
 
-use crate::motion::odom::OdomMovement;
+
+use crate::motion::{
+    odom::{devices::Pose, tracker::OdomTracker},
+    pid::arcpid::ArcPIDMovement,
+    pusuit::algorithm::abs_arc_point,
+};
 
 /// Candidate-Based Pursuit path follower.
 ///
 /// Follows a path using the lookahead distance to determine targets.
 /// Larger lookahead values result in smoother but less accurate paths.
 /// Smaller values track the path more precisely but may cause oscillation.
+#[derive(Debug, Clone, Copy)]
 pub struct Pursuit {
     /// The lookahead distance in inches.
     ///
@@ -86,23 +92,21 @@ impl Pursuit {
     ///
     /// pursuit.follow(odom, path).await;
     /// ```
-    pub async fn follow(&self, odom: OdomMovement, path: geo::Path) {
+    pub async fn follow(&self, odom: &OdomTracker, arc_pid: &ArcPIDMovement, path: geo::Path) {
         let mut run = true;
         while run {
-            let odometry_values = odom.odometry_values.lock().await;
-            let (x, y) = (odometry_values.global_x, odometry_values.global_y);
+            let odometry_values = odom.global_pose.lock().await;
+            let (x, y, t) = (odometry_values.x, odometry_values.y, odometry_values.t);
             let cir = geo::Circle {
                 x: x,
                 y: y,
                 r: self.lookahead,
             };
             let target = algorithm::pursuit_target(path.clone(), cir);
-            odom.arc_point(target.x, target.y).await;
+            let (tarx, tary) = abs_arc_point(Pose::new(x, y, t), target.x, target.y);
 
-            if let Some(arcpid) = odom.arc_pid.clone() {
-                let values = arcpid.arcpid_values.lock().await;
-                run = values.active;
-            }
+            arc_pid.abs_local_coords(tarx, tary).await;
+            run = arc_pid.arcpid_values.lock().await.active;
         }
     }
 }

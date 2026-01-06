@@ -3,6 +3,7 @@ use std::f64::{EPSILON, MAX};
 use log::{error, info};
 
 use super::geo;
+use crate::motion::odom::devices::Pose;
 
 fn point_in_circle(p: &geo::Point, cir: &geo::Circle) -> bool {
     let h = cir.x;
@@ -174,6 +175,27 @@ fn get_target(candidates: Vec<geo::Point>, path: geo::Path) -> geo::Point {
 pub fn pursuit_target(path: geo::Path, cir: geo::Circle) -> geo::Point {
     let candidates = get_candidates(&path, cir);
     get_target(candidates, path)
+}
+
+pub fn abs_arc_point(current_pose: Pose, x: f64, y: f64) -> (f64, f64) {
+    // Calculate difference in global coordinates
+    let delta_x = x - current_pose.x;
+    let delta_y = y - current_pose.y;
+
+    // Convert heading from degrees to radians and rotate to get local coordinates
+    let heading_rad = current_pose.t.as_radians();
+    let (local_x, local_y) = rotate_vector(-heading_rad, delta_x, delta_y);
+
+    // Use ArcPID to move to the local coordinates
+    (local_x, local_y)
+}
+
+fn rotate_vector(angle: f64, x: f64, y: f64) -> (f64, f64) {
+    let cos_theta = angle.cos();
+    let sin_theta = angle.sin();
+    let global_x = cos_theta * x - sin_theta * y;
+    let global_y = sin_theta * x + cos_theta * y;
+    (global_x, global_y)
 }
 
 #[cfg(test)]

@@ -318,7 +318,7 @@ impl OdomMovement {
 
         // Use ArcPID to move to the local coordinates
         if let Some(arc_pid) = &self.arc_pid {
-            arc_pid.local_coords(local_x, local_y).await;
+            arc_pid.abs_local_coords(local_x, local_y).await;
         } else {
             warn!("Cannot arc to point without Movement Algorithm (Arc PID needed)")
         }

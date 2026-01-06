@@ -33,7 +33,7 @@ pub struct Point {
 ///
 /// The robot will travel through these points in order during
 /// path following.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Path {
     /// The ordered list of waypoints.
     pub waypoints: Vec<Point>,

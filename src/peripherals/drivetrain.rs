@@ -39,7 +39,7 @@ use vexide::{
     controller::ControllerState,
     math::Angle,
     prelude::{Controller, Motor},
-    smart::motor::BrakeMode,
+    smart::{PortError, motor::BrakeMode},
 };
 
 /// A differential drivetrain controller.
@@ -365,6 +365,56 @@ impl Differential {
             warn!("Error Borrowing Mutex");
         }
         angle / denom
+    }
+
+    pub fn reset_position(&self) -> Result<(), PortError> {
+        let left = self.left.try_borrow_mut();
+        let right = self.right.try_borrow_mut();
+
+        if let Ok(mut motors) = left {
+            for motor in motors.as_mut() {
+                motor.reset_position()?
+            }
+        } else if let Err(e) = left {
+            warn!("Error Borrowing Mutex: {}", e);
+        } else {
+            warn!("Error Borrowing Mutex");
+        }
+        if let Ok(mut motors) = right {
+            for motor in motors.as_mut() {
+                motor.reset_position()?
+            }
+        } else if let Err(e) = right {
+            warn!("Error Borrowing Mutex: {}", e);
+        } else {
+            warn!("Error Borrowing Mutex");
+        }
+        Ok(())
+    }
+
+    pub fn set_position(&self, position: Angle) -> Result<(), PortError> {
+        let left = self.left.try_borrow_mut();
+        let right = self.right.try_borrow_mut();
+
+        if let Ok(mut motors) = left {
+            for motor in motors.as_mut() {
+                motor.set_position(position)?
+            }
+        } else if let Err(e) = left {
+            warn!("Error Borrowing Mutex: {}", e);
+        } else {
+            warn!("Error Borrowing Mutex");
+        }
+        if let Ok(mut motors) = right {
+            for motor in motors.as_mut() {
+                motor.set_position(position)?
+            }
+        } else if let Err(e) = right {
+            warn!("Error Borrowing Mutex: {}", e);
+        } else {
+            warn!("Error Borrowing Mutex");
+        }
+        Ok(())
     }
 
     /// Creates a new drivetrain with shared ownership of the left/right motors.

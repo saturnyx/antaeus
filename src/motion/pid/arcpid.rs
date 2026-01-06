@@ -233,7 +233,22 @@ impl ArcPIDMovement {
         s.offset = offset;
     }
 
-    pub async fn local_coords(&self, x: f64, y: f64) {
+    pub async fn local_coords(&self, x: f64, y: f64, timeout: u64, afterdelay: u64) {
+        let track_width = self.drivetrain_config.track_width;
+        let offset;
+        let (radius, angle) = get_arc(x, y);
+        if angle > 0.0 {
+            offset = ((2.0 * radius) - track_width) / ((2.0 * radius) + track_width);
+        } else if angle < 0.0 {
+            offset = ((2.0 * radius) + track_width) / ((2.0 * radius) - track_width);
+        } else {
+            offset = 0.0;
+        }
+        let distance = radius * angle;
+        self.travel(distance, offset, timeout, afterdelay).await;
+    }
+
+    pub async fn abs_local_coords(&self, x: f64, y: f64) {
         let track_width = self.drivetrain_config.track_width;
         let offset;
         let (radius, angle) = get_arc(x, y);

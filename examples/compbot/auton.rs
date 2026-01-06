@@ -1,7 +1,14 @@
-use antaeus::motion::{pusuit::geo, *};
+use antaeus::{
+    motion::{
+        odom::{self, devices::Pose},
+        pusuit::geo,
+        *,
+    },
+    to_mutex,
+};
 
 use crate::hardware::Robot;
-pub fn main_auton(robot: &mut Robot) {
+pub async fn main_auton(robot: &mut Robot) {
     let mut path = pusuit::geo::Path::origin();
     path.add(geo::Point::new(20.0, 20.0));
     path.add(geo::Point::new(-20.0, 20.0));
@@ -24,45 +31,35 @@ pub fn main_auton(robot: &mut Robot) {
         track_width:    13.9,
     };
 
-    let pid = pid::arcpid::ArcPIDMovement {
+    let arc_pid = pid::arcpid::ArcPIDMovement {
         drivetrain:        robot.dt.clone(),
         drivetrain_config: dtc,
         arcpid_values:     std::sync::Arc::new(vexide::sync::Mutex::new(arcpid_val)),
     };
 
-    let vertical = odom::WheelTracker {
-        device:         odom::TrackingDevice::RotationSensor(robot.v_tracker.clone()),
+    let vertical = odom::devices::Tracker {
+        sensor:         odom::devices::TrackingSensor::RotationSensor(robot.v_tracker.clone()),
         offset:         0.0,
         wheel_diameter: 3.25,
-        reverse:        false,
+        driven_gear:    1.0,
+        driving_gear:   1.0,
     };
 
-    let horizontal = odom::WheelTracker {
-        device:         odom::TrackingDevice::RotationSensor(robot.h_tracker.clone()),
+    let horizontal = odom::devices::Tracker {
+        sensor:         odom::devices::TrackingSensor::RotationSensor(robot.h_tracker.clone()),
         offset:         0.0,
         wheel_diameter: 3.25,
-        reverse:        false,
+        driven_gear:    1.0,
+        driving_gear:   1.0,
     };
 
-    let trackers = odom::Trackers {
-        horizontal: horizontal,
-        vertical:   vertical,
-        imu:        robot.imu.clone(),
-    };
+    let trackers = odom::devices::TrackerMech::new(vertical, horizontal, robot.imu.clone());
 
-    let odom_values = odom::OdomValues {
-        global_x:       0.0,
-        global_y:       0.0,
-        global_heading: 0.0,
+    let odomtrack = odom::tracker::OdomTracker {
+        trackermech: trackers,
+        global_pose: to_mutex(Pose::origin()),
     };
-
-    let odom = odom::OdomMovement {
-        odometry_values: std::sync::Arc::new(vexide::sync::Mutex::new(odom_values)),
-        trackers:        trackers,
-        pid:             None,
-        arc_pid:         Some(pid),
-    };
-
     let pursuit = pusuit::Pursuit { lookahead: 10.0 };
-    let _ = pursuit.follow(odom, path);
+    let _ = pursuit.follow(&odomtrack, &arc_pid, path.clone());
+    let _ = pursuit.follow(&odomtrack, &arc_pid, path);
 }
