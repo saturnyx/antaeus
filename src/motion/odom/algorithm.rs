@@ -72,3 +72,28 @@ async fn update_pose(global_pose: &Arc<Mutex<Pose>>, local_pose: Pose) {
     gp.y += local_pose.y;
     gp.t = local_pose.t;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn rotate_vec_test_basic() {
+        let (x, y) = (1.0, 3.0);
+        let (new_x, new_y) = rotate_vec(x, y, Angle::from_degrees(90.0));
+        let expected = (-3.0, 1.0);
+        let tolerance = 1e-10;
+        assert!((new_x - expected.0).abs() < tolerance);
+        assert!((new_y - expected.1).abs() < tolerance);
+    }
+
+    #[test]
+    fn rotate_vec_test_adv() {
+        let (x, y) = (4.65, 7.89);
+        let (new_x, new_y) = rotate_vec(x, y, Angle::from_radians(0.34));
+        let expected = (1.7383, 8.9938);
+        let tolerance = 0.2;
+        eprint!("{}, {}", new_x, new_y);
+        assert!((new_x - expected.0).abs() < tolerance);
+        assert!((new_y - expected.1).abs() < tolerance);
+    }
+}
