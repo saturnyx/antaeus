@@ -89,10 +89,18 @@ impl Differential {
     /// Creates a new drivetrain with the provided left/right motors.
     /// **Compatible with Evian**
     ///
+    /// # Arguments
+    ///
+    /// * `left` - An array of motors for the left side of the drivetrain.
+    /// * `right` - An array of motors for the right side of the drivetrain.
+    ///
     /// # Examples
     ///
-    /// ```
-    /// let motors = Differential::new(
+    /// ```ignore
+    /// use antaeus::peripherals::drivetrain::Differential;
+    /// use vexide::prelude::*;
+    ///
+    /// let drivetrain = Differential::new(
     ///     [
     ///         Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
     ///         Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
@@ -115,12 +123,22 @@ impl Differential {
 
     /// Controls a tank-style drivetrain using the input from a controller.
     ///
+    /// In tank drive mode, each joystick directly controls one side of the
+    /// drivetrain. The left stick Y-axis controls the left motors, and the
+    /// right stick Y-axis controls the right motors.
+    ///
+    /// # Arguments
+    ///
+    /// * `controller` - The VEX controller to read input from.
+    ///
     /// # Examples
     ///
-    /// ```
-    /// use vexide::prelude::Controller;
+    /// ```ignore
+    /// use antaeus::peripherals::drivetrain::Differential;
+    /// use vexide::prelude::*;
+    ///
     /// let controller = Controller::new(ControllerId::Primary);
-    /// motors.tank(&controller);
+    /// drivetrain.tank(&controller);
     /// ```
     pub fn tank(&self, controller: &Controller) {
         let state = controller.state().unwrap_or_else(|e| {
@@ -419,31 +437,31 @@ impl Differential {
 
     /// Creates a new drivetrain with shared ownership of the left/right motors.
     /// **Compatible with Evian**
+    ///
+    /// This constructor is useful when you need to share motor references
+    /// with other systems (e.g., PID controllers or odometry).
+    ///
+    /// # Arguments
+    ///
+    /// * `left` - A reference-counted cell containing the left motor array.
+    /// * `right` - A reference-counted cell containing the right motor array.
+    ///
     /// # Examples
     ///
-    /// ```
-    /// let motors = Differential::new(
-    ///     Rc::new(RefCell::new([
-    ///         Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
-    ///         Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
-    ///     ])),
-    ///     Rc::new(RefCell::new([
-    ///         Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
-    ///         Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
-    ///     ])),
-    /// );
-    /// ```
+    /// ```ignore
+    /// use antaeus::peripherals::drivetrain::Differential;
+    /// use std::{cell::RefCell, rc::Rc};
+    /// use vexide::prelude::*;
     ///
-    /// ```
-    /// let motors = Differential::new(
-    ///     shared_motors![
+    /// let drivetrain = Differential::from_shared(
+    ///     Rc::new(RefCell::new([
     ///         Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
     ///         Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
-    ///     ],
-    ///     shared_motors![
+    ///     ])),
+    ///     Rc::new(RefCell::new([
     ///         Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
     ///         Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
-    ///     ],
+    ///     ])),
     /// );
     /// ```
     pub fn from_shared<L: AsMut<[Motor]> + 'static, R: AsMut<[Motor]> + 'static>(

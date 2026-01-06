@@ -66,27 +66,19 @@ impl ControllerControl {
     /// Creates a new ControllerControl Instance that can be used to easily
     /// control motors and ADI ports.
     ///
+    /// # Arguments
+    ///
+    /// * `controller` - The VEX controller to read input from.
+    /// * `button` - The button to use as the control/modifier button.
+    ///
     /// # Examples
     ///
-    /// ```
-    /// pub unsafe fn run() {
-    ///     let master = Controller::new(ControllerId::Partner);
-    ///     let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
-    /// }
-    /// ```
+    /// ```ignore
+    /// use antaeus::peripherals::controller::{ControllerControl, ControllerButton};
+    /// use vexide::prelude::*;
     ///
-    /// or, if you prefer using a struct:
-    ///
-    /// ```
-    /// pub unsafe fn run() {
-    ///     let master = Controller::new(ControllerId::Partner);
-    ///     // The above method will log unwrap errors, this would not.
-    ///     let master_state = master.state().unwrap_or_default();
-    ///     let master_control = ControllerControl {
-    ///         state:      master_state,
-    ///         controlkey: master_state.button_a,
-    ///     };
-    /// }
+    /// let master = Controller::new(ControllerId::Primary);
+    /// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
     /// ```
     pub fn new(controller: &Controller, button: ControllerButton) -> Self {
         let state = get_state(controller);
@@ -102,26 +94,27 @@ impl ControllerControl {
     /// maximum of 8 ADI devices can be controlled at a time.
     ///
     /// # Arguments
-    /// - `button`: The Primary Button that will control the device.
-    /// - `adi_devices`: A `heapless::Vec` of ADI devices to control.
-    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
-    /// wish to press the control button and the primary button.
+    ///
+    /// * `button` - The primary button that will control the device.
+    /// * `adi_devices` - A `heapless::Vec` of ADI devices to control.
+    /// * `ctrl` - Whether to use the control button. Usually set to `false`, unless you
+    ///   wish to press the control button and the primary button together.
     ///
     /// # Example
     ///
-    /// ```
-    /// pub unsafe fn run() {
-    ///     let master = Controller::new(ControllerId::Partner);
-    ///     let mut pistonleft = AdiDigitalOut::new(Peripherals::steal().adi_a);
-    ///     let mut pistonright = AdiDigitalOut::new(Peripherals::steal().adi_b);
+    /// ```ignore
+    /// use antaeus::peripherals::controller::{ControllerControl, ControllerButton};
+    /// use vexide::prelude::*;
     ///
-    ///     let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
-    ///     master_control.button_to_adi_toggle(
-    ///         ControllerButton::ButtonB,
-    ///         heapless::Vec::from_array([&mut pistonleft, &mut pistonright]),
-    ///         false,
-    ///     ); // Button B will control both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
-    /// }
+    /// let master = Controller::new(ControllerId::Primary);
+    /// let mut piston = AdiDigitalOut::new(peripherals.adi_a);
+    ///
+    /// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
+    /// master_control.button_to_adi_toggle(
+    ///     ControllerButton::ButtonB,
+    ///     heapless::Vec::from_array([&mut piston]),
+    ///     false,
+    /// );
     /// ```
     pub fn button_to_adi_toggle(
         &self,
@@ -143,26 +136,27 @@ impl ControllerControl {
     /// maximum of 8 ADI devices can be controlled at a time.
     ///
     /// # Arguments
-    /// - `button`: The Primary Button that will control the device.
-    /// - `adi_devices`: A `heapless::Vec` of ADI devices to control.
-    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
-    /// wish to press the control button and the primary button.
+    ///
+    /// * `button` - The primary button that will control the device.
+    /// * `adi_devices` - A `heapless::Vec` of ADI devices to control.
+    /// * `ctrl` - Whether to use the control button. Usually set to `false`, unless you
+    ///   wish to press the control button and the primary button together.
     ///
     /// # Example
     ///
-    /// ```
-    /// pub unsafe fn run() {
-    ///     let master = Controller::new(ControllerId::Partner);
-    ///     let mut pistonleft = AdiDigitalOut::new(Peripherals::steal().adi_a);
-    ///     let mut pistonright = AdiDigitalOut::new(Peripherals::steal().adi_b);
+    /// ```ignore
+    /// use antaeus::peripherals::controller::{ControllerControl, ControllerButton};
+    /// use vexide::prelude::*;
     ///
-    ///     let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
-    ///     master_control.button_to_adi_high(
-    ///         ControllerButton::ButtonB,
-    ///         heapless::Vec::from_array([&mut pistonleft, &mut pistonright]),
-    ///         false,
-    ///     ); // Button B will control both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
-    /// }
+    /// let master = Controller::new(ControllerId::Primary);
+    /// let mut piston = AdiDigitalOut::new(peripherals.adi_a);
+    ///
+    /// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
+    /// master_control.button_to_adi_high(
+    ///     ControllerButton::ButtonB,
+    ///     heapless::Vec::from_array([&mut piston]),
+    ///     false,
+    /// );
     /// ```
     pub fn button_to_adi_high(
         &self,
@@ -180,30 +174,31 @@ impl ControllerControl {
         }
     }
 
-    /// Maps the output from a button to set one or more ADI Devices to high. A
+    /// Maps the output from a button to set one or more ADI Devices to low. A
     /// maximum of 8 ADI devices can be controlled at a time.
     ///
     /// # Arguments
-    /// - `button`: The Primary Button that will control the device.
-    /// - `adi_devices`: A `heapless::Vec` of ADI devices to control.
-    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
-    /// wish to press the control button and the primary button.
+    ///
+    /// * `button` - The primary button that will control the device.
+    /// * `adi_devices` - A `heapless::Vec` of ADI devices to control.
+    /// * `ctrl` - Whether to use the control button. Usually set to `false`, unless you
+    ///   wish to press the control button and the primary button together.
     ///
     /// # Example
     ///
-    /// ```
-    /// pub unsafe fn run() {
-    ///     let master = Controller::new(ControllerId::Partner);
-    ///     let mut pistonleft = AdiDigitalOut::new(Peripherals::steal().adi_a);
-    ///     let mut pistonright = AdiDigitalOut::new(Peripherals::steal().adi_b);
+    /// ```ignore
+    /// use antaeus::peripherals::controller::{ControllerControl, ControllerButton};
+    /// use vexide::prelude::*;
     ///
-    ///     let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
-    ///     master_control.button_to_adi_low(
-    ///         ControllerButton::ButtonB,
-    ///         heapless::Vec::from_array([&mut pistonleft, &mut pistonright]),
-    ///         false,
-    ///     ); // Button B will control both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
-    /// }
+    /// let master = Controller::new(ControllerId::Primary);
+    /// let mut piston = AdiDigitalOut::new(peripherals.adi_a);
+    ///
+    /// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
+    /// master_control.button_to_adi_low(
+    ///     ControllerButton::ButtonB,
+    ///     heapless::Vec::from_array([&mut piston]),
+    ///     false,
+    /// );
     /// ```
     pub fn button_to_adi_low(
         &self,
@@ -221,39 +216,36 @@ impl ControllerControl {
         }
     }
 
-    /// Maps 2 Buttons to one or more ADI Devices. The High Button output a
-    /// high value to the ADI Devices. A Low Button will output a low value to
+    /// Maps 2 Buttons to one or more ADI Devices. The High Button outputs a
+    /// high value to the ADI Devices. The Low Button outputs a low value to
     /// the ADI Devices. A maximum of 8 ADI devices can be controlled at a time.
     ///
     /// # Arguments
-    /// - `button_high`: The Button that will set the device to high.
-    /// - `button_low`: The Button that will set the device to low.
-    /// - `adi_devices`: A `heapless::Vec` of ADI devices to control.
-    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
-    /// wish to press the control button and another button.
+    ///
+    /// * `button_high` - The button that will set the device to high.
+    /// * `button_low` - The button that will set the device to low.
+    /// * `adi_devices` - A `heapless::Vec` of ADI devices to control.
+    /// * `ctrl` - Whether to use the control button. Usually set to `false`, unless you
+    ///   wish to press the control button and another button.
     ///
     /// # Example
     ///
-    /// ```
-    /// pub unsafe fn run() {
-    ///     let master = Controller::new(ControllerId::Partner);
-    ///     let master_state = master.state().unwrap_or_default();
-    ///     let master_control = ControllerControl {
-    ///         state:      master_state,
-    ///         controlkey: master_state.button_a,
-    ///     };
+    /// ```ignore
+    /// use antaeus::peripherals::controller::{ControllerControl, ControllerButton};
+    /// use vexide::prelude::*;
     ///
-    ///     let mut pistonleft = AdiDigitalOut::new(Peripherals::steal().adi_a);
-    ///     let mut pistonright = AdiDigitalOut::new(Peripherals::steal().adi_b);
-    ///     master_control.dual_button_to_adi(
-    ///         ControllerButton::ButtonL1,
-    ///         ControllerButton::ButtonL2,
-    ///         heapless::Vec::from_array([&mut pistonleft, &mut pistonright]),
-    ///         false,
-    ///     );
-    ///     // Button L1 will extend both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
-    ///     // Button L2 will retract both PistonLeft (ADI Port A) and PistonRight (ADI Port B).
-    /// }
+    /// let master = Controller::new(ControllerId::Primary);
+    /// let mut piston = AdiDigitalOut::new(peripherals.adi_a);
+    ///
+    /// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
+    /// master_control.dual_button_to_adi(
+    ///     ControllerButton::ButtonL1,
+    ///     ControllerButton::ButtonL2,
+    ///     heapless::Vec::from_array([&mut piston]),
+    ///     false,
+    /// );
+    /// // L1 extends, L2 retracts
+    /// ```
     pub fn dual_button_to_adi(
         &self,
         button_high: ControllerButton,
@@ -281,44 +273,34 @@ impl ControllerControl {
     }
 
     /// Maps a button to one or more motors. Pressing the button will run the
-    /// Motor at Active Power. Otherwise, the Motor will run at passive power.
-    /// A maximum of 8 ADI devices can be controlled at a time.
+    /// motor at active power. Otherwise, the motor will run at passive power.
+    /// A maximum of 8 motors can be controlled at a time.
     ///
     /// # Arguments
-    /// - `button`: The Primary Button that will control the device.
-    /// - `motors`: A `heapless::Vec` of Motors to control.
-    /// - `active_pwr`: The power(in Volts) given to the Motor when button is pressed.
-    /// - `passive_pwr`: The power(in Volts) given to the Motor when button is not pressed.
-    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
-    /// wish to press the control button and the primary button.
+    ///
+    /// * `button` - The primary button that will control the motors.
+    /// * `motors` - A `heapless::Vec` of motors to control.
+    /// * `active_pwr` - The power (in Volts) given to the motors when button is pressed.
+    /// * `passive_pwr` - The power (in Volts) given to the motors when button is not pressed.
+    /// * `ctrl` - Whether to use the control button. Usually set to `false`.
     ///
     /// # Example
     ///
-    /// ```
-    /// pub unsafe fn run() {
-    ///     let master = Controller::new(ControllerId::Partner);
-    ///     let master_state = master.state().unwrap_or_default();
-    ///     let master_control = ControllerControl {
-    ///         state:      master_state,
-    ///         controlkey: master_state.button_a,
-    ///     };
+    /// ```ignore
+    /// use antaeus::peripherals::controller::{ControllerControl, ControllerButton};
+    /// use vexide::prelude::*;
     ///
-    ///     let mut intake_stage1 =
-    ///         Motor::new(Peripherals::steal().port_1, Gearset::Red, Direction::Forward);
-    ///     let mut intake_stage2 =
-    ///         Motor::new(Peripherals::steal().port_2, Gearset::Red, Direction::Forward);
+    /// let master = Controller::new(ControllerId::Primary);
+    /// let mut intake = Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward);
     ///
-    ///     master_control.button_to_motors(
-    ///         ControllerButton::ButtonL1,
-    ///         heapless::Vec::from_array([&mut intake_stage1, &mut intake_stage2]),
-    ///         12.0,
-    ///         -4.0,
-    ///         false,
-    ///     );
-    ///     // Button L1 will run both Intake Stage 1 and 2 Forward at 12 volts.
-    ///     // If L1 is not pressed, Intake Stage 1 and 2 will run in reverse
-    ///     // with 4 volts.
-    /// }
+    /// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
+    /// master_control.button_to_motors(
+    ///     ControllerButton::ButtonL1,
+    ///     heapless::Vec::from_array([&mut intake]),
+    ///     12.0,  // active power
+    ///     0.0,   // passive power
+    ///     false,
+    /// );
     /// ```
     pub fn button_to_motors(
         &self,
@@ -346,48 +328,39 @@ impl ControllerControl {
         }
     }
 
-    /// Maps 2 Buttons to one or more motors. The High Button output a high
-    /// power to the Motors. A Low Button will output a low value to the Motors.
-    /// A maximum of 8 Motors can be controlled at a time.
+    /// Maps 2 buttons to one or more motors. The High button outputs a high
+    /// power to the motors. The Low button outputs a low power to the motors.
+    /// A maximum of 8 motors can be controlled at a time.
     ///
     /// # Arguments
-    /// - `button_high`: The Button that will give the High Power to the device.
-    /// - `button_low`: The Button that will give the Low Power to the device.
-    /// - `motors`: A `heapless::Vec` of Motors to control.
-    /// - `high_pwr`: The power(in Volts) given to the Motor when High Button is pressed.
-    /// - `low_pwr`: The power(in Volts) given to the Motor when Low Button is pressed.
-    /// - `passive_pwr`: The power(in Volts) given to the Motor when button is not pressed.
-    /// - `ctrl`: Whether to use the control button. Usually set to false, unless you
-    /// wish to press the control button and the primary button.
+    ///
+    /// * `button_high` - The button that will give high power to the motors.
+    /// * `button_low` - The button that will give low power to the motors.
+    /// * `motors` - A `heapless::Vec` of motors to control.
+    /// * `high_pwr` - The power (in Volts) given to the motors when High button is pressed.
+    /// * `low_pwr` - The power (in Volts) given to the motors when Low button is pressed.
+    /// * `passive_pwr` - The power (in Volts) given to the motors when no button is pressed.
+    /// * `ctrl` - Whether to use the control button. Usually set to `false`.
     ///
     /// # Example
     ///
-    /// ```
-    /// pub unsafe fn run() {
-    ///     let master = Controller::new(ControllerId::Partner);
-    ///     let master_state = master.state().unwrap_or_default();
-    ///     let master_control = ControllerControl {
-    ///         state:      master_state,
-    ///         controlkey: master_state.button_a,
-    ///     };
+    /// ```ignore
+    /// use antaeus::peripherals::controller::{ControllerControl, ControllerButton};
+    /// use vexide::prelude::*;
     ///
-    ///     let mut intake_stage1 =
-    ///         Motor::new(Peripherals::steal().port_1, Gearset::Blue, Direction::Forward);
-    ///     let mut intake_stage2 =
-    ///         Motor::new(Peripherals::steal().port_2, Gearset::Blue, Direction::Forward);
+    /// let master = Controller::new(ControllerId::Primary);
+    /// let mut intake = Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward);
     ///
-    ///     master_control.dual_button_to_motors(
-    ///         ControllerButton::ButtonL1,
-    ///         ControllerButton::ButtonL2,
-    ///         heapless::Vec::from_array([&mut intake_stage1, &mut intake_stage2]),
-    ///         12.0,
-    ///         -12.0,
-    ///         0.0,
-    ///         false,
-    ///     );
-    ///     // Button L1 will run both Intake Stage 1 and 2 Forward.
-    ///     // Button L2 will run both Intake Stage 1 and 2 in Reverse.
-    /// }
+    /// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
+    /// master_control.dual_button_to_motors(
+    ///     ControllerButton::ButtonL1,  // forward
+    ///     ControllerButton::ButtonL2,  // reverse
+    ///     heapless::Vec::from_array([&mut intake]),
+    ///     12.0,  // high power
+    ///     -12.0, // low power
+    ///     0.0,   // passive power
+    ///     false,
+    /// );
     /// ```
     pub fn dual_button_to_motors(
         &self,
@@ -428,12 +401,19 @@ impl ControllerControl {
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
-/// A list of Controller Buttons.
+/// An enumeration of controller buttons.
+///
+/// These represent the physical buttons on a VEX controller that can be
+/// mapped to robot actions.
 ///
 /// # Example
 ///
-/// ```
-/// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA); 
+/// ```ignore
+/// use antaeus::peripherals::controller::{ControllerControl, ControllerButton};
+/// use vexide::prelude::*;
+///
+/// let master = Controller::new(ControllerId::Primary);
+/// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
 /// ```
 pub enum ControllerButton {
     ButtonA,
