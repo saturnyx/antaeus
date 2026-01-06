@@ -178,12 +178,16 @@ async fn pid_loop(pidvalues: &Arc<Mutex<PIDValues>>, drivetrain: drivetrain::Dif
 }
 
 impl PIDMovement {
-    /// Initializes a PID Loop.
-    /// The PID movements will require a PID loop to run as a seperate task or thread.
+    /// Initializes a PID loop.
+    ///
+    /// The PID movements require a PID loop to run as a separate task or thread.
     /// It is necessary to initialize the PID before running any movements.
     ///
     /// # Examples
-    /// ```
+    ///
+    /// ```ignore
+    /// use antaeus::motion::pid::pid::PIDMovement;
+    ///
     /// async fn auton(pid: PIDMovement) {
     ///     pid.init(); // Initialize the PID before any movements
     ///     pid.set_maximum_power(12.0).await;
@@ -199,7 +203,14 @@ impl PIDMovement {
         mainloop.detach();
     }
 
-    /// Set the tolerance, Kp, Ki and Kd Values for PID. The values are in radians.
+    /// Sets the tolerance, Kp, Ki and Kd values for PID.
+    ///
+    /// # Arguments
+    ///
+    /// * `kp` - Proportional gain.
+    /// * `ki` - Integral gain.
+    /// * `kd` - Derivative gain.
+    /// * `tolerance` - Error tolerance in radians.
     pub async fn tune(&self, kp: f64, ki: f64, kd: f64, tolerance: f64) {
         let mut pid_values = self.pid_values.lock().await;
         pid_values.kp = kp;
@@ -380,51 +391,38 @@ impl PIDMovement {
     }
 }
 
-/// **The PID Movement Controller**
+/// The PID Movement Controller.
 ///
 /// Initialize an instance of this to control the robot using PID.
+/// This struct manages a differential drivetrain with PID control for
+/// precise autonomous movements.
 ///
 /// # Examples
 ///
-/// Creating a PIDMovement Instance
-/// ```
-/// fn new_pid() -> PIDMovement {
-///     let dt = Differential::new(
-///         [
-///             Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
-///             Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
-///         ],
-///         [
-///             Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
-///             Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
-///         ],
-///     );
-///     let config = DrivetrainConfig {
-///         wheel_diameter: 3.25,
-///         driving_gear:   3.0,
-///         driven_gear:    5.0,
-///         track_width:    12.0,
-///     };
-///     let values = PIDValues {
-///         kp:           0.5,
-///         kd:           0.1,
-///         ki:           0.0,
-///         tolerance:    0.02,
-///         maxpwr:       12.0,
-///         active:       true,
-///         target_left:  0.0,
-///         target_right: 0.0,
-///     };
-///     let PID_controller = PIDMovement {
-///         drivetrain:        dt,
-///         drivetrain_config: config,
-///         pid_values:        Arc::new(Mutex::new(values)),
-///     };
-/// }
+/// Creating a PIDMovement instance:
+///
+/// ```ignore
+/// use antaeus::motion::pid::pid::{PIDMovement, PIDValues};
+/// use antaeus::motion::pid::DrivetrainConfig;
+/// use antaeus::peripherals::drivetrain::Differential;
+/// use vexide::prelude::*;
+///
+/// let dt = Differential::new(
+///     [Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward)],
+///     [Motor::new(peripherals.port_2, Gearset::Green, Direction::Reverse)],
+/// );
+/// let config = DrivetrainConfig::new(3.25, 3.0, 5.0, 12.0);
+/// let values = PIDValues::new(0.5, 0.0, 0.1, 0.02, 12.0);
+///
+/// let pid_controller = PIDMovement::new(dt, config, values);
+/// pid_controller.init();
 /// ```
 pub struct PIDMovement {
+    /// The differential drivetrain to control.
     pub drivetrain:        Differential,
+    /// Physical configuration of the drivetrain.
     pub drivetrain_config: DrivetrainConfig,
+    /// Thread-safe container for PID runtime values.
     pub pid_values:        Arc<Mutex<PIDValues>>,
 }
 
