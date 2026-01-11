@@ -52,7 +52,7 @@ pub fn print_logo(display: &mut DisplayDriver) {
             &img,
             Point::new(
                 Display::HORIZONTAL_RESOLUTION as i32 / 2 - image_size.width as i32 / 2,
-                Display::VERTICAL_RESOLUTION as i32 / 2 - image_size.height as i32 / 3 * 2,
+                Display::VERTICAL_RESOLUTION as i32 / 2 - image_size.height as i32 / 2,
             ),
         );
         let _ = logo.draw(display);
@@ -101,7 +101,7 @@ pub fn print_badge(display: &mut DisplayDriver) {
             &img,
             Point::new(
                 Display::HORIZONTAL_RESOLUTION as i32 / 2 - image_size.width as i32 / 2,
-                Display::VERTICAL_RESOLUTION as i32 / 2 - image_size.height as i32 / 3 * 2,
+                Display::VERTICAL_RESOLUTION as i32 / 2 - image_size.height as i32 / 2,
             ),
         );
         let _ = logo.draw(display);
