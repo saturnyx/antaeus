@@ -1,13 +1,15 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use log::warn;
-use vexide::{math::Angle, prelude::InertialSensor, sync::Mutex};
+use vexide::{math::Angle, prelude::InertialSensor, sync::Mutex, time::sleep};
 
 use super::devices::{Pose, TrackerMech};
 
+const LOOPRATE: Duration = Duration::from_millis(10);
+
 pub async fn odomloop(tm: &TrackerMech, global_pose: &Arc<Mutex<Pose>>) {
     let (mut prev_t, mut prev_v, mut prev_h) = (Angle::from_radians(0.0), 0.0, 0.0);
-    let mut pose = Pose::new(0.0, 0.0, Angle::from_radians(0.0));
+    let mut delta_pose = Pose::new(0.0, 0.0, Angle::from_radians(0.0));
     loop {
         let t = get_imu_angle(&tm.imu).await;
         let v = tm.vertical_tracker.dist().await;
@@ -17,22 +19,19 @@ pub async fn odomloop(tm: &TrackerMech, global_pose: &Arc<Mutex<Pose>>) {
 
         // A really rare case scenario where the robot moves in an exactly straight line
         if delta_t == Angle::from_radians(0.0) {
-            (pose.t, pose.x, pose.y) = (get_imu_heading(&tm.imu).await, h, v)
+            (delta_pose.t, delta_pose.x, delta_pose.y) = (delta_t, delta_h, delta_v)
         } else {
             // Here we go... (somewhat complex math)
             // Equation 6 of http://thepilons.ca/wp-content/uploads/2018/10/Tracking.pdf
-            pose.t = get_imu_heading(&tm.imu).await;
-            pose.x = local_calc(t, delta_t, delta_h, tm.horizontal_tracker.offset);
-            pose.y = local_calc(t, delta_t, delta_v, tm.vertical_tracker.offset);
+            delta_pose.t = delta_t;
+            delta_pose.x = local_calc(delta_t, delta_h, tm.horizontal_tracker.offset);
+            delta_pose.y = local_calc(delta_t, delta_v, tm.vertical_tracker.offset);
         }
 
-        let avg_t = get_imu_angle(&tm.imu).await + (delta_t / 2.0);
-        let (global_delta_x, global_delta_y) = rotate_vec(pose.x, pose.y, avg_t);
-        update_pose(
-            &global_pose,
-            Pose::new(global_delta_x, global_delta_y, get_imu_heading(&tm.imu).await),
-        )
-        .await;
+        let avg_t = t + (delta_t / 2.0);
+        let (global_delta_x, global_delta_y) = rotate_vec(delta_pose.x, delta_pose.y, avg_t);
+        update_pose(&global_pose, Pose::new(global_delta_x, global_delta_y, t)).await;
+        sleep(LOOPRATE).await;
     }
 }
 
@@ -43,21 +42,12 @@ async fn get_imu_angle(imu: &Arc<Mutex<InertialSensor>>) -> Angle {
     })
 }
 
-async fn get_imu_heading(imu: &Arc<Mutex<InertialSensor>>) -> Angle {
-    let angle = imu.lock().await.euler();
-    if let Ok(a) = angle {
-        a.b
-    } else if let Err(e) = angle {
-        warn!("IMU Error: {}", e);
-        Angle::from_radians(0.0)
+fn local_calc(delta_t: Angle, delta_dist: f64, offset: f64) -> f64 {
+    if delta_t.as_radians().abs() < 1e-10 {
+        delta_dist // Straight line motion
     } else {
-        warn!("IMU Error");
-        Angle::from_radians(0.0)
+        2.0 * (delta_t / 2.0).sin() * (delta_dist / delta_t.as_radians() + offset)
     }
-}
-
-fn local_calc(t: Angle, delta_t: Angle, delta_dist: f64, offset: f64) -> f64 {
-    2.0 * (t / 2.0).sin() * (delta_dist / delta_t.as_radians() + offset)
 }
 
 fn rotate_vec(x: f64, y: f64, t: Angle) -> (f64, f64) {
