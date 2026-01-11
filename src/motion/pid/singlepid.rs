@@ -35,7 +35,7 @@ use vexide::{
 };
 
 /// Loop rate for the PID control task in milliseconds.
-const LOOPRATE: u64 = 5;
+const LOOPRATE: u64 = 10;
 
 async fn single_pid_loop(
     pidvalues: &Arc<Mutex<SinglePIDValues>>,

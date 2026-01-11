@@ -42,6 +42,11 @@ mod algorithm;
 /// used by the pursuit algorithm.
 pub mod geo;
 
+const LOOPRATE: Duration = Duration::from_millis(10);
+
+use std::time::Duration;
+
+use vexide::time::sleep;
 
 use crate::motion::{
     odom::{devices::Pose, tracker::OdomTracker},
@@ -107,6 +112,7 @@ impl Pursuit {
 
             arc_pid.abs_local_coords(tarx, tary).await;
             run = arc_pid.arcpid_values.lock().await.active;
+            sleep(LOOPRATE).await;
         }
     }
 }

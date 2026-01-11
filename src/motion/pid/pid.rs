@@ -46,7 +46,7 @@ use crate::{
 };
 
 /// Loop rate for the PID control task in milliseconds.
-const LOOPRATE: u64 = 5;
+const LOOPRATE: u64 = 10;
 
 async fn pid_loop(pidvalues: &Arc<Mutex<PIDValues>>, drivetrain: drivetrain::Differential) {
     info!("PID Control Loop Started");
