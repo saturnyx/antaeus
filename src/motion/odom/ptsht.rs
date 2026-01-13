@@ -74,8 +74,9 @@ impl PointShoot {
         let delta_y = y - self.odom.global_pose.lock().await.y;
         let angle = delta_y.atan2(delta_x).to_degrees();
 
-        let imu = &self.odom.trackermech.imu.lock().await;
-        self.pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+        self.pid
+            .rotate_imu(angle, &self.odom.trackermech.imu.clone(), TIMEOUT, AFTERDELAY)
+            .await;
     }
 
     /// Moves the robot to a specific point on the field.
@@ -93,8 +94,9 @@ impl PointShoot {
         let angle = delta_y.atan2(delta_x).to_degrees();
         let hyp = (delta_x.powi(2) + delta_y.powi(2)).sqrt();
 
-        let imu = &self.odom.trackermech.imu.lock().await;
-        self.pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+        self.pid
+            .rotate_imu(angle, &self.odom.trackermech.imu.clone(), TIMEOUT, AFTERDELAY)
+            .await;
         self.pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
     }
 
@@ -115,8 +117,9 @@ impl PointShoot {
         let delta_y = y - self.odom.global_pose.lock().await.y;
         let angle = delta_y.atan2(delta_x).to_degrees();
         let hyp = (delta_x.powi(2) + delta_y.powi(2)).sqrt();
-        let imu = &self.odom.trackermech.imu.lock().await;
-        self.pid.rotate_imu(angle, imu, TIMEOUT, AFTERDELAY).await;
+        self.pid
+            .rotate_imu(angle, &self.odom.trackermech.imu.clone(), TIMEOUT, AFTERDELAY)
+            .await;
         self.pid.travel(hyp, TIMEOUT, AFTERDELAY).await;
         self.pid.rotate(heading, TIMEOUT, AFTERDELAY).await;
     }

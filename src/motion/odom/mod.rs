@@ -58,11 +58,6 @@ mod algorithm;
 /// Tracking devices and position types.
 pub mod devices;
 
-/// Legacy odometry implementation.
-///
-/// **Deprecated**: Use [`tracker`] for new projects.
-pub mod legacy;
-
 /// Point-and-shoot navigation.
 pub mod ptsht;
 

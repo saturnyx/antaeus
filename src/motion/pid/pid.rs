@@ -278,7 +278,7 @@ impl PIDMovement {
     pub async fn rotate_imu(
         &self,
         degrees: f64,
-        imu: &InertialSensor,
+        imu: &Arc<Mutex<InertialSensor>>,
         timeout: u64,
         afterdelay: u64,
     ) {
@@ -289,6 +289,7 @@ impl PIDMovement {
         let mut s = self.pid_values.lock().await;
         s.active = true;
         loop {
+            let imu = imu.lock().await;
             angle = degrees - get_heading(&imu);
             delta_angle = angle - prev_angle;
             prev_angle = angle;
@@ -351,7 +352,7 @@ impl PIDMovement {
     pub async fn swing_imu(
         &self,
         degrees: f64,
-        imu: &InertialSensor,
+        imu: &Arc<Mutex<InertialSensor>>,
         right: bool,
         timeout: u64,
         afterdelay: u64,
@@ -363,6 +364,7 @@ impl PIDMovement {
         let mut s = self.pid_values.lock().await;
         s.active = true;
         loop {
+            let imu = imu.lock().await;
             angle = degrees - get_heading(&imu);
             delta_angle = angle - prev_angle;
             prev_angle = angle;
