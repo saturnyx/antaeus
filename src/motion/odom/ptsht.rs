@@ -58,9 +58,7 @@ impl PointShoot {
     ///
     /// * `odom` - The odometry tracker for position feedback.
     /// * `pid` - The PID controller for movement execution.
-    pub fn new(odom: OdomTracker, pid: PIDMovement) -> Self {
-        Self { odom, pid }
-    }
+    pub fn new(odom: OdomTracker, pid: PIDMovement) -> Self { Self { odom, pid } }
 
     /// Rotates the robot to face a specific point on the field.
     ///

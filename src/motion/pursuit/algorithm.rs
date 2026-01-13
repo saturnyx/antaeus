@@ -201,7 +201,7 @@ fn rotate_vector(angle: f64, x: f64, y: f64) -> (f64, f64) {
 #[cfg(test)]
 mod tests {
     use super::geo;
-    use crate::motion::pusuit::{
+    use crate::motion::pursuit::{
         algorithm::*,
         geo::{Circle, Point},
     };

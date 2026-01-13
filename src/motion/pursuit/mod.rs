@@ -20,7 +20,7 @@
 //! # Example
 //!
 //! ```ignore
-//! use antaeus::motion::pusuit::{Pursuit, geo::{Path, Point}};
+//! use antaeus::motion::pursuit::{Pursuit, geo::{Path, Point}};
 //!
 //! let pursuit = Pursuit { lookahead: 12.0 };
 //!
@@ -51,7 +51,7 @@ use vexide::time::sleep;
 use crate::motion::{
     odom::{devices::Pose, tracker::OdomTracker},
     pid::arcpid::ArcPIDMovement,
-    pusuit::algorithm::abs_arc_point,
+    pursuit::algorithm::abs_arc_point,
 };
 
 /// Candidate-Based Pursuit path follower.

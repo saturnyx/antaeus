@@ -1,7 +1,7 @@
 use antaeus::{
     motion::{
         odom::{self, devices::Pose},
-        pusuit::geo,
+        pursuit::geo,
         *,
     },
     to_mutex,
@@ -9,7 +9,7 @@ use antaeus::{
 
 use crate::hardware::Robot;
 pub async fn main_auton(robot: &mut Robot) {
-    let mut path = pusuit::geo::Path::origin();
+    let mut path = pursuit::geo::Path::origin();
     path.add(geo::Point::new(20.0, 20.0));
     path.add(geo::Point::new(-20.0, 20.0));
     path.add(geo::Point::new(0.0, 0.0));
@@ -59,7 +59,7 @@ pub async fn main_auton(robot: &mut Robot) {
         trackermech: trackers,
         global_pose: to_mutex(Pose::origin()),
     };
-    let pursuit = pusuit::Pursuit { lookahead: 10.0 };
+    let pursuit = pursuit::Pursuit { lookahead: 10.0 };
     let _ = pursuit.follow(&odomtrack, &arc_pid, path.clone());
     let _ = pursuit.follow(&odomtrack, &arc_pid, path);
 }

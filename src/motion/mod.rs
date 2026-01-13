@@ -48,4 +48,4 @@ pub mod pid;
 ///
 /// A more robust variant of pure pursuit that handles edge cases
 /// like the robot being off the path or near path endpoints.
-pub mod pusuit;
+pub mod pursuit;
