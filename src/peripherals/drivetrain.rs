@@ -435,6 +435,22 @@ impl Differential {
         Ok(())
     }
 
+    pub fn set_voltage(&self, voltage: f64) {
+        let left = self.left.try_borrow_mut();
+        let right = self.right.try_borrow_mut();
+
+        if let Ok(mut motors) = left {
+            for motor in motors.as_mut() {
+                let _ = motor.set_voltage(voltage);
+            }
+        }
+        if let Ok(mut motors) = right {
+            for motor in motors.as_mut() {
+                let _ = motor.set_voltage(voltage);
+            }
+        }
+    }
+
     /// Creates a new drivetrain with shared ownership of the left/right motors.
     /// **Compatible with Evian**
     ///

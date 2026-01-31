@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use log::warn;
+use log::{trace, warn};
 use vexide::{math::Angle, prelude::InertialSensor, sync::Mutex, time::sleep};
 
 use super::devices::{Pose, TrackerMech};
@@ -61,6 +61,8 @@ async fn update_pose(global_pose: &Arc<Mutex<Pose>>, local_pose: Pose) {
     gp.x += local_pose.x;
     gp.y += local_pose.y;
     gp.t = local_pose.t;
+
+    trace!("x: {}, y: {}", gp.x, gp.y);
 }
 
 #[cfg(test)]
