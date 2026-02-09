@@ -33,6 +33,18 @@ without thinking much. If you have new ideas, you are really really encouraged
 to contribute to this library and/or create your own library. More on
 contribution can be found in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+# Current State of Development
+
+Anteaus is currently in the early stages of development. We are working on
+implementing the core features and improving the documentation. We are also
+looking for contributors to help us with the development process. If you are
+interested in contributing, please check out our 
+[CONTRIBUTING.md](./CONTRIBUTING.md) file. 
+
+> [!WARNING]
+> Anateus is lacking testers! More information can be found in 
+> [CONTRIBUTING.md](./CONTRIBUTING.md).
+
 # License
 
 Copyright (C) 2025 Harshal (Saturnyx)
