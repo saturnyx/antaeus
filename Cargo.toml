@@ -23,8 +23,11 @@ log = "0.4.28"
 rusttype = "0.9.3"
 tinybmp = "0.6.0"
 vex-sdk = "0.28.0"
-
+lvgl = { version = "0.6.2", default-features = false, optional = true }
 vexide = { version = "0.8.0", features = ["full"] }
 
 [dev-dependencies]
 embedded-graphics-simulator = "0.8.0"
+
+[features]
+lvgl-support = ["lvgl"]

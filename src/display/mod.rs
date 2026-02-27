@@ -60,6 +60,10 @@ pub mod fonts;
 /// Functions for displaying the Antaeus branding on the V5 Brain screen.
 pub mod logo;
 
+/// LVGL support with rust bindings
+#[cfg(feature = "lvgl-support")]
+pub mod lvgl;
+
 use core::convert::Infallible;
 
 use embedded_graphics_core::{pixelcolor::Rgb888, prelude::*};
