@@ -10,6 +10,7 @@ use vexide::{
     sync::Mutex,
     time::user_uptime,
 };
+
 pub enum RangeSensor {
     SmartDistSensor(Arc<Mutex<DistanceSensor>>),
     AdiDistanceSensor(Arc<Mutex<AdiRangeFinder>>),
@@ -196,6 +197,7 @@ impl KalmanRangeSensor {
 
 #[cfg(test)]
 mod tests {
+    use rand_distr::Normal;
     use vexide::prelude::Peripherals;
 
     use super::*;
@@ -214,6 +216,47 @@ mod tests {
         filtered:     Vec<f64>,
         predicted:    Vec<f64>,
         variance:     Vec<f64>,
+    }
+
+    /// Generate random noisy test data following a linear trajectory
+    ///
+    /// # Parameters
+    /// - `num_samples`: Number of data points to generate
+    /// - `start_distance`: Starting distance in meters
+    /// - `velocity`: Constant velocity in m/s
+    /// - `dt_ms`: Time step in milliseconds
+    /// - `noise_amplitude`: Noise standard deviation in meters
+    fn generate_random_test_data(
+        num_samples: usize,
+        start_distance: f64,
+        velocity: f64,
+        dt_ms: u64,
+        noise_amplitude: f64,
+    ) -> Vec<TestDataPoint> {
+        use rand_distr::Distribution;
+
+        let mut rng = rand::thread_rng();
+        let mut data = Vec::new();
+        let dt = Duration::from_millis(dt_ms);
+        let dt_secs = dt_ms as f64 / 1000.0;
+        let normal =
+            Normal::new(0.0, noise_amplitude).expect("Failed to create normal distribution");
+
+        for i in 0..num_samples {
+            // True distance following linear trajectory
+            let true_distance = start_distance + velocity * (i as f64) * dt_secs;
+
+            // Add Gaussian noise
+            let measurement: f64 = true_distance + normal.sample(&mut rng);
+
+            data.push(TestDataPoint {
+                distance: Distance::from_metres(measurement.max(0.0)), // Ensure non-negative
+                velocity: Speed::from_metres_per_second(velocity),
+                dt,
+            });
+        }
+
+        data
     }
 
     impl FilterTestData {
@@ -253,8 +296,8 @@ mod tests {
 
             let mut plot = Plot::new();
             plot.add_trace(measured);
-            plot.add_trace(filtered);
             plot.add_trace(predicted);
+            plot.add_trace(filtered);
 
             plot.set_layout(
                 plotly::Layout::new()
@@ -293,9 +336,10 @@ mod tests {
     }
 
     #[vexide::test]
-    async fn test_kalman_filter_with_data_sequence(_p: Peripherals) {
-        // Simulate object moving at constant 1 m/s
-        let test_data = vec![
+    async fn test_kalman_filter_predict_update(_p: Peripherals) {
+        // Test Kalman filter predict/update cycle with perfect and noisy measurements
+        // Scenario 1: Clean data - object at constant 1 m/s
+        let test_data_clean = vec![
             TestDataPoint {
                 distance: Distance::from_metres(1.0),
                 velocity: Speed::from_metres_per_second(1.0),
@@ -337,98 +381,50 @@ mod tests {
             initial_vel,
         );
 
-        debug!("=== Kalman Filter Test ===");
-        debug!(
-            "Initial state - Distance: {:.3}m, Variance: {:.6}",
-            kalman.measurement().as_metres(),
-            kalman.variance()
-        );
+        debug!("=== Kalman Filter Clean Data Test ===");
 
-        for (i, data_point) in test_data.iter().enumerate() {
-            // Step 1: Predict next state
+        for (i, data_point) in test_data_clean.iter().enumerate() {
             kalman.predict_with_dt(data_point.dt).await;
             let predicted_dist = kalman.predicted_measurement().as_metres();
             let predicted_var = kalman.predicted_variance();
 
-            debug!(
-                "Step {}: After predict - Distance: {:.3}m, Variance: {:.6}",
-                i + 1,
-                predicted_dist,
-                predicted_var
-            );
-
-            // Step 2: Update with new measurement
             kalman.set_sensor_mock(data_point.distance, data_point.velocity);
             kalman.update().await;
             let updated_dist = kalman.measurement().as_metres();
             let updated_var = kalman.variance();
 
-            debug!(
-                "Step {}: After update - Distance: {:.3}m, Variance: {:.6}",
-                i + 1,
-                updated_dist,
-                updated_var
-            );
-
-            // Assertions
-            assert!(
-                updated_dist > 0.0,
-                "Step {}: Distance should be positive, got {:.3}m",
-                i + 1,
-                updated_dist
-            );
-
+            // Assertions for clean data
+            assert!(updated_dist > 0.0, "Step {}: Distance should be positive", i + 1);
             assert!(
                 updated_var < predicted_var,
-                "Step {}: Variance should decrease after update ({:.6} -> {:.6})",
-                i + 1,
-                predicted_var,
-                updated_var
+                "Step {}: Variance should decrease after update",
+                i + 1
             );
+            assert!(updated_var > 0.0, "Step {}: Variance should be positive", i + 1);
 
-            assert!(
-                updated_var > 0.0,
-                "Step {}: Variance should be positive, got {:.6}",
-                i + 1,
-                updated_var
-            );
-
-            // Distance should be reasonable (between predicted and measured)
             let min_dist = predicted_dist.min(data_point.distance.as_metres());
             let max_dist = predicted_dist.max(data_point.distance.as_metres());
             assert!(
                 updated_dist >= min_dist - 0.01 && updated_dist <= max_dist + 0.01,
-                "Step {}: Updated distance {:.3}m should be between prediction {:.3}m and \
-                 measurement {:.3}m",
-                i + 1,
-                updated_dist,
-                predicted_dist,
-                data_point.distance.as_metres()
+                "Step {}: Updated distance should be between prediction and measurement",
+                i + 1
             );
         }
 
-        debug!("=== Test Complete ===");
-    }
-
-    #[vexide::test]
-    #[ignore = "manual verification needed (graph)"]
-    async fn test_kalman_with_noisy_measurements_visualized(_p: Peripherals) {
-        // Simulate noisy sensor with linear motion (2 m/s) with significant noise
-        // The object moves in a straight line but measurements oscillate around the true path
-        let test_data = vec![
-            // Start at 2.0m, moving at 2.0 m/s
+        // Scenario 2: Noisy data - object at constant 2 m/s with measurement noise
+        let test_data_noisy = vec![
             TestDataPoint {
                 distance: Distance::from_metres(2.0),
                 velocity: Speed::from_metres_per_second(2.0),
                 dt:       Duration::from_millis(50),
             },
             TestDataPoint {
-                distance: Distance::from_metres(2.18),
+                distance: Distance::from_metres(2.15),
                 velocity: Speed::from_metres_per_second(2.0),
                 dt:       Duration::from_millis(50),
             },
             TestDataPoint {
-                distance: Distance::from_metres(2.08),
+                distance: Distance::from_metres(2.05),
                 velocity: Speed::from_metres_per_second(2.0),
                 dt:       Duration::from_millis(50),
             },
@@ -438,182 +434,62 @@ mod tests {
                 dt:       Duration::from_millis(50),
             },
             TestDataPoint {
-                distance: Distance::from_metres(2.12),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            // 2.25m
-            TestDataPoint {
-                distance: Distance::from_metres(2.35),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
                 distance: Distance::from_metres(2.20),
                 velocity: Speed::from_metres_per_second(2.0),
                 dt:       Duration::from_millis(50),
             },
-            TestDataPoint {
-                distance: Distance::from_metres(2.40),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.26),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.38),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            // 2.50m
-            TestDataPoint {
-                distance: Distance::from_metres(2.55),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.48),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.68),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.52),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.72),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            // 2.75m
-            TestDataPoint {
-                distance: Distance::from_metres(2.60),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.80),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.70),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.88),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.75),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            // 3.00m
-            TestDataPoint {
-                distance: Distance::from_metres(3.05),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.95),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.15),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.02),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.18),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            // 3.25m
-            TestDataPoint {
-                distance: Distance::from_metres(3.12),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.28),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.18),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.32),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.22),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            // 3.50m - settle a bit
-            TestDataPoint {
-                distance: Distance::from_metres(3.50),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.48),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.55),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.52),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.60),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.58),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.63),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(3.62),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
         ];
+
+        let initial_dist = Distance::from_metres(2.0);
+        let initial_vel = Speed::from_metres_per_second(2.0);
+
+        let mut kalman = KalmanRangeSensor::new(
+            RangeSensor::Mock {
+                distance: Some(initial_dist),
+                velocity: Some(initial_vel),
+            },
+            0.02, // process variance
+            0.1,  // measurement variance (high for noisy sensor)
+            initial_dist,
+            initial_vel,
+        );
+
+        debug!("=== Kalman Filter Noisy Data Test ===");
+        let mut prev_var = kalman.variance();
+
+        for (i, data_point) in test_data_noisy.iter().enumerate() {
+            kalman.predict_with_dt(data_point.dt).await;
+            kalman.set_sensor_mock(data_point.distance, data_point.velocity);
+            kalman.update().await;
+
+            let current_var = kalman.variance();
+
+            // Assertions for noisy data
+            assert!(current_var > 0.0, "Step {}: Variance should be positive", i + 1);
+            assert!(
+                current_var <= prev_var + 0.01, // small tolerance for process noise
+                "Step {}: Variance should not increase significantly",
+                i + 1
+            );
+
+            prev_var = current_var;
+        }
+
+        debug!("=== Kalman Filter Tests Complete ===");
+    }
+
+    #[vexide::test]
+    #[ignore = "manual verification needed (graph)"]
+    async fn test_kalman_filter_visualization(_p: Peripherals) {
+        // Generate random noisy test data
+        // Object moving at constant 2 m/s with Gaussian noise (σ = 0.15m)
+        let test_data = generate_random_test_data(
+            100,  // 100 samples for more comprehensive visualization
+            2.0,  // Start at 2.0m
+            2.0,  // Velocity: 2.0 m/s
+            50,   // Time step: 50ms
+            0.15, // Noise amplitude (standard deviation): 0.15m
+        );
 
         let initial_dist = Distance::from_metres(2.0);
         let initial_vel = Speed::from_metres_per_second(2.0);
@@ -674,82 +550,13 @@ mod tests {
 
         // Print table for debugging
         test_data_viz.print_table();
-
+        let temp_dir = std::env::temp_dir();
         // Generate plot
-        match test_data_viz.plot_to_html("target/kalman_filter_test.html") {
-            Ok(_) => println!("Plot saved to target/kalman_filter_test.html"),
-            Err(e) => eprintln!("Failed to create plot: {}", e),
-        }
-    }
-
-    #[vexide::test]
-    async fn test_kalman_with_noisy_measurements(_p: Peripherals) {
-        // Simulate noisy sensor with constant 2 m/s motion
-        let test_data = vec![
-            TestDataPoint {
-                distance: Distance::from_metres(2.0),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            },
-            TestDataPoint {
-                distance: Distance::from_metres(2.15),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            }, // slightly off
-            TestDataPoint {
-                distance: Distance::from_metres(2.05),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            }, // noisy
-            TestDataPoint {
-                distance: Distance::from_metres(2.25),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            }, // noisy
-            TestDataPoint {
-                distance: Distance::from_metres(2.20),
-                velocity: Speed::from_metres_per_second(2.0),
-                dt:       Duration::from_millis(50),
-            }, // converging
-        ];
-
-        let initial_dist = Distance::from_metres(2.0);
-        let initial_vel = Speed::from_metres_per_second(2.0);
-
-        let mut kalman = KalmanRangeSensor::new(
-            RangeSensor::Mock {
-                distance: Some(initial_dist),
-                velocity: Some(initial_vel),
-            },
-            0.02, // process variance
-            0.1,  // measurement variance (high for noisy sensor)
-            initial_dist,
-            initial_vel,
-        );
-
-        let mut prev_var = kalman.variance();
-
-        for (i, data_point) in test_data.iter().enumerate() {
-            kalman.predict_with_dt(data_point.dt).await;
-            kalman.set_sensor_mock(data_point.distance, data_point.velocity);
-            kalman.update().await;
-
-            let current_var = kalman.variance();
-            debug!(
-                "Noisy Step {}: Distance: {:.3}m, Variance: {:.6}",
-                i + 1,
-                kalman.measurement().as_metres(),
-                current_var
-            );
-
-            // Variance should generally decrease (filter converging)
-            assert!(
-                current_var <= prev_var + 0.01, // small tolerance for process noise
-                "Step {}: Variance should not increase significantly",
-                i + 1
-            );
-
-            prev_var = current_var;
+        if let Some(strpath) = temp_dir.join("test_plot.html").to_str() {
+            match test_data_viz.plot_to_html(strpath) {
+                Ok(_) => println!("Plot saved to target/kalman_filter_test.html"),
+                Err(e) => eprintln!("Failed to create plot: {}", e),
+            }
         }
     }
 
