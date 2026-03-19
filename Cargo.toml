@@ -20,6 +20,7 @@ embedded-ttf = "=0.2.2"
 heapless = "0.9.2"
 humantime = "2.3.0"
 log = "0.4.28"
+measurements = "0.11.1"
 rusttype = "0.9.3"
 tinybmp = "0.6.0"
 vex-sdk = "0.28.0"
@@ -28,3 +29,5 @@ vexide = { version = "0.8.0", features = ["full"] }
 
 [dev-dependencies]
 embedded-graphics-simulator = "0.8.0"
+vexide = { version = "0.8.0", features = ["full", "vex-sdk-mock"] }
+plotly = "0.8"

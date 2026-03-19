@@ -50,3 +50,5 @@ pub mod controller;
 pub mod drivetrain;
 
 pub mod motorgroup;
+
+pub mod range_sensor;
