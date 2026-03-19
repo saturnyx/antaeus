@@ -4,24 +4,22 @@
 </div>
 <h1 align="center" style="margin-top: -50px;">Ἀνταῖος</h1>
 
-Antaeus is a versatile framework based on [Vexide](https://vexide.dev)
-that aims to be powerful for experts while still being easy to use for beginners.
+Antaeus is a versatile, next-gen framework based on [Vexide](https://vexide.dev)
 
 # Philosophy
 
-Antaeus aims to be an easy to use, batteries-included framework for teams to
-easily implement. As Vex Robotics has become more competitive in the recent
-years, teams have been allocating lesser time for programmers to program their
-robots. This framework/library is designed to be easy and faster to implement.
+Antaeus aims to be a cutting-edge, batteries-included framework that can be
+to code Vex v5 robots. It aims to integrate newer, features that are 
+specialized for such robots.
 
 ## Comparison with Evian
 
 [Evian](https://github.com/vexide/evian) is a complete framework based on Vexide
 as well that Antaeus was inspired by. It aims to be a extensible framework that
-is easy to use as well. However, Antaeus aims to be less extensible and more of
-an all-rounded framework, not only for autonomous motion but for advanced
-driver control operations. It is important that you carefully pick which library
-you would like to use before continuing.
+is easy to use as well. However, Antaeus aims to be less extensible but a more
+advanced, modern framework that can bring Vex to a new level. It includes heavily
+modified algorithms suited specifically for Vex Robots. Hence, it is important 
+that you carefully pick which library you would like to use before continuing.
 
 ## A Notice before using Antaeus
 
@@ -32,6 +30,25 @@ more in the process. Please do not just "plug in" this library and use it
 without thinking much. If you have new ideas, you are really really encouraged
 to contribute to this library and/or create your own library. More on
 contribution can be found in [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## Is Antaeus for you?
+If you:
+
+ - would want a easy-to-use/plug & play library for your team, or
+ - are a new team and would like a beginner-friendly library, or
+ - don't know what is pure pursuit, odometry or a Kalman filter, or
+ - have only a week left for teh competition and need to code fast,
+
+I'm sorry, this library isn't for you. But if you:
+
+- need a advanced, cutting-edge library to code your autonomous, and
+- are willing to fix bugs by yourself (though rare), and
+- are willing to create your own algorithms (if you do, feel free to open a pr),
+
+then, this framework will be helpful.
+
+---
+
 
 # Current State of Development
 
