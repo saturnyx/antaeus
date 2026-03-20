@@ -1,6 +1,6 @@
 [package]
 name = "antaeus"
-version = "0.3.5"
+version = "0.3.6"
 edition = "2024"
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -14,15 +14,15 @@ keywords = ["Robotics", "bindings", "vex", "v5"]
 name = "antaeus"
 
 [dependencies]
-embedded-graphics = "0.8.1"
-embedded-graphics-core = "0.4.0"
+embedded-graphics = "0.8.2"
+embedded-graphics-core = "0.4.1"
 embedded-ttf = "=0.2.2"
 humantime = "2.3.0"
-log = "0.4.28"
+log = "0.4.29"
 measurements = "0.11.1"
 rusttype = "0.9.3"
 tempfile = "3.27.0"
-tinybmp = "0.6.0"
+tinybmp = "0.7.0"
 vex-sdk = "0.28.0"
 
 vexide = { version = "0.8.0", features = ["full"] }
@@ -30,6 +30,6 @@ vexide = { version = "0.8.0", features = ["full"] }
 [dev-dependencies]
 embedded-graphics-simulator = "0.8.0"
 vexide = { version = "0.8.0", features = ["full", "vex-sdk-mock"] }
-plotly = "0.8"
-rand = "0.8"
-rand_distr = "0.4"
+plotly = "0.14"
+rand = "0.10"
+rand_distr = "0.6"

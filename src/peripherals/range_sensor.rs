@@ -306,9 +306,10 @@ mod tests {
         dt_ms: u64,
         noise_amplitude: f64,
     ) -> Vec<TestDataPoint> {
+        use rand::rng;
         use rand_distr::Distribution;
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rng();
         let mut data = Vec::new();
         let dt = Duration::from_millis(dt_ms);
         let dt_secs = dt_ms as f64 / 1000.0;
@@ -374,14 +375,16 @@ mod tests {
 
             plot.set_layout(
                 plotly::Layout::new()
-                    .title(plotly::common::Title::new("Kalman Filter: Raw vs Filtered Data"))
+                    .title(plotly::common::Title::with_text(
+                        "Kalman Filter: Raw vs Filtered Data",
+                    ))
                     .x_axis(
                         plotly::layout::Axis::new()
-                            .title(plotly::common::Title::new("Time (steps)")),
+                            .title(plotly::common::Title::with_text("Time (steps)")),
                     )
                     .y_axis(
                         plotly::layout::Axis::new()
-                            .title(plotly::common::Title::new("Distance (m)")),
+                            .title(plotly::common::Title::with_text("Distance (m)")),
                     ),
             );
 
