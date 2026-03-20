@@ -11,7 +11,6 @@ use antaeus::{
     motion::pid::{DrivetrainConfig, pid::*},
     peripherals::{controller::*, drivetrain::Differential},
 };
-use heapless::Vec;
 use vexide::{prelude::*, sync::Mutex};
 struct Clawbot {
     drivetrain: Differential,
@@ -57,7 +56,7 @@ impl Compete for Clawbot {
             control.dual_button_to_motors(
                 ControllerButton::ButtonUp,
                 ControllerButton::ButtonDown,
-                Vec::from_array([&mut self.arm]),
+                vec![&mut self.arm],
                 8.0,
                 -8.0,
                 0.0,
@@ -66,7 +65,7 @@ impl Compete for Clawbot {
             control.dual_button_to_motors(
                 ControllerButton::ButtonLeft,
                 ControllerButton::ButtonRight,
-                Vec::from_array([&mut self.claw]),
+                vec![&mut self.claw],
                 8.0,
                 -8.0,
                 4.0,

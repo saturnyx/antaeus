@@ -19,12 +19,13 @@
 //! control.dual_button_to_motors(
 //!     ControllerButton::ButtonR1,
 //!     ControllerButton::ButtonR2,
-//!     heapless::Vec::from_array([&mut intake]),
+//!     vec![&mut intake],
 //!     12.0, -12.0, 0.0, false,
 //! );
 //! ```
 
-use heapless::Vec;
+use std::vec::Vec;
+
 use log::warn;
 use vexide::{
     controller::{ButtonState, ControllerState},
@@ -96,7 +97,7 @@ impl ControllerControl {
     /// # Arguments
     ///
     /// * `button` - The primary button that will control the device.
-    /// * `adi_devices` - A `heapless::Vec` of ADI devices to control.
+    /// * `adi_devices` - A `Vec` of ADI devices to control.
     /// * `ctrl` - Whether to use the control button. Usually set to `false`, unless you
     ///   wish to press the control button and the primary button together.
     ///
@@ -112,14 +113,14 @@ impl ControllerControl {
     /// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
     /// master_control.button_to_adi_toggle(
     ///     ControllerButton::ButtonB,
-    ///     heapless::Vec::from_array([&mut piston]),
+    ///     vec![&mut piston],
     ///     false,
     /// );
     /// ```
     pub fn button_to_adi_toggle(
         &self,
         button: ControllerButton,
-        adi_devices: Vec<&mut AdiDigitalOut, 8>,
+        adi_devices: Vec<&mut AdiDigitalOut>,
         ctrl: bool,
     ) {
         let button_state = get_button_state(self.state, button);
@@ -138,7 +139,7 @@ impl ControllerControl {
     /// # Arguments
     ///
     /// * `button` - The primary button that will control the device.
-    /// * `adi_devices` - A `heapless::Vec` of ADI devices to control.
+    /// * `adi_devices` - A `Vec` of ADI devices to control.
     /// * `ctrl` - Whether to use the control button. Usually set to `false`, unless you
     ///   wish to press the control button and the primary button together.
     ///
@@ -154,14 +155,14 @@ impl ControllerControl {
     /// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
     /// master_control.button_to_adi_high(
     ///     ControllerButton::ButtonB,
-    ///     heapless::Vec::from_array([&mut piston]),
+    ///     vec![&mut piston],
     ///     false,
     /// );
     /// ```
     pub fn button_to_adi_high(
         &self,
         button: ControllerButton,
-        adi_devices: Vec<&mut AdiDigitalOut, 8>,
+        adi_devices: Vec<&mut AdiDigitalOut>,
         ctrl: bool,
     ) {
         let button_state = get_button_state(self.state, button);
@@ -180,7 +181,7 @@ impl ControllerControl {
     /// # Arguments
     ///
     /// * `button` - The primary button that will control the device.
-    /// * `adi_devices` - A `heapless::Vec` of ADI devices to control.
+    /// * `adi_devices` - A `Vec` of ADI devices to control.
     /// * `ctrl` - Whether to use the control button. Usually set to `false`, unless you
     ///   wish to press the control button and the primary button together.
     ///
@@ -196,14 +197,14 @@ impl ControllerControl {
     /// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
     /// master_control.button_to_adi_low(
     ///     ControllerButton::ButtonB,
-    ///     heapless::Vec::from_array([&mut piston]),
+    ///     vec![&mut piston],
     ///     false,
     /// );
     /// ```
     pub fn button_to_adi_low(
         &self,
         button: ControllerButton,
-        adi_devices: Vec<&mut AdiDigitalOut, 8>,
+        adi_devices: Vec<&mut AdiDigitalOut>,
         ctrl: bool,
     ) {
         let button_state = get_button_state(self.state, button);
@@ -224,7 +225,7 @@ impl ControllerControl {
     ///
     /// * `button_high` - The button that will set the device to high.
     /// * `button_low` - The button that will set the device to low.
-    /// * `adi_devices` - A `heapless::Vec` of ADI devices to control.
+    /// * `adi_devices` - A `Vec` of ADI devices to control.
     /// * `ctrl` - Whether to use the control button. Usually set to `false`, unless you
     ///   wish to press the control button and another button.
     ///
@@ -241,7 +242,7 @@ impl ControllerControl {
     /// master_control.dual_button_to_adi(
     ///     ControllerButton::ButtonL1,
     ///     ControllerButton::ButtonL2,
-    ///     heapless::Vec::from_array([&mut piston]),
+    ///     vec![&mut piston],
     ///     false,
     /// );
     /// // L1 extends, L2 retracts
@@ -250,7 +251,7 @@ impl ControllerControl {
         &self,
         button_high: ControllerButton,
         button_low: ControllerButton,
-        adi_devices: Vec<&mut AdiDigitalOut, 8>,
+        adi_devices: Vec<&mut AdiDigitalOut>,
         ctrl: bool,
     ) {
         let button_high_state = get_button_state(self.state, button_high);
@@ -279,7 +280,7 @@ impl ControllerControl {
     /// # Arguments
     ///
     /// * `button` - The primary button that will control the motors.
-    /// * `motors` - A `heapless::Vec` of motors to control.
+    /// * `motors` - A `:Vec` of motors to control.
     /// * `active_pwr` - The power (in Volts) given to the motors when button is pressed.
     /// * `passive_pwr` - The power (in Volts) given to the motors when button is not pressed.
     /// * `ctrl` - Whether to use the control button. Usually set to `false`.
@@ -296,7 +297,7 @@ impl ControllerControl {
     /// let master_control = ControllerControl::new(&master, ControllerButton::ButtonA);
     /// master_control.button_to_motors(
     ///     ControllerButton::ButtonL1,
-    ///     heapless::Vec::from_array([&mut intake]),
+    ///     vec![&mut intake],
     ///     12.0,  // active power
     ///     0.0,   // passive power
     ///     false,
@@ -305,7 +306,7 @@ impl ControllerControl {
     pub fn button_to_motors(
         &self,
         button: ControllerButton,
-        motors: Vec<&mut Motor, 8>,
+        motors: Vec<&mut Motor>,
         active_pwr: f64,
         passive_pwr: f64,
         ctrl: bool,
@@ -336,7 +337,7 @@ impl ControllerControl {
     ///
     /// * `button_high` - The button that will give high power to the motors.
     /// * `button_low` - The button that will give low power to the motors.
-    /// * `motors` - A `heapless::Vec` of motors to control.
+    /// * `motors` - A `Vec` of motors to control.
     /// * `high_pwr` - The power (in Volts) given to the motors when High button is pressed.
     /// * `low_pwr` - The power (in Volts) given to the motors when Low button is pressed.
     /// * `passive_pwr` - The power (in Volts) given to the motors when no button is pressed.
@@ -355,7 +356,7 @@ impl ControllerControl {
     /// master_control.dual_button_to_motors(
     ///     ControllerButton::ButtonL1,  // forward
     ///     ControllerButton::ButtonL2,  // reverse
-    ///     heapless::Vec::from_array([&mut intake]),
+    ///     vec![&mut intake],
     ///     12.0,  // high power
     ///     -12.0, // low power
     ///     0.0,   // passive power
@@ -366,7 +367,7 @@ impl ControllerControl {
         &self,
         button_high: ControllerButton,
         button_low: ControllerButton,
-        motors: Vec<&mut Motor, 8>,
+        motors: Vec<&mut Motor>,
         high_pwr: f64,
         low_pwr: f64,
         passive_pwr: f64,

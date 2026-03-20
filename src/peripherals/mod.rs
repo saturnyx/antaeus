@@ -20,7 +20,7 @@
 //! // Button B toggles a piston
 //! control.button_to_adi_toggle(
 //!     ControllerButton::ButtonB,
-//!     heapless::Vec::from_array([&mut piston]),
+//!     vec![&mut piston],
 //!     false,
 //! );
 //!
@@ -28,7 +28,7 @@
 //! control.dual_button_to_motors(
 //!     ControllerButton::ButtonL1,
 //!     ControllerButton::ButtonL2,
-//!     heapless::Vec::from_array([&mut intake]),
+//!     vec![&mut intake],
 //!     12.0, -12.0, 0.0, false,
 //! );
 //! ```
