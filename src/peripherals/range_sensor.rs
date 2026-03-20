@@ -1,3 +1,43 @@
+//! Range sensor wrappers and Kalman-filtered range estimates.
+//!
+//! This module provides a unified [`RangeSensor`] interface for VEX range
+//! hardware and a [`KalmanRangeSensor`] to smooth distance measurements and
+//! estimate velocity using a constant-velocity model.
+//!
+//! # RangeSensor
+//!
+//! - [`RangeSensor::from_distance`] wraps a smart distance sensor.
+//! - [`RangeSensor::from_adi`] wraps an ADI range finder (distance only).
+//! - [`RangeSensor::distance`] returns the latest distance reading, if any.
+//! - [`RangeSensor::velocity`] returns object velocity when supported.
+//!
+//! # KalmanRangeSensor
+//!
+//! Call [`KalmanRangeSensor::predict`] with a steady cadence, then
+//! [`KalmanRangeSensor::update`] to incorporate sensor readings. The filter
+//! returns the current measurement, variance, and velocity estimate.
+//!
+//! # Example
+//!
+//! ```ignore
+//! use antaeus::peripherals::range_sensor::{KalmanRangeSensor, RangeSensor};
+//! use measurements::{Distance, Speed};
+//! use vexide::smart::distance::DistanceSensor;
+//!
+//! let sensor = DistanceSensor::new(1);
+//! let range = RangeSensor::from_distance(sensor);
+//! let mut filter = KalmanRangeSensor::new(
+//!     range,
+//!     0.02,
+//!     0.1,
+//!     Distance::from_metres(0.5),
+//!     Speed::from_metres_per_second(0.0),
+//! );
+//!
+//! filter.predict().await;
+//! filter.update().await;
+//! let filtered = filter.measurement();
+//! ```
 use std::{sync::Arc, time::Duration};
 
 #[allow(unused_imports)]
@@ -11,8 +51,11 @@ use vexide::{
     time::user_uptime,
 };
 
+/// Unified range sensor interface for smart and ADI hardware.
 pub enum RangeSensor {
+    /// Smart distance sensor with distance and velocity data.
     SmartDistSensor(Arc<Mutex<DistanceSensor>>),
+    /// ADI range finder (distance only).
     AdiDistanceSensor(Arc<Mutex<AdiRangeFinder>>),
     #[cfg(any(test, debug_assertions))]
     Mock {
@@ -22,14 +65,17 @@ pub enum RangeSensor {
 }
 
 impl RangeSensor {
+    /// Wrap a smart distance sensor.
     pub fn from_distance(sensor: DistanceSensor) -> Self {
         Self::SmartDistSensor(Arc::new(Mutex::new(sensor)))
     }
 
+    /// Wrap an ADI range finder.
     pub fn from_adi(sensor: AdiRangeFinder) -> Self {
         Self::AdiDistanceSensor(Arc::new(Mutex::new(sensor)))
     }
 
+    /// Read the current distance measurement, if available.
     pub async fn distance(&self) -> Option<Distance> {
         match self {
             RangeSensor::AdiDistanceSensor(sensor) => match sensor.lock().await.distance() {
@@ -62,6 +108,9 @@ impl RangeSensor {
         }
     }
 
+    /// Read the current velocity measurement when supported.
+    ///
+    /// ADI range finders do not report velocity, so this returns `None`.
     pub async fn velocity(&self) -> Option<Speed> {
         match self {
             Self::SmartDistSensor(sensor) => {
@@ -84,6 +133,11 @@ impl RangeSensor {
     }
 }
 
+/// Kalman-filtered range sensor wrapper.
+///
+/// Maintains a constant-velocity Kalman filter state over distance
+/// measurements. Call [`KalmanRangeSensor::predict`] to advance the estimate,
+/// then [`KalmanRangeSensor::update`] to incorporate a new measurement.
 pub struct KalmanRangeSensor {
     sensor:          RangeSensor,
     process_var:     f64,
@@ -98,6 +152,15 @@ pub struct KalmanRangeSensor {
     new_var:         f64,
 }
 impl KalmanRangeSensor {
+    /// Create a new Kalman range sensor.
+    ///
+    /// # Arguments
+    ///
+    /// * `sensor` - The range sensor to sample.
+    /// * `process_var` - Process noise variance.
+    /// * `measurement_var` - Measurement noise variance.
+    /// * `initial_distance` - Initial distance estimate.
+    /// * `initial_velocity` - Initial velocity estimate.
     pub fn new(
         sensor: RangeSensor,
         process_var: f64,
@@ -120,6 +183,7 @@ impl KalmanRangeSensor {
         }
     }
 
+    /// Predict the next state using elapsed time since the last update.
     pub async fn predict(&mut self) {
         let elapsed = user_uptime() - self.last_update;
         let dx = self.prev_vel * elapsed;
@@ -128,7 +192,7 @@ impl KalmanRangeSensor {
         self.last_update = user_uptime();
     }
 
-    /// For testing: predict with explicit time step
+    /// Predict with an explicit time step (test-only helper).
     #[cfg(any(test, debug_assertions))]
     pub async fn predict_with_dt(&mut self, dt: Duration) {
         let dx = self.prev_vel * dt;
@@ -137,6 +201,9 @@ impl KalmanRangeSensor {
         self.last_update = self.last_update + dt;
     }
 
+    /// Update the filter with the latest sensor measurement.
+    ///
+    /// If a measurement is unavailable, the predicted state is retained.
     pub async fn update(&mut self) {
         let m = match self.sensor.distance().await {
             Some(val) => val,
@@ -164,16 +231,22 @@ impl KalmanRangeSensor {
         }
     }
 
+    /// Return the most recent filtered distance measurement.
     pub fn measurement(&self) -> Distance { self.new_m }
 
+    /// Return the current measurement variance.
     pub fn variance(&self) -> f64 { self.new_var }
 
+    /// Return the current velocity estimate.
     pub fn velocity(&self) -> Speed { self.prev_vel }
 
+    /// Return the predicted distance measurement.
     pub fn predicted_measurement(&self) -> Distance { self.est_m }
 
+    /// Return the predicted measurement variance.
     pub fn predicted_variance(&self) -> f64 { self.est_var }
 
+    /// Reset the filter state to new initial values.
     pub fn reset(&mut self, initial_distance: Distance, initial_velocity: Speed) {
         self.prev_m = initial_distance;
         self.prev_vel = initial_velocity;
@@ -185,7 +258,7 @@ impl KalmanRangeSensor {
         self.last_update = user_uptime();
     }
 
-    /// For testing: update the sensor with new mock data
+    /// Update the sensor with mock data (test-only helper).
     #[cfg(any(test, debug_assertions))]
     pub fn set_sensor_mock(&mut self, distance: Distance, velocity: Speed) {
         self.sensor = RangeSensor::Mock {
