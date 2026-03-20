@@ -20,6 +20,7 @@
 //! # Example
 //!
 //! ```ignore
+//! use crate::peripherals::range_sensor::{KalmanRangeSensor, RangeSensor};
 //! use measurements::{Distance, Speed};
 //! use vexide::smart::distance::DistanceSensor;
 //!
