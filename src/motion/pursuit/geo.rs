@@ -12,6 +12,8 @@
 
 use std::vec;
 
+use measurements::{Length, Measurement};
+
 /// A 2D point in the coordinate system.
 ///
 /// Used to represent waypoints, robot positions, and intersection points.
@@ -66,7 +68,16 @@ pub struct Circle {
 
 impl Point {
     /// Create a new point using `x` and `y` coordinates
-    pub fn new(x: f64, y: f64) -> Self { Point { x, y } }
+    pub fn new(x: Length, y: Length) -> Self {
+        Point {
+            x: x.as_inches(),
+            y: y.as_inches(),
+        }
+    }
+
+    pub fn rnew(x: f64, y: f64) -> Self { Point { x: x, y: y } }
+
+    pub fn origin() -> Self { Point { x: 0.0, y: 0.0 } }
 }
 
 impl Path {
@@ -79,7 +90,7 @@ impl Path {
 
     /// Create a path with a start point at origin (0,0)
     pub fn origin() -> Self {
-        let vec = vec![Point::new(0.0, 0.0)];
+        let vec = vec![Point::new(Length::from_base_units(0.0), Length::from_base_units(0.0))];
         Self { waypoints: vec }
     }
 
@@ -105,8 +116,14 @@ impl Path {
         let mut lines: Vec<Line> = Vec::new();
         for i in 0..self.waypoints.len() - 1 {
             lines.push(Line {
-                point1: Point::new(self.waypoints[i].x, self.waypoints[i].y),
-                point2: Point::new(self.waypoints[i + 1].x, self.waypoints[i + 1].y),
+                point1: Point::new(
+                    Length::from_inches(self.waypoints[i].x),
+                    Length::from_inches(self.waypoints[i].y),
+                ),
+                point2: Point::new(
+                    Length::from_inches(self.waypoints[i + 1].x),
+                    Length::from_inches(self.waypoints[i + 1].y),
+                ),
             });
         }
         lines
@@ -115,10 +132,16 @@ impl Path {
 
 impl Line {
     /// Create a new line from 2 coordinates
-    pub fn new(x1: f64, y1: f64, x2: f64, y2: f64) -> Line {
+    pub fn new(x1: Length, y1: Length, x2: Length, y2: Length) -> Line {
         Line {
-            point1: Point { x: (x1), y: (y1) },
-            point2: Point { x: (x2), y: (y2) },
+            point1: Point {
+                x: (x1.as_inches()),
+                y: (y1.as_inches()),
+            },
+            point2: Point {
+                x: (x2.as_inches()),
+                y: (y2.as_inches()),
+            },
         }
     }
 
@@ -133,5 +156,13 @@ impl Line {
 
 impl Circle {
     /// Create a new circle
-    pub fn new(x: f64, y: f64, r: f64) -> Circle { Circle { x: x, y: y, r: r } }
+    pub fn new(x: Length, y: Length, r: Length) -> Circle {
+        Circle {
+            x: x.as_inches(),
+            y: y.as_inches(),
+            r: r.as_inches(),
+        }
+    }
+
+    pub fn rnew(x: f64, y: f64, r: f64) -> Circle { Circle { x: x, y: y, r: r } }
 }

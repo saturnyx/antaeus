@@ -38,9 +38,10 @@ pub mod arcpid;
 ///
 /// Provides linear movement, rotation, and swing turn capabilities
 /// with configurable PID gains.
-pub mod pid;
+pub mod linear_pid;
 
 /// Standalone PID controller for single motor groups.
+
 ///
 /// Useful for controlling mechanisms like arms, lifts, or flywheels
 /// independently from the drivetrain.

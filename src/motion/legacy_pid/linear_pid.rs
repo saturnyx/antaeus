@@ -40,7 +40,7 @@ use vexide::{
 };
 
 use crate::{
-    motion::pid::DrivetrainConfig,
+    motion::legacy_pid::DrivetrainConfig,
     peripherals::{drivetrain, drivetrain::Differential},
     to_mutex,
 };

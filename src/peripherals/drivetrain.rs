@@ -385,6 +385,84 @@ impl Differential {
         angle / denom
     }
 
+    /// Returns the average encoder position of all left motors in the drivetrain.
+    ///
+    /// This method reads the position from each motor's integrated encoder
+    /// and returns the average. The result is returned as an [`Angle`], which
+    /// can be converted to degrees or radians.
+    ///
+    /// # Errors
+    ///
+    /// If reading a motor's position fails, that motor is excluded from the
+    /// average and a warning is logged. If the mutex cannot be borrowed,
+    /// a warning is logged.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let position = drivetrain.left_position();
+    /// println!("Drivetrain position: {} degrees", position.as_degrees());
+    /// ```
+    pub fn left_position(&self) -> Angle {
+        let left = self.left.try_borrow_mut();
+        let mut angle: Angle = Angle::from_degrees(0.0);
+        let mut denom: f64 = 0.0;
+        if let Ok(mut motors) = left {
+            for motor in motors.as_mut() {
+                angle += motor.position().unwrap_or_else(|e| {
+                    warn!("Error Getting Motor Encoder Position: {}", e);
+                    denom -= 1.0;
+                    Angle::from_radians(0.0)
+                });
+                denom += 1.0;
+            }
+        } else if let Err(e) = left {
+            warn!("Error Borrowing Mutex: {}", e);
+        } else {
+            warn!("Error Borrowing Mutex");
+        }
+        angle / denom
+    }
+
+    /// Returns the average encoder position of all right motors in the drivetrain.
+    ///
+    /// This method reads the position from each motor's integrated encoder
+    /// and returns the average. The result is returned as an [`Angle`], which
+    /// can be converted to degrees or radians.
+    ///
+    /// # Errors
+    ///
+    /// If reading a motor's position fails, that motor is excluded from the
+    /// average and a warning is logged. If the mutex cannot be borrowed,
+    /// a warning is logged.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let position = drivetrain.right_position();
+    /// println!("Drivetrain position: {} degrees", position.as_degrees());
+    /// ```
+    pub fn right_position(&self) -> Angle {
+        let right = self.right.try_borrow_mut();
+        let mut angle: Angle = Angle::from_degrees(0.0);
+        let mut denom: f64 = 0.0;
+        if let Ok(mut motors) = right {
+            for motor in motors.as_mut() {
+                angle += motor.position().unwrap_or_else(|e| {
+                    warn!("Error Getting Motor Encoder Position: {}", e);
+                    denom -= 1.0;
+                    Angle::from_radians(0.0)
+                });
+                denom += 1.0;
+            }
+        } else if let Err(e) = right {
+            warn!("Error Borrowing Mutex: {}", e);
+        } else {
+            warn!("Error Borrowing Mutex");
+        }
+        angle / denom
+    }
+
     pub fn reset_position(&self) -> Result<(), PortError> {
         let left = self.left.try_borrow_mut();
         let right = self.right.try_borrow_mut();
@@ -444,6 +522,26 @@ impl Differential {
                 let _ = motor.set_voltage(voltage);
             }
         }
+        if let Ok(mut motors) = right {
+            for motor in motors.as_mut() {
+                let _ = motor.set_voltage(voltage);
+            }
+        }
+    }
+
+    pub fn set_left_voltage(&self, voltage: f64) {
+        let left = self.left.try_borrow_mut();
+
+        if let Ok(mut motors) = left {
+            for motor in motors.as_mut() {
+                let _ = motor.set_voltage(voltage);
+            }
+        }
+    }
+
+    pub fn set_right_voltage(&self, voltage: f64) {
+        let right = self.right.try_borrow_mut();
+
         if let Ok(mut motors) = right {
             for motor in motors.as_mut() {
                 let _ = motor.set_voltage(voltage);

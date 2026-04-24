@@ -40,6 +40,7 @@ dependencies = [
  "embedded-graphics-core",
  "embedded-graphics-simulator",
  "embedded-ttf",
+ "getrandom",
  "humantime",
  "log",
  "measurements",

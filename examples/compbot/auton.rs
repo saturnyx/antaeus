@@ -6,15 +6,16 @@ use antaeus::{
     },
     to_mutex,
 };
+use measurements::Length;
 
 use crate::hardware::Robot;
 pub async fn main_auton(robot: &mut Robot) {
     let mut path = pursuit::geo::Path::origin();
-    path.add(geo::Point::new(20.0, 20.0));
-    path.add(geo::Point::new(-20.0, 20.0));
-    path.add(geo::Point::new(0.0, 0.0));
+    path.add(geo::Point::new(Length::from_inches(20.0), Length::from_inches(20.0)));
+    path.add(geo::Point::new(Length::from_inches(-20.0), Length::from_inches(20.0)));
+    path.add(geo::Point::origin());
 
-    let arcpid_val = pid::arcpid::ArcPIDValues {
+    let arcpid_val = legacy_pid::arcpid::ArcPIDValues {
         kp:        0.0,
         kd:        0.0,
         tolerance: 0.0,
@@ -24,14 +25,14 @@ pub async fn main_auton(robot: &mut Robot) {
         offset:    0.0,
     };
 
-    let dtc = pid::DrivetrainConfig {
+    let dtc = legacy_pid::DrivetrainConfig {
         wheel_diameter: 3.25,
         driving_gear:   3.0,
         driven_gear:    4.0,
         track_width:    13.9,
     };
 
-    let arc_pid = pid::arcpid::ArcPIDMovement {
+    let arc_pid = legacy_pid::arcpid::ArcPIDMovement {
         drivetrain:        robot.dt.clone(),
         drivetrain_config: dtc,
         arcpid_values:     std::sync::Arc::new(vexide::sync::Mutex::new(arcpid_val)),
@@ -59,7 +60,9 @@ pub async fn main_auton(robot: &mut Robot) {
         trackermech: trackers,
         global_pose: to_mutex(Pose::origin()),
     };
-    let pursuit = pursuit::Pursuit { lookahead: 10.0 };
+    let pursuit = pursuit::Pursuit {
+        lookahead: Length::from_inches(10.0),
+    };
     let _ = pursuit.follow(&odomtrack, &arc_pid, path.clone());
     let _ = pursuit.follow(&odomtrack, &arc_pid, path);
 }

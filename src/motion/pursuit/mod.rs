@@ -46,11 +46,12 @@ const LOOPRATE: Duration = Duration::from_millis(10);
 
 use std::time::Duration;
 
+use measurements::Length;
 use vexide::time::sleep;
 
 use crate::motion::{
+    legacy_pid::arcpid::ArcPIDMovement,
     odom::{devices::Pose, tracker::OdomTracker},
-    pid::arcpid::ArcPIDMovement,
     pursuit::algorithm::abs_arc_point,
 };
 
@@ -65,7 +66,7 @@ pub struct Pursuit {
     ///
     /// This is the radius of the circle used to find target points.
     /// Recommended starting value: 12-18 inches.
-    pub lookahead: f64,
+    pub lookahead: Length,
 }
 
 impl Pursuit {
@@ -74,7 +75,7 @@ impl Pursuit {
     /// # Arguments
     ///
     /// * `lookahead` - The lookahead distance in inches, used as the radius for target point calculations.
-    pub fn new(lookahead: f64) -> Self { Self { lookahead } }
+    pub fn new(lookahead: Length) -> Self { Self { lookahead } }
 
     /// Follows a path using the Candidate-Based Pursuit algorithm.
     ///
@@ -101,14 +102,22 @@ impl Pursuit {
         let mut run = true;
         while run {
             let odometry_values = odom.global_pose.lock().await;
-            let (x, y, t) = (odometry_values.x, odometry_values.y, odometry_values.t);
+            let (x, y, t) = (
+                Length::from_inches(odometry_values.x),
+                Length::from_inches(odometry_values.y),
+                odometry_values.t,
+            );
             let cir = geo::Circle {
-                x: x,
-                y: y,
-                r: self.lookahead,
+                x: x.as_inches(),
+                y: y.as_inches(),
+                r: self.lookahead.as_inches(),
             };
             let target = algorithm::pursuit_target(path.clone(), cir);
-            let (tarx, tary) = abs_arc_point(Pose::new(x, y, t), target.x, target.y);
+            let (tarx, tary) = abs_arc_point(
+                Pose::new(Length::as_inches(&x), Length::as_inches(&y), t),
+                Length::as_inches(&Length::from_inches(target.x)),
+                Length::as_inches(&Length::from_inches(target.y)),
+            );
 
             arc_pid.abs_local_coords(tarx, tary).await;
             run = arc_pid.arcpid_values.lock().await.active;
