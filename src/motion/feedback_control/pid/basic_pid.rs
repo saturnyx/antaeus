@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use vexide::time::user_uptime;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct BasicPID {
     pub target:      f64,
     pub kp:          f64,
@@ -47,15 +47,19 @@ impl BasicPID {
         self.prev_error = error;
         self.last_update = now;
 
-        if error > self.tolerance { output } else { 0.0 }
+        if error.abs() > self.tolerance {
+            output
+        } else {
+            0.0
+        }
     }
 
     pub fn reset_integral(&mut self) { self.integral = 0.0 }
 
     pub fn set_target(&mut self, target: f64) { self.target = target; }
 
-    pub fn is_active(&mut self, reading: f64) -> bool {
+    pub fn is_active(&self, reading: f64) -> bool {
         let error = self.target - reading;
-        error > self.tolerance
+        error.abs() > self.tolerance
     }
 }
