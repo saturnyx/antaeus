@@ -1,2 +1,2 @@
-pub mod basic_pid;
+pub mod core_pid;
 pub mod drive_pid;

@@ -3,7 +3,7 @@ use std::time::Duration;
 use measurements::Length;
 use vexide::{math::Angle, time::user_uptime};
 
-use super::basic_pid::BasicPID;
+use super::core_pid::BasicPID;
 use crate::peripherals::drivetrain::Differential;
 pub struct DrivePID {
     pub drivetrain:        Differential,
