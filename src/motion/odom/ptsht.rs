@@ -22,7 +22,10 @@
 //! point_shoot.goto_pose(48.0, 0.0, 90.0).await;
 //! ```
 
-use crate::motion::{legacy_pid::linear_pid::PIDMovement, odom::tracker::OdomTracker};
+use crate::motion::{
+    feedback_control::legacy_pid::linear_pid::PIDMovement,
+    odom::tracker::OdomTracker,
+};
 
 /// Default timeout for movement operations in milliseconds.
 const TIMEOUT: u64 = 10000;

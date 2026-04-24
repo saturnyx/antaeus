@@ -50,7 +50,7 @@ use measurements::Length;
 use vexide::time::sleep;
 
 use crate::motion::{
-    legacy_pid::arcpid::ArcPIDMovement,
+    feedback_control::legacy_pid::arcpid::ArcPIDMovement,
     odom::{devices::Pose, tracker::OdomTracker},
     pursuit::algorithm::abs_arc_point,
 };

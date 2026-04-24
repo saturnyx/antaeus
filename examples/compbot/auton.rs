@@ -1,5 +1,6 @@
 use antaeus::{
     motion::{
+        feedback_control::*,
         odom::{self, devices::Pose},
         pursuit::geo,
         *,

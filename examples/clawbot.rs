@@ -8,7 +8,7 @@
 use std::sync::Arc;
 
 use antaeus::{
-    motion::legacy_pid::{DrivetrainConfig, linear_pid::*},
+    motion::feedback_control::legacy_pid::{DrivetrainConfig, linear_pid::*},
     peripherals::{controller::*, drivetrain::Differential},
 };
 use vexide::{prelude::*, sync::Mutex};

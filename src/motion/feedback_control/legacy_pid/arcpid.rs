@@ -34,7 +34,7 @@ use log::info;
 use vexide::{smart::motor::BrakeMode, sync::Mutex, task::*, time::*};
 
 use crate::{
-    motion::legacy_pid::DrivetrainConfig,
+    motion::feedback_control::legacy_pid::DrivetrainConfig,
     peripherals::drivetrain::{self, Differential},
     to_mutex,
 };
