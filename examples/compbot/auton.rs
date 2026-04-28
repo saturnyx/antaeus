@@ -1,8 +1,7 @@
 use antaeus::{
     motion::{
-        feedback_control::*,
         odom::{self, devices::Pose},
-        pursuit::geo,
+        pursuit::{control, geo},
         *,
     },
     to_mutex,
@@ -16,27 +15,9 @@ pub async fn main_auton(robot: &mut Robot) {
     path.add(geo::Point::new(Length::from_inches(-20.0), Length::from_inches(20.0)));
     path.add(geo::Point::origin());
 
-    let arcpid_val = legacy_pid::arcpid::ArcPIDValues {
-        kp:        0.0,
-        kd:        0.0,
-        tolerance: 0.0,
-        maxpwr:    0.0,
-        active:    false,
-        target:    0.0,
-        offset:    0.0,
-    };
-
-    let dtc = legacy_pid::DrivetrainConfig {
-        wheel_diameter: 3.25,
-        driving_gear:   3.0,
-        driven_gear:    4.0,
-        track_width:    13.9,
-    };
-
-    let arc_pid = legacy_pid::arcpid::ArcPIDMovement {
-        drivetrain:        robot.dt.clone(),
-        drivetrain_config: dtc,
-        arcpid_values:     std::sync::Arc::new(vexide::sync::Mutex::new(arcpid_val)),
+    let basic_ctrl = control::basic::BasicControl {
+        track_width: Length::from_inches(13.9),
+        tolerance:   Length::from_inches(0.5),
     };
 
     let vertical = odom::devices::Tracker {
@@ -64,6 +45,5 @@ pub async fn main_auton(robot: &mut Robot) {
     let pursuit = pursuit::Pursuit {
         lookahead: Length::from_inches(10.0),
     };
-    let _ = pursuit.follow(&odomtrack, &arc_pid, path.clone());
-    let _ = pursuit.follow(&odomtrack, &arc_pid, path);
+    let _ = pursuit.follow(&odomtrack, &robot.dt, &basic_ctrl, path.clone());
 }

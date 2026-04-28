@@ -42,19 +42,23 @@ mod algorithm;
 /// used by the pursuit algorithm.
 pub mod geo;
 
+pub mod control;
+
 const LOOPRATE: Duration = Duration::from_millis(10);
 
 use std::time::Duration;
 
+use control::PusuitControl;
 use measurements::Length;
 use vexide::time::sleep;
 
-use crate::motion::{
-    feedback_control::legacy_pid::arcpid::ArcPIDMovement,
-    odom::{devices::Pose, tracker::OdomTracker},
-    pursuit::algorithm::abs_arc_point,
+use crate::{
+    motion::{
+        odom::{devices::Pose, tracker::OdomTracker},
+        pursuit::algorithm::abs_arc_point,
+    },
+    peripherals::drivetrain::Differential,
 };
-
 /// Candidate-Based Pursuit path follower.
 ///
 /// Follows a path using the lookahead distance to determine targets.
@@ -98,7 +102,13 @@ impl Pursuit {
     ///
     /// pursuit.follow(odom, path).await;
     /// ```
-    pub async fn follow(&self, odom: &OdomTracker, arc_pid: &ArcPIDMovement, path: geo::Path) {
+    pub async fn follow<C: PusuitControl>(
+        &self,
+        odom: &OdomTracker,
+        drivetrain: &Differential,
+        ctrl_algorithm: &C,
+        path: geo::Path,
+    ) {
         let mut run = true;
         while run {
             let odometry_values = odom.global_pose.lock().await;
@@ -118,9 +128,14 @@ impl Pursuit {
                 Length::as_inches(&Length::from_inches(target.x)),
                 Length::as_inches(&Length::from_inches(target.y)),
             );
-
-            arc_pid.abs_local_coords(tarx, tary).await;
-            run = arc_pid.arcpid_values.lock().await.active;
+            let ((powl, powr), run_curr) = ctrl_algorithm.control(
+                Length::from_inches(tarx),
+                Length::from_inches(tary),
+                self.lookahead,
+            );
+            drivetrain.set_left_voltage(powl);
+            drivetrain.set_right_voltage(powr);
+            run = run_curr;
             sleep(LOOPRATE).await;
         }
     }
