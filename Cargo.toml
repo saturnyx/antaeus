@@ -33,3 +33,4 @@ vexide = { version = "0.8.0", features = ["full", "vex-sdk-mock"] }
 plotly = "0.14"
 rand = "0.10"
 rand_distr = "0.6"
+getrandom = { version = "^0.4.2" }

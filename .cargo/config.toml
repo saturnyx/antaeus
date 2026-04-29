@@ -1,5 +1,5 @@
 [target.'cfg(target_os = "vexos")']
-rustflags = ["-Clink-arg=-Tvexide.ld"]
+rustflags = ["-Clink-arg=-Tvexide.ld", "--cfg", "getrandom_backend=\"custom\""]
 
 [unstable]
 build-std = ["std", "panic_abort"]

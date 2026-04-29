@@ -1,40 +1,23 @@
 use antaeus::{
     motion::{
         odom::{self, devices::Pose},
-        pursuit::geo,
+        pursuit::{control, geo},
         *,
     },
     to_mutex,
 };
+use measurements::Length;
 
 use crate::hardware::Robot;
 pub async fn main_auton(robot: &mut Robot) {
     let mut path = pursuit::geo::Path::origin();
-    path.add(geo::Point::new(20.0, 20.0));
-    path.add(geo::Point::new(-20.0, 20.0));
-    path.add(geo::Point::new(0.0, 0.0));
+    path.add(geo::Point::new(Length::from_inches(20.0), Length::from_inches(20.0)));
+    path.add(geo::Point::new(Length::from_inches(-20.0), Length::from_inches(20.0)));
+    path.add(geo::Point::origin());
 
-    let arcpid_val = pid::arcpid::ArcPIDValues {
-        kp:        0.0,
-        kd:        0.0,
-        tolerance: 0.0,
-        maxpwr:    0.0,
-        active:    false,
-        target:    0.0,
-        offset:    0.0,
-    };
-
-    let dtc = pid::DrivetrainConfig {
-        wheel_diameter: 3.25,
-        driving_gear:   3.0,
-        driven_gear:    4.0,
-        track_width:    13.9,
-    };
-
-    let arc_pid = pid::arcpid::ArcPIDMovement {
-        drivetrain:        robot.dt.clone(),
-        drivetrain_config: dtc,
-        arcpid_values:     std::sync::Arc::new(vexide::sync::Mutex::new(arcpid_val)),
+    let basic_ctrl = control::basic::BasicControl {
+        track_width: Length::from_inches(13.9),
+        tolerance:   Length::from_inches(0.5),
     };
 
     let vertical = odom::devices::Tracker {
@@ -59,7 +42,8 @@ pub async fn main_auton(robot: &mut Robot) {
         trackermech: trackers,
         global_pose: to_mutex(Pose::origin()),
     };
-    let pursuit = pursuit::Pursuit { lookahead: 10.0 };
-    let _ = pursuit.follow(&odomtrack, &arc_pid, path.clone());
-    let _ = pursuit.follow(&odomtrack, &arc_pid, path);
+    let pursuit = pursuit::Pursuit {
+        lookahead: Length::from_inches(10.0),
+    };
+    let _ = pursuit.follow(&odomtrack, &robot.dt, &basic_ctrl, path.clone());
 }
