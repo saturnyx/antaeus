@@ -32,11 +32,15 @@
 //! drivetrain.tank(&controller);
 //! ```
 
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{BorrowMutError, RefCell},
+    rc::Rc,
+};
 
 use log::warn;
+use snafu::Snafu;
 use vexide::{
-    controller::ControllerState,
+    controller::{ControllerError, ControllerState},
     math::Angle,
     prelude::{Controller, Motor},
     smart::{PortError, motor::BrakeMode},
@@ -82,6 +86,25 @@ pub struct Differential {
     /// relative to each other (typically opposite to the left side for
     /// forward movement).
     pub right: Rc<RefCell<dyn AsMut<[Motor]>>>,
+}
+
+#[derive(Debug, Snafu)]
+pub enum DrivetrainError {
+    #[snafu(display("Failed to access port: {port_error}"))]
+    PortError {
+        port_error: PortError,
+    },
+    #[snafu(display("Failed to access controller: {controller_error}"))]
+    ControllerError {
+        controller_error: ControllerError,
+    },
+    #[snafu(display("Failed to borrow RefCell mutably: {borrow_mut_error}"))]
+    BorrowMutError {
+        borrow_mut_error: BorrowMutError,
+    },
+    Unknown {
+        string: String,
+    },
 }
 
 #[allow(dead_code)]
@@ -140,9 +163,14 @@ impl Differential {
     /// let controller = Controller::new(ControllerId::Primary);
     /// drivetrain.tank(&controller);
     /// ```
-    pub fn tank(&self, controller: &Controller) {
+    pub fn tank(&self, controller: &Controller) -> Vec<DrivetrainError> {
+        let mut errors: Vec<DrivetrainError> = Vec::new();
         let state = controller.state().unwrap_or_else(|e| {
-            warn!("Controller State Error: {}", e);
+            let err = DrivetrainError::ControllerError {
+                controller_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
             ControllerState::default()
         });
 
@@ -152,17 +180,45 @@ impl Differential {
         let left_voltage = left_power * 12.0;
         let right_voltage = right_power * 12.0;
 
-        if let Ok(mut left_motors) = self.left.try_borrow_mut() {
-            for motor in left_motors.as_mut() {
-                let _ = motor.set_voltage(left_voltage);
+        match self.left.try_borrow_mut() {
+            Ok(mut left_motors) => {
+                for motor in left_motors.as_mut() {
+                    motor.set_voltage(left_voltage).unwrap_or_else(|e| {
+                        let err = DrivetrainError::PortError { port_error: e };
+                        warn!("{}", err);
+                        errors.push(err);
+                    });
+                }
+            }
+            Err(e) => {
+                let err = DrivetrainError::BorrowMutError {
+                    borrow_mut_error: e,
+                };
+                warn!("{}", err);
+                errors.push(err);
             }
         }
 
-        if let Ok(mut right_motors) = self.right.try_borrow_mut() {
-            for motor in right_motors.as_mut() {
-                let _ = motor.set_voltage(right_voltage);
+        match self.right.try_borrow_mut() {
+            Ok(mut right_motors) => {
+                for motor in right_motors.as_mut() {
+                    motor.set_voltage(right_voltage).unwrap_or_else(|e| {
+                        let err = DrivetrainError::PortError { port_error: e };
+                        warn!("{}", err);
+                        errors.push(err);
+                    });
+                }
+            }
+            Err(e) => {
+                let err = DrivetrainError::BorrowMutError {
+                    borrow_mut_error: e,
+                };
+                warn!("{}", err);
+                errors.push(err);
             }
         }
+
+        errors
     }
 
     /// Drive the robot using arcade controls (single-stick forward/back + single-stick turn).
@@ -186,9 +242,14 @@ impl Differential {
     /// let controller = Controller::new(ControllerId::Primary);
     /// drivetrain.arcade(&controller);
     /// ```
-    pub fn arcade(&self, controller: &Controller) {
+    pub fn arcade(&self, controller: &Controller) -> Vec<DrivetrainError> {
+        let mut errors: Vec<DrivetrainError> = Vec::new();
         let state = controller.state().unwrap_or_else(|e| {
-            warn!("Controller State Error: {}", e);
+            let err = DrivetrainError::ControllerError {
+                controller_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
             ControllerState::default()
         });
 
@@ -198,17 +259,45 @@ impl Differential {
         let left_voltage = (fwd + turn) * 12.0;
         let right_voltage = (fwd - turn) * 12.0;
 
-        if let Ok(mut left_motors) = self.left.try_borrow_mut() {
-            for motor in left_motors.as_mut() {
-                let _ = motor.set_voltage(left_voltage);
+        match self.left.try_borrow_mut() {
+            Ok(mut left_motors) => {
+                for motor in left_motors.as_mut() {
+                    motor.set_voltage(left_voltage).unwrap_or_else(|e| {
+                        let err = DrivetrainError::PortError { port_error: e };
+                        warn!("{}", err);
+                        errors.push(err);
+                    });
+                }
+            }
+            Err(e) => {
+                let err = DrivetrainError::BorrowMutError {
+                    borrow_mut_error: e,
+                };
+                warn!("{}", err);
+                errors.push(err);
             }
         }
 
-        if let Ok(mut right_motors) = self.right.try_borrow_mut() {
-            for motor in right_motors.as_mut() {
-                let _ = motor.set_voltage(right_voltage);
+        match self.right.try_borrow_mut() {
+            Ok(mut right_motors) => {
+                for motor in right_motors.as_mut() {
+                    motor.set_voltage(right_voltage).unwrap_or_else(|e| {
+                        let err = DrivetrainError::PortError { port_error: e };
+                        warn!("{}", err);
+                        errors.push(err);
+                    });
+                }
+            }
+            Err(e) => {
+                let err = DrivetrainError::BorrowMutError {
+                    borrow_mut_error: e,
+                };
+                warn!("{}", err);
+                errors.push(err);
             }
         }
+
+        errors
     }
 
     /// Drive the robot using reversed tank controls (sticks swapped and inverted).
@@ -230,26 +319,59 @@ impl Differential {
     /// let controller = Controller::new(ControllerId::Primary);
     /// drivetrain.reverse_tank(&controller);
     /// ```
-    pub fn reverse_tank(&self, controller: &Controller) {
+    pub fn reverse_tank(&self, controller: &Controller) -> Vec<DrivetrainError> {
+        let mut errors: Vec<DrivetrainError> = Vec::new();
         let state = controller.state().unwrap_or_else(|e| {
-            warn!("Controller State Error: {}", e);
+            let err = DrivetrainError::ControllerError {
+                controller_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
             ControllerState::default()
         });
 
         let left_voltage = (-state.right_stick.y()) * 12.0;
         let right_voltage = (-state.left_stick.y()) * 12.0;
 
-        if let Ok(mut left_motors) = self.left.try_borrow_mut() {
-            for motor in left_motors.as_mut() {
-                let _ = motor.set_voltage(left_voltage);
+        match self.left.try_borrow_mut() {
+            Ok(mut left_motors) => {
+                for motor in left_motors.as_mut() {
+                    motor.set_voltage(left_voltage).unwrap_or_else(|e| {
+                        let err = DrivetrainError::PortError { port_error: e };
+                        warn!("{}", err);
+                        errors.push(err);
+                    });
+                }
+            }
+            Err(e) => {
+                let err = DrivetrainError::BorrowMutError {
+                    borrow_mut_error: e,
+                };
+                warn!("{}", err);
+                errors.push(err);
             }
         }
 
-        if let Ok(mut right_motors) = self.right.try_borrow_mut() {
-            for motor in right_motors.as_mut() {
-                let _ = motor.set_voltage(right_voltage);
+        match self.right.try_borrow_mut() {
+            Ok(mut right_motors) => {
+                for motor in right_motors.as_mut() {
+                    motor.set_voltage(right_voltage).unwrap_or_else(|e| {
+                        let err = DrivetrainError::PortError { port_error: e };
+                        warn!("{}", err);
+                        errors.push(err);
+                    });
+                }
+            }
+            Err(e) => {
+                let err = DrivetrainError::BorrowMutError {
+                    borrow_mut_error: e,
+                };
+                warn!("{}", err);
+                errors.push(err);
             }
         }
+
+        errors
     }
 
     /// Drive the robot using reversed arcade controls (forward/turn both inverted).
@@ -274,9 +396,14 @@ impl Differential {
     /// let controller = Controller::new(ControllerId::Primary);
     /// drivetrain.reverse_arcade(&controller);
     /// ```
-    pub fn reverse_arcade(&self, controller: &Controller) {
+    pub fn reverse_arcade(&self, controller: &Controller) -> Vec<DrivetrainError> {
+        let mut errors: Vec<DrivetrainError> = Vec::new();
         let state = controller.state().unwrap_or_else(|e| {
-            warn!("Controller State Error: {}", e);
+            let err = DrivetrainError::ControllerError {
+                controller_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
             ControllerState::default()
         });
 
@@ -286,17 +413,45 @@ impl Differential {
         let left_voltage = (fwd + turn) * 12.0;
         let right_voltage = (fwd - turn) * 12.0;
 
-        if let Ok(mut left_motors) = self.left.try_borrow_mut() {
-            for motor in left_motors.as_mut() {
-                let _ = motor.set_voltage(left_voltage);
+        match self.left.try_borrow_mut() {
+            Ok(mut left_motors) => {
+                for motor in left_motors.as_mut() {
+                    motor.set_voltage(left_voltage).unwrap_or_else(|e| {
+                        let err = DrivetrainError::PortError { port_error: e };
+                        warn!("{}", err);
+                        errors.push(err);
+                    });
+                }
+            }
+            Err(e) => {
+                let err = DrivetrainError::BorrowMutError {
+                    borrow_mut_error: e,
+                };
+                warn!("{}", err);
+                errors.push(err);
             }
         }
 
-        if let Ok(mut right_motors) = self.right.try_borrow_mut() {
-            for motor in right_motors.as_mut() {
-                let _ = motor.set_voltage(right_voltage);
+        match self.right.try_borrow_mut() {
+            Ok(mut right_motors) => {
+                for motor in right_motors.as_mut() {
+                    motor.set_voltage(right_voltage).unwrap_or_else(|e| {
+                        let err = DrivetrainError::PortError { port_error: e };
+                        warn!("{}", err);
+                        errors.push(err);
+                    });
+                }
+            }
+            Err(e) => {
+                let err = DrivetrainError::BorrowMutError {
+                    borrow_mut_error: e,
+                };
+                warn!("{}", err);
+                errors.push(err);
             }
         }
+
+        errors
     }
 
     /// Sets the brake mode for all motors in the drivetrain.
@@ -315,20 +470,31 @@ impl Differential {
     /// // Set motors to brake mode for better control
     /// drivetrain.set_brakemode(BrakeMode::Brake);
     /// ```
-    pub fn set_brakemode(&self, brakemode: BrakeMode) {
+    pub fn set_brakemode(&self, brakemode: BrakeMode) -> Vec<DrivetrainError> {
+        let mut errors = Vec::new();
+
         let left = self.left.try_borrow_mut();
         let right = self.right.try_borrow_mut();
 
         if let Ok(mut motors) = left {
             for motor in motors.as_mut() {
-                let _ = motor.brake(brakemode);
+                let _ = motor.brake(brakemode).unwrap_or_else(|e| {
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
+                });
             }
         }
         if let Ok(mut motors) = right {
             for motor in motors.as_mut() {
-                let _ = motor.brake(brakemode);
+                let _ = motor.brake(brakemode).unwrap_or_else(|e| {
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
+                });
             }
         }
+        errors
     }
 
     /// Returns the average encoder position of all motors in the drivetrain.
@@ -349,7 +515,8 @@ impl Differential {
     /// let position = drivetrain.position();
     /// println!("Drivetrain position: {} degrees", position.as_degrees());
     /// ```
-    pub fn position(&self) -> Angle {
+    pub fn position(&self) -> (Angle, Vec<DrivetrainError>) {
+        let mut errors = Vec::new();
         let left = self.left.try_borrow_mut();
         let right = self.right.try_borrow_mut();
         let mut angle: Angle = Angle::from_degrees(0.0);
@@ -357,32 +524,52 @@ impl Differential {
         if let Ok(mut motors) = left {
             for motor in motors.as_mut() {
                 angle += motor.position().unwrap_or_else(|e| {
-                    warn!("Error Getting Motor Encoder Position: {}", e);
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
                     denom -= 1.0;
                     Angle::from_radians(0.0)
                 });
                 denom += 1.0;
             }
         } else if let Err(e) = left {
-            warn!("Error Borrowing Mutex: {}", e);
+            let err = DrivetrainError::BorrowMutError {
+                borrow_mut_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
         } else {
-            warn!("Error Borrowing Mutex");
+            let err = DrivetrainError::Unknown {
+                string: "Failed to borrow RefCell mutably".to_string(),
+            };
+            warn!("{}", err);
+            errors.push(err);
         }
         if let Ok(mut motors) = right {
             for motor in motors.as_mut() {
                 angle += motor.position().unwrap_or_else(|e| {
-                    warn!("Error Getting Motor Encoder Position: {}", e);
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
                     denom -= 1.0;
                     Angle::from_radians(0.0)
                 });
                 denom += 1.0;
             }
         } else if let Err(e) = right {
-            warn!("Error Borrowing Mutex: {}", e);
+            let err = DrivetrainError::BorrowMutError {
+                borrow_mut_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
         } else {
-            warn!("Error Borrowing Mutex");
+            let err = DrivetrainError::Unknown {
+                string: "Failed to borrow RefCell mutably".to_string(),
+            };
+            warn!("{}", err);
+            errors.push(err);
         }
-        angle / denom
+        (angle / denom, errors)
     }
 
     /// Returns the average encoder position of all left motors in the drivetrain.
@@ -403,25 +590,36 @@ impl Differential {
     /// let position = drivetrain.left_position();
     /// println!("Drivetrain position: {} degrees", position.as_degrees());
     /// ```
-    pub fn left_position(&self) -> Angle {
+    pub fn left_position(&self) -> (Angle, Vec<DrivetrainError>) {
+        let mut errors = Vec::new();
         let left = self.left.try_borrow_mut();
         let mut angle: Angle = Angle::from_degrees(0.0);
         let mut denom: f64 = 0.0;
         if let Ok(mut motors) = left {
             for motor in motors.as_mut() {
                 angle += motor.position().unwrap_or_else(|e| {
-                    warn!("Error Getting Motor Encoder Position: {}", e);
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
                     denom -= 1.0;
                     Angle::from_radians(0.0)
                 });
                 denom += 1.0;
             }
         } else if let Err(e) = left {
-            warn!("Error Borrowing Mutex: {}", e);
+            let err = DrivetrainError::BorrowMutError {
+                borrow_mut_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
         } else {
-            warn!("Error Borrowing Mutex");
+            let err = DrivetrainError::Unknown {
+                string: "Failed to borrow RefCell mutably".to_string(),
+            };
+            warn!("{}", err);
+            errors.push(err);
         }
-        angle / denom
+        (angle / denom, errors)
     }
 
     /// Returns the average encoder position of all right motors in the drivetrain.
@@ -442,111 +640,197 @@ impl Differential {
     /// let position = drivetrain.right_position();
     /// println!("Drivetrain position: {} degrees", position.as_degrees());
     /// ```
-    pub fn right_position(&self) -> Angle {
+    pub fn right_position(&self) -> (Angle, Vec<DrivetrainError>) {
+        let mut errors = Vec::new();
         let right = self.right.try_borrow_mut();
         let mut angle: Angle = Angle::from_degrees(0.0);
         let mut denom: f64 = 0.0;
         if let Ok(mut motors) = right {
             for motor in motors.as_mut() {
                 angle += motor.position().unwrap_or_else(|e| {
-                    warn!("Error Getting Motor Encoder Position: {}", e);
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
                     denom -= 1.0;
                     Angle::from_radians(0.0)
                 });
                 denom += 1.0;
             }
         } else if let Err(e) = right {
-            warn!("Error Borrowing Mutex: {}", e);
+            let err = DrivetrainError::BorrowMutError {
+                borrow_mut_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
         } else {
-            warn!("Error Borrowing Mutex");
+            let err = DrivetrainError::Unknown {
+                string: "Failed to borrow RefCell mutably".to_string(),
+            };
+            warn!("{}", err);
+            errors.push(err);
         }
-        angle / denom
+        (angle / denom, errors)
     }
 
     pub fn reset_position(&self) -> Result<(), PortError> {
+        let mut errors = Vec::new();
         let left = self.left.try_borrow_mut();
         let right = self.right.try_borrow_mut();
 
         if let Ok(mut motors) = left {
             for motor in motors.as_mut() {
-                motor.reset_position()?
+                motor.reset_position().unwrap_or_else(|e| {
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
+                })
             }
         } else if let Err(e) = left {
-            warn!("Error Borrowing Mutex: {}", e);
+            let err = DrivetrainError::BorrowMutError {
+                borrow_mut_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
         } else {
-            warn!("Error Borrowing Mutex");
+            let err = DrivetrainError::Unknown {
+                string: "Failed to borrow RefCell mutably".to_string(),
+            };
+            warn!("{}", err);
+            errors.push(err);
         }
         if let Ok(mut motors) = right {
             for motor in motors.as_mut() {
-                motor.reset_position()?
+                motor.reset_position().unwrap_or_else(|e| {
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
+                })
             }
         } else if let Err(e) = right {
-            warn!("Error Borrowing Mutex: {}", e);
+            let err = DrivetrainError::BorrowMutError {
+                borrow_mut_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
         } else {
-            warn!("Error Borrowing Mutex");
+            let err = DrivetrainError::Unknown {
+                string: "Failed to borrow RefCell mutably".to_string(),
+            };
+            warn!("{}", err);
+            errors.push(err);
         }
         Ok(())
     }
 
     pub fn set_position(&self, position: Angle) -> Result<(), PortError> {
+        let mut errors = Vec::new();
         let left = self.left.try_borrow_mut();
         let right = self.right.try_borrow_mut();
 
         if let Ok(mut motors) = left {
             for motor in motors.as_mut() {
-                motor.set_position(position)?
+                motor.set_position(position).unwrap_or_else(|e| {
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
+                })
             }
         } else if let Err(e) = left {
-            warn!("Error Borrowing Mutex: {}", e);
+            let err = DrivetrainError::BorrowMutError {
+                borrow_mut_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
         } else {
-            warn!("Error Borrowing Mutex");
+            let err = DrivetrainError::Unknown {
+                string: "Failed to borrow RefCell mutably".to_string(),
+            };
+            warn!("{}", err);
+            errors.push(err);
         }
         if let Ok(mut motors) = right {
             for motor in motors.as_mut() {
-                motor.set_position(position)?
+                motor.set_position(position).unwrap_or_else(|e| {
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
+                })
             }
         } else if let Err(e) = right {
-            warn!("Error Borrowing Mutex: {}", e);
+            let err = DrivetrainError::BorrowMutError {
+                borrow_mut_error: e,
+            };
+            warn!("{}", err);
+            errors.push(err);
         } else {
-            warn!("Error Borrowing Mutex");
+            let err = DrivetrainError::Unknown {
+                string: "Failed to borrow RefCell mutably".to_string(),
+            };
+            warn!("{}", err);
+            errors.push(err);
         }
         Ok(())
     }
 
-    pub fn set_voltage(&self, voltage: f64) {
+    pub fn set_voltage(&self, voltage: f64) -> Vec<DrivetrainError> {
+        let mut errors = Vec::new();
+
         let left = self.left.try_borrow_mut();
         let right = self.right.try_borrow_mut();
 
         if let Ok(mut motors) = left {
             for motor in motors.as_mut() {
-                let _ = motor.set_voltage(voltage);
+                motor.set_voltage(voltage).unwrap_or_else(|e| {
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
+                });
             }
         }
         if let Ok(mut motors) = right {
             for motor in motors.as_mut() {
-                let _ = motor.set_voltage(voltage);
+                motor.set_voltage(voltage).unwrap_or_else(|e| {
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
+                });
             }
         }
+        errors
     }
 
-    pub fn set_left_voltage(&self, voltage: f64) {
+    pub fn set_left_voltage(&self, voltage: f64) -> Vec<DrivetrainError> {
+        let mut errors = Vec::new();
+
         let left = self.left.try_borrow_mut();
 
         if let Ok(mut motors) = left {
             for motor in motors.as_mut() {
-                let _ = motor.set_voltage(voltage);
+                motor.set_voltage(voltage).unwrap_or_else(|e| {
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
+                });
             }
         }
+        errors
     }
 
-    pub fn set_right_voltage(&self, voltage: f64) {
+    pub fn set_right_voltage(&self, voltage: f64) -> Vec<DrivetrainError> {
+        let mut errors = Vec::new();
+
         let right = self.right.try_borrow_mut();
 
         if let Ok(mut motors) = right {
             for motor in motors.as_mut() {
-                let _ = motor.set_voltage(voltage);
+                motor.set_voltage(voltage).unwrap_or_else(|e| {
+                    let err = DrivetrainError::PortError { port_error: e };
+                    warn!("{}", err);
+                    errors.push(err);
+                });
             }
         }
+        errors
     }
 
     /// Creates a new drivetrain with shared ownership of the left/right motors.

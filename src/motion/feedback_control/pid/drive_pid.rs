@@ -146,14 +146,14 @@ impl DrivePID {
     pub fn tick(&mut self) {
         let now = user_uptime();
         let dt = (now - self.last_update).as_secs_f64();
-        let left_reading = self.drivetrain.left_position();
+        let left_reading = self.drivetrain.left_position().0;
         let right_reading = self.drivetrain.right_position();
         let left_power = self.pid_left.tick(
             arc_length(left_reading, self.wheel_diameter, self.motor_wheel_ratio).as_inches(),
             dt,
         );
         let right_power = self.pid_right.tick(
-            arc_length(right_reading, self.wheel_diameter, self.motor_wheel_ratio).as_inches(),
+            arc_length(right_reading.0, self.wheel_diameter, self.motor_wheel_ratio).as_inches(),
             dt,
         );
         self.drivetrain.set_left_voltage(left_power);
@@ -169,7 +169,7 @@ impl DrivePID {
         self.pid_left.set_target(
             left.as_inches() +
                 arc_length(
-                    self.drivetrain.left_position(),
+                    self.drivetrain.left_position().0,
                     self.wheel_diameter,
                     self.motor_wheel_ratio,
                 )
@@ -178,7 +178,7 @@ impl DrivePID {
         self.pid_right.set_target(
             right.as_inches() +
                 arc_length(
-                    self.drivetrain.right_position(),
+                    self.drivetrain.right_position().0,
                     self.wheel_diameter,
                     self.motor_wheel_ratio,
                 )
@@ -220,14 +220,14 @@ impl DrivePID {
         let start = user_uptime();
         while self.pid_left.is_active(
             arc_length(
-                self.drivetrain.left_position(),
+                self.drivetrain.left_position().0,
                 self.wheel_diameter,
                 self.motor_wheel_ratio,
             )
             .as_inches(),
         ) || self.pid_right.is_active(
             arc_length(
-                self.drivetrain.right_position(),
+                self.drivetrain.right_position().0,
                 self.wheel_diameter,
                 self.motor_wheel_ratio,
             )
@@ -334,13 +334,13 @@ impl DriveControl for DrivePID {
 
             // Current wheel travel (absolute, in inches).
             let left_now = arc_length(
-                self.drivetrain.left_position(),
+                self.drivetrain.left_position().0,
                 self.wheel_diameter,
                 self.motor_wheel_ratio,
             )
             .as_inches();
             let right_now = arc_length(
-                self.drivetrain.right_position(),
+                self.drivetrain.right_position().0,
                 self.wheel_diameter,
                 self.motor_wheel_ratio,
             )
@@ -418,13 +418,13 @@ impl DriveControl for DrivePID {
 
             // Current wheel travel (absolute, in inches).
             let left_now = arc_length(
-                self.drivetrain.left_position(),
+                self.drivetrain.left_position().0,
                 self.wheel_diameter,
                 self.motor_wheel_ratio,
             )
             .as_inches();
             let right_now = arc_length(
-                self.drivetrain.right_position(),
+                self.drivetrain.right_position().0,
                 self.wheel_diameter,
                 self.motor_wheel_ratio,
             )
