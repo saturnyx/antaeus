@@ -5,10 +5,10 @@
 //!
 //! # Types
 //!
-//! - `Point`: A 2D point with x and y coordinates.
-//! - `Line`: A line segment between two points.
-//! - `Path`: A sequence of waypoints forming a path.
-//! - `Circle`: A circle defined by center and radius.
+//! * `Point`: A 2D point with x and y coordinates.
+//! * `Line`: A line segment between two points.
+//! * `Path`: A sequence of waypoints forming a path.
+//! * `Circle`: A circle defined by center and radius.
 
 use std::vec;
 

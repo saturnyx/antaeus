@@ -3,11 +3,11 @@
 //! This module provides the sensor abstractions and data types used by the
 //! odometry tracking system. It includes:
 //!
-//! - **TrackingSensor**: An abstraction over different encoder types.
-//! - **Tracker**: Configuration for a tracking wheel with gear ratios.
-//! - **TrackerMech**: The complete tracking mechanism with vertical/horizontal
+//! * **TrackingSensor**: An abstraction over different encoder types.
+//! * **Tracker**: Configuration for a tracking wheel with gear ratios.
+//! * **TrackerMech**: The complete tracking mechanism with vertical/horizontal
 //!   trackers and an IMU.
-//! - **Pose**: A 2D position with heading.
+//! * **Pose**: A 2D position with heading.
 //!
 //! # Example
 //!
@@ -45,10 +45,10 @@ use crate::peripherals::drivetrain::Differential;
 ///
 /// # Variants
 ///
-/// - `AdiOpticalEncoder`: A 3-wire optical shaft encoder.
-/// - `RotationSensor`: A V5 rotation sensor (high resolution).
-/// - `Differential`: Uses drivetrain motor encoders as tracking sensors.
-/// - `None`: Placeholder for optional tracking (returns zero).
+/// * `AdiOpticalEncoder`: A 3-wire optical shaft encoder.
+/// * `RotationSensor`: A V5 rotation sensor (high resolution).
+/// * `Differential`: Uses drivetrain motor encoders as tracking sensors.
+/// * `None`: Placeholder for optional tracking (returns zero).
 ///
 /// # Example
 ///

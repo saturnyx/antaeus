@@ -5,20 +5,20 @@
 //!
 //! # Available Controllers
 //!
-//! - `pid`: Standard PID for controlling a differential drivetrain.
+//! * `pid`: Standard PID for controlling a differential drivetrain.
 //!   Supports linear movement, rotation, and swing turns.
-//! - `arcpid`: Arc PID for curved movements where the robot doesn't
+//! * `arcpid`: Arc PID for curved movements where the robot doesn't
 //!   stop to turn.
-//! - `singlepid`: Standalone PID for controlling a single motor group
+//! * `singlepid`: Standalone PID for controlling a single motor group
 //!   (e.g., an arm or lift).
 //!
 //! # How PID Works
 //!
 //! PID control calculates motor output based on three terms:
 //!
-//! - **P (Proportional)**: Output proportional to the error (distance from target).
-//! - **I (Integral)**: Output proportional to accumulated error over time.
-//! - **D (Derivative)**: Output proportional to the rate of error change.
+//! * **P (Proportional)**: Output proportional to the error (distance from target).
+//! * **I (Integral)**: Output proportional to accumulated error over time.
+//! * **D (Derivative)**: Output proportional to the rate of error change.
 //!
 //! The formula is: `output = Kp*error + Ki*integral + Kd*derivative`
 //!

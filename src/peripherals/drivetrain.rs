@@ -6,9 +6,9 @@
 //!
 //! # Supported Drive Modes
 //!
-//! - **Tank**: Each joystick directly controls one side of the drivetrain.
-//! - **Arcade**: One stick for forward/backward, another for turning.
-//! - **Reverse Tank/Arcade**: Inverted controls for intuitive driving in reverse.
+//! * **Tank**: Each joystick directly controls one side of the drivetrain.
+//! * **Arcade**: One stick for forward/backward, another for turning.
+//! * **Reverse Tank/Arcade**: Inverted controls for intuitive driving in reverse.
 //!
 //! # Example
 //!
@@ -168,16 +168,16 @@ impl Differential {
     /// Drive the robot using arcade controls (single-stick forward/back + single-stick turn).
     ///
     /// Behavior:
-    /// - Forward/backward is read from the left stick Y axis.
-    /// - Turning is read from the right stick X axis.
-    /// - The two values are mixed into left/right voltages as:
-    ///   - left = (fwd + turn) * 12.0
-    ///   - right = (fwd - turn) * 12.0
-    /// - If reading the controller state fails, zeroed inputs are used (no movement) and a warning is logged.
+    /// * Forward/backward is read from the left stick Y axis.
+    /// * Turning is read from the right stick X axis.
+    /// * The two values are mixed into left/right voltages as:
+    ///   * left = (fwd + turn) * 12.0
+    ///   * right = (fwd - turn) * 12.0
+    /// * If reading the controller state fails, zeroed inputs are used (no movement) and a warning is logged.
     ///
     /// Notes:
-    /// - Inputs are assumed to be in the range [-1.0, 1.0] and are scaled to volts by 12.0.
-    /// - Consider applying your own deadband before calling if small-stick noise is an issue.
+    /// * Inputs are assumed to be in the range [-1.0, 1.0] and are scaled to volts by 12.0.
+    /// * Consider applying your own deadband before calling if small-stick noise is an issue.
     ///
     /// # Example
     /// ```ignore
@@ -214,14 +214,14 @@ impl Differential {
     /// Drive the robot using reversed tank controls (sticks swapped and inverted).
     ///
     /// Behavior:
-    /// - Left motors take input from the RIGHT stick Y axis, inverted.
-    /// - Right motors take input from the LEFT stick Y axis, inverted.
-    /// - Computation:
-    ///   - left = (-right_y) * 12.0
-    ///   - right = (-left_y) * 12.0
-    /// - This is useful when the robot is driving backwards but you want the sticks
+    /// * Left motors take input from the RIGHT stick Y axis, inverted.
+    /// * Right motors take input from the LEFT stick Y axis, inverted.
+    /// * Computation:
+    ///   * left = (-right_y) * 12.0
+    ///   * right = (-left_y) * 12.0
+    /// * This is useful when the robot is driving backwards but you want the sticks
     ///   to maintain an intuitive left/right mapping relative to the robot's new front.
-    /// - On controller read error, zeroed inputs are used and a warning is logged.
+    /// * On controller read error, zeroed inputs are used and a warning is logged.
     ///
     /// # Example
     /// ```ignore
@@ -255,17 +255,17 @@ impl Differential {
     /// Drive the robot using reversed arcade controls (forward/turn both inverted).
     ///
     /// Behavior:
-    /// - Forward/backward is read from the left stick Y axis, but inverted (fwd = -left_y).
-    /// - Turning is read from the right stick X axis, also inverted (turn = -right_x).
-    /// - Mixed into left/right voltages as:
-    ///   - left = (fwd + turn) * 12.0
-    ///   - right = (fwd - turn) * 12.0
-    /// - This inversion preserves intuitive steering when the robot is driving backwards
+    /// * Forward/backward is read from the left stick Y axis, but inverted (fwd = -left_y).
+    /// * Turning is read from the right stick X axis, also inverted (turn = -right_x).
+    /// * Mixed into left/right voltages as:
+    ///   * left = (fwd + turn) * 12.0
+    ///   * right = (fwd - turn) * 12.0
+    /// * This inversion preserves intuitive steering when the robot is driving backwards
     ///   (pushing the right stick right still causes a clockwise turn relative to the driver).
-    /// - On controller read error, zeroed inputs are used and a warning is logged.
+    /// * On controller read error, zeroed inputs are used and a warning is logged.
     ///
     /// Notes:
-    /// - Inputs are assumed to be in the range [-1.0, 1.0] and are scaled to volts by 12.0.
+    /// * Inputs are assumed to be in the range [-1.0, 1.0] and are scaled to volts by 12.0.
     ///
     /// # Example
     /// ```ignore
@@ -303,9 +303,9 @@ impl Differential {
     ///
     /// The brake mode determines how motors behave when no voltage is applied:
     ///
-    /// - [`BrakeMode::Coast`]: Motors spin freely.
-    /// - [`BrakeMode::Brake`]: Motors actively resist rotation.
-    /// - [`BrakeMode::Hold`]: Motors actively hold their position.
+    /// * [`BrakeMode::Coast`]: Motors spin freely.
+    /// * [`BrakeMode::Brake`]: Motors actively resist rotation.
+    /// * [`BrakeMode::Hold`]: Motors actively hold their position.
     ///
     /// # Example
     ///

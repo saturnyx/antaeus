@@ -358,9 +358,9 @@ pub struct ArcPIDValues {
     pub target:    f64,
     /// Curvature offset for arc movements.
     ///
-    /// - Positive values: curve right (left motors faster).
-    /// - Negative values: curve left (right motors faster).
-    /// - Zero: straight line movement.
+    /// * Positive values: curve right (left motors faster).
+    /// * Negative values: curve left (right motors faster).
+    /// * Zero: straight line movement.
     pub offset:    f64,
 }
 

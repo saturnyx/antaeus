@@ -3,10 +3,10 @@
 //! This module provides tools for precise robot movement during autonomous
 //! periods. It includes:
 //!
-//! - **Odometry**: Position tracking using tracking wheels and an inertial sensor.
-//! - **PID Control**: Proportional-Integral-Derivative controllers for accurate
+//! * **Odometry**: Position tracking using tracking wheels and an inertial sensor.
+//! * **PID Control**: Proportional-Integral-Derivative controllers for accurate
 //!   linear and rotational movement.
-//! - **Path Following**: The Candidate-Based Pursuit algorithm for smooth path
+//! * **Path Following**: The Candidate-Based Pursuit algorithm for smooth path
 //!   tracking.
 //!
 //! # Architecture
@@ -39,9 +39,9 @@ pub mod odom;
 /// PID control algorithms.
 ///
 /// Contains multiple PID implementations:
-/// - [`pid`](pid::pid): Standard PID for drivetrain control.
-/// - [`arcpid`](pid::arcpid): PID that allows arc movements.
-/// - [`singlepid`](pid::singlepid): PID for single motor groups.
+/// * [`pid`](pid::pid): Standard PID for drivetrain control.
+/// * [`arcpid`](pid::arcpid): PID that allows arc movements.
+/// * [`singlepid`](pid::singlepid): PID for single motor groups.
 pub mod pid;
 
 /// Candidate-Based Pursuit path following algorithm.
