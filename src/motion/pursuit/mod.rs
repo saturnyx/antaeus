@@ -88,7 +88,9 @@ impl Pursuit {
     ///
     /// # Arguments
     ///
-    /// * `odom` - The odometry movement controller (must have arc_pid configured).
+    /// * `odom` - The odometry movement controller
+    /// * `drivetrain` - The differential drivetrain
+    /// * `ctrl_algorithm` - The control algorithm
     /// * `path` - The path to follow, defined as a series of waypoints.
     ///
     /// # Example
@@ -138,5 +140,51 @@ impl Pursuit {
             run = run_curr;
             sleep(LOOPRATE).await;
         }
+    }
+
+    /// Follows a path using the Candidate-Based Pursuit algorithm.
+    ///
+    /// This method continuously calculates target points and commands
+    /// arc movements until the robot reaches the end of the path.
+    ///
+    /// # Arguments
+    ///
+    /// * `odom` - The odometry movement controller
+    /// * `drivetrain` - The differential drivetrain
+    /// * `ctrl_algorithm` - The control algorithm
+    /// * `path` - The path to follow, defined as a series of waypoints.
+    pub async fn tick<C: PursuitControl>(
+        &self,
+        odom: &OdomTracker,
+        drivetrain: &Differential,
+        ctrl_algorithm: &C,
+        path: geo::Path,
+    ) -> bool {
+        let odometry_values = odom.global_pose.lock().await;
+        let (x, y, t) = (
+            Length::from_inches(odometry_values.x),
+            Length::from_inches(odometry_values.y),
+            odometry_values.t,
+        );
+        let cir = geo::Circle {
+            x: x.as_inches(),
+            y: y.as_inches(),
+            r: self.lookahead.as_inches(),
+        };
+        let target = algorithm::pursuit_target(path.clone(), cir);
+        let (tarx, tary) = abs_arc_point(
+            Pose::new(Length::as_inches(&x), Length::as_inches(&y), t),
+            Length::as_inches(&Length::from_inches(target.x)),
+            Length::as_inches(&Length::from_inches(target.y)),
+        );
+        let ((powl, powr), run_curr) = ctrl_algorithm.control(
+            Length::from_inches(tarx),
+            Length::from_inches(tary),
+            self.lookahead,
+        );
+        drivetrain.set_left_voltage(powl);
+        drivetrain.set_right_voltage(powr);
+
+        run_curr
     }
 }
