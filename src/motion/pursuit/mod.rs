@@ -48,7 +48,7 @@ const LOOPRATE: Duration = Duration::from_millis(10);
 
 use std::time::Duration;
 
-use control::PusuitControl;
+use control::PursuitControl;
 use measurements::Length;
 use vexide::time::sleep;
 
@@ -102,7 +102,7 @@ impl Pursuit {
     ///
     /// pursuit.follow(odom, path).await;
     /// ```
-    pub async fn follow<C: PusuitControl>(
+    pub async fn follow<C: PursuitControl>(
         &self,
         odom: &OdomTracker,
         drivetrain: &Differential,

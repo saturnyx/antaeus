@@ -8,6 +8,11 @@ pub enum PursuitDirection {
 
 pub mod basic;
 
-pub trait PusuitControl {
+/// # `PursuitControl` Trait
+/// The lower-level algorithm used by the Pursuit Algorithm to access and
+/// control motor voltages.
+pub trait PursuitControl {
+    /// A Control Algorithm that generates wheel velocities depending on a
+    /// point relative to the robot.
     fn control(&self, x: Length, y: Length, lookahead: Length) -> ((f64, f64), bool);
 }

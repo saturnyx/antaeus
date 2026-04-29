@@ -1,13 +1,29 @@
 use measurements::Length;
 
-use crate::motion::pursuit::control::PusuitControl;
+use crate::motion::pursuit::control::PursuitControl;
 
+/// A Basic Control Algorithm that generates wheel velocities depending on a
+/// point relative to the robot.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct BasicControl {
     pub track_width: Length,
     pub tolerance:   Length,
 }
 
-impl PusuitControl for BasicControl {
+impl BasicControl {
+    /// Create a new instance of `Basic Control`
+    /// - `track_width`: The width of the drivetrain
+    /// - `tolerance`: A leeway at which the algorithm will end. Smaller
+    /// tolerances mean more accuracy but more time spent.
+    pub fn new(track_width: Length, tolerance: Length) -> Self {
+        Self {
+            track_width,
+            tolerance,
+        }
+    }
+}
+
+impl PursuitControl for BasicControl {
     fn control(&self, x: Length, y: Length, lookahead: Length) -> ((f64, f64), bool) {
         // Your frame:
         // +x = right, +y = forward
@@ -56,7 +72,7 @@ impl PusuitControl for BasicControl {
 mod tests {
     use measurements::{Length, test_utils::assert_almost_eq};
 
-    use crate::motion::pursuit::control::{PusuitControl, basic::BasicControl};
+    use crate::motion::pursuit::control::{PursuitControl, basic::BasicControl};
 
     #[test]
     fn basic_normal() {
