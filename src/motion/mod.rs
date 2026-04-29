@@ -36,16 +36,10 @@
 /// the robot's global position using tracking wheels and an inertial sensor.
 pub mod odom;
 
-/// PID control algorithms.
-///
-/// Contains multiple PID implementations:
-/// * [`pid`](pid::pid): Standard PID for drivetrain control.
-/// * [`arcpid`](pid::arcpid): PID that allows arc movements.
-/// * [`singlepid`](pid::singlepid): PID for single motor groups.
-pub mod pid;
-
 /// Candidate-Based Pursuit path following algorithm.
 ///
 /// A more robust variant of pure pursuit that handles edge cases
 /// like the robot being off the path or near path endpoints.
 pub mod pursuit;
+
+pub mod feedback_control;
