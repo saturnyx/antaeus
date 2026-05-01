@@ -84,6 +84,9 @@ pub mod peripherals;
 /// - Antaeus logo and badge display utilities.
 pub mod display;
 
+/// Miscellaneous utilities module.
+pub mod misc;
+
 /// Makes an object clonable by wrapping it in `Rc` and `RefCell`
 pub fn make_cloneable<T>(v: T) -> Rc<RefCell<T>> { Rc::new(RefCell::new(v)) }
 

@@ -42,14 +42,19 @@ use std::{sync::Arc, time::Duration};
 
 #[allow(unused_imports)]
 use log::debug;
-use log::warn;
-use measurements::{Distance, Speed};
+use measurements::{Distance, Length, Speed};
+use snafu::Snafu;
 use vexide::{
     adi::range_finder::AdiRangeFinder,
-    smart::distance::DistanceSensor,
+    smart::{
+        PortError,
+        distance::{DistanceObjectError, DistanceSensor},
+    },
     sync::Mutex,
     time::user_uptime,
 };
+
+use crate::misc::error::Report;
 
 /// Unified range sensor interface for smart and ADI hardware.
 pub enum RangeSensor {
@@ -64,6 +69,20 @@ pub enum RangeSensor {
     },
 }
 
+#[derive(Debug, Snafu)]
+pub enum RangeSensorError {
+    #[snafu(display("Failed to access port: {port_error}"))]
+    PortError { port_error: PortError },
+    #[snafu(display("Failed to get object's distance : {distance_object_error}"))]
+    DistanceObjectError {
+        distance_object_error: DistanceObjectError,
+    },
+    #[snafu(display("Sensor did not detect a distance"))]
+    NoDistance,
+    #[snafu(display("Sensor did not detect a velocity"))]
+    NoVelocity,
+}
+
 impl RangeSensor {
     /// Wrap a smart distance sensor.
     pub fn from_distance(sensor: DistanceSensor) -> Self {
@@ -76,59 +95,85 @@ impl RangeSensor {
     }
 
     /// Read the current distance measurement, if available.
-    pub async fn distance(&self) -> Option<Distance> {
+    pub async fn distance(&self) -> Report<Distance, RangeSensorError> {
         match self {
             RangeSensor::AdiDistanceSensor(sensor) => match sensor.lock().await.distance() {
                 Ok(dist) => match dist {
-                    Some(d) => Some(Distance::from_centimeters(d as f64)),
-                    None => None,
+                    Some(d) => Report::new(Distance::from_centimeters(d as f64)),
+                    None => Report::from_parts(
+                        Distance::from_centimeters(0.0),
+                        RangeSensorError::NoDistance,
+                    ),
                 },
-                Err(e) => {
-                    warn!("Error getting distance: {}", e);
-                    None
-                }
+                Err(e) => Report::from_parts(
+                    Distance::from_centimeters(0.0),
+                    RangeSensorError::PortError { port_error: e },
+                ),
             },
             RangeSensor::SmartDistSensor(sensor) => {
                 let object = sensor.lock().await.object();
                 match object {
                     Ok(obj) => match obj {
-                        Some(obj) => Some(Distance::from_micrometres(obj.distance as f64)),
-                        None => None,
+                        Some(obj) => Report::new(Distance::from_centimetres(obj.distance as f64)),
+                        None => Report::from_parts(
+                            Distance::from_centimeters(0.0),
+                            RangeSensorError::NoDistance,
+                        ),
                     },
-                    Err(e) => {
-                        warn!("Error getting object from distance sensor: {}", e);
-                        None
-                    }
+                    Err(e) => Report::from_parts(
+                        Length::from_centimeters(0.0),
+                        RangeSensorError::DistanceObjectError {
+                            distance_object_error: e,
+                        },
+                    ),
                 }
             }
             RangeSensor::Mock {
                 distance,
                 velocity: _,
-            } => distance.clone(),
+            } => match distance {
+                Some(dist) => Report::new(dist.clone()),
+                None => {
+                    Report::from_parts(Length::from_centimeters(0.0), RangeSensorError::NoDistance)
+                }
+            },
         }
     }
 
     /// Read the current velocity measurement when supported.
     ///
     /// ADI range finders do not report velocity, so this returns `None`.
-    pub async fn velocity(&self) -> Option<Speed> {
+    pub async fn velocity(&self) -> Report<Speed, RangeSensorError> {
         match self {
             Self::SmartDistSensor(sensor) => {
                 let obj = sensor.lock().await.object();
                 match obj {
-                    Ok(Some(obj)) => Some(Speed::from_metres_per_second(obj.velocity)),
-                    Ok(None) => None,
-                    Err(e) => {
-                        warn!("Error getting velocity {}", e);
-                        None
-                    }
+                    Ok(Some(obj)) => Report::new(Speed::from_metres_per_second(obj.velocity)),
+                    Ok(None) => Report::from_parts(
+                        Speed::from_meters_per_second(0.0),
+                        RangeSensorError::NoVelocity,
+                    ),
+                    Err(e) => Report::from_parts(
+                        Speed::from_meters_per_second(0.0),
+                        RangeSensorError::DistanceObjectError {
+                            distance_object_error: e,
+                        },
+                    ),
                 }
             }
-            Self::AdiDistanceSensor(_) => None,
+            Self::AdiDistanceSensor(_) => {
+                Report::from_parts(Speed::from_meters_per_second(0.0), RangeSensorError::NoVelocity)
+            }
             Self::Mock {
                 distance: _,
                 velocity,
-            } => velocity.clone(),
+            } => match velocity {
+                Some(vel) => Report::new(vel.clone()),
+                None => Report::from_parts(
+                    Speed::from_meters_per_second(0.0),
+                    RangeSensorError::NoVelocity,
+                ),
+            },
         }
     }
 }
@@ -206,14 +251,21 @@ impl KalmanRangeSensor {
     /// If a measurement is unavailable, the predicted state is retained.
     pub async fn update(&mut self) {
         let m = match self.sensor.distance().await {
-            Some(val) => val,
-            None => {
-                warn!("Error getting distance");
-                self.new_m = self.est_m;
-                self.new_var = self.est_var;
-                return; // Exit fn
+            Report::Ok(d) => d,
+            Report::Warn { value: d, error: e } => {
+                // best-effort policy: log, but keep the returned value
+                log::warn!("{}", e);
+                d
             }
         };
+
+        // Ok(val) => val,
+        // Warn => {
+        //     warn!("Error getting distance");
+        //     self.new_m = self.est_m;
+        //     self.new_var = self.est_var;
+        //     return; // Exit fn
+        // }
 
         let residual = m - self.est_m;
         let kalman_gain = self.est_var / (self.est_var + self.measurement_var);
@@ -222,7 +274,7 @@ impl KalmanRangeSensor {
 
         self.prev_m = self.new_m;
         self.prev_var = self.new_var;
-        if let Some(vel) = self.sensor.velocity().await {
+        if let Report::Ok(vel) = self.sensor.velocity().await {
             self.prev_vel = vel;
         } else {
             let distance_change = self.new_m - self.prev_m;
