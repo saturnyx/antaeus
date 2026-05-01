@@ -33,7 +33,7 @@
 //! );
 //! ```
 
-/// Controller input mapping utilities.
+/// Legacy Controller input mapping utilities.
 ///
 /// Provides [`ControllerControl`](controller::ControllerControl) for
 /// mapping buttons to motors and ADI devices.

@@ -125,7 +125,7 @@ impl TrackingSensor {
                     Angle::from_radians(0.0)
                 })
             }
-            TrackingSensor::Differential(dt) => dt.position().0,
+            TrackingSensor::Differential(dt) => dt.position().value(),
             TrackingSensor::None => Angle::from_radians(0.0),
         }
     }

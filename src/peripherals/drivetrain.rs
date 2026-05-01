@@ -64,6 +64,8 @@ use vexide::{
     smart::{PortError, motor::BrakeMode},
 };
 
+use crate::misc::error::Report;
+
 /// A left/right (“tank”) drivetrain controller.
 ///
 /// `Differential` owns (or shares ownership of) two motor groups:
@@ -571,7 +573,7 @@ impl Differential {
     /// for e in errs { println!("warn: {e}"); }
     /// println!("Drivetrain position: {} degrees", pos.as_degrees());
     /// ```
-    pub fn position(&self) -> (Angle, Vec<DrivetrainError>) {
+    pub fn position(&self) -> Report<Angle, Vec<DrivetrainError>> {
         let mut errors = Vec::new();
         let left = self.left.try_borrow_mut();
         let right = self.right.try_borrow_mut();
@@ -620,7 +622,10 @@ impl Differential {
                 errors.push(err);
             }
         }
-        (angle / denom, errors)
+        match errors.is_empty() {
+            true => Report::new(angle / denom),
+            false => Report::from_parts(angle / denom, errors),
+        }
     }
 
     /// Returns the average encoder position of all left motors.
@@ -633,7 +638,7 @@ impl Differential {
     /// let (pos, _errs) = drivetrain.left_position();
     /// println!("Left position: {} degrees", pos.as_degrees());
     /// ```
-    pub fn left_position(&self) -> (Angle, Vec<DrivetrainError>) {
+    pub fn left_position(&self) -> Report<Angle, Vec<DrivetrainError>> {
         let mut errors = Vec::new();
         let left = self.left.try_borrow_mut();
         let mut angle: Angle = Angle::from_degrees(0.0);
@@ -659,7 +664,10 @@ impl Differential {
                 errors.push(err);
             }
         }
-        (angle / denom, errors)
+        match errors.is_empty() {
+            true => Report::new(angle / denom),
+            false => Report::from_parts(angle / denom, errors),
+        }
     }
 
     /// Returns the average encoder position of all right motors.
@@ -672,7 +680,7 @@ impl Differential {
     /// let (pos, _errs) = drivetrain.right_position();
     /// println!("Right position: {} degrees", pos.as_degrees());
     /// ```
-    pub fn right_position(&self) -> (Angle, Vec<DrivetrainError>) {
+    pub fn right_position(&self) -> Report<Angle, Vec<DrivetrainError>> {
         let mut errors = Vec::new();
         let right = self.right.try_borrow_mut();
         let mut angle: Angle = Angle::from_degrees(0.0);
@@ -698,7 +706,10 @@ impl Differential {
                 errors.push(err);
             }
         }
-        (angle / denom, errors)
+        match errors.is_empty() {
+            true => Report::new(angle / denom),
+            false => Report::from_parts(angle / denom, errors),
+        }
     }
 
     /// Resets the integrated encoder position on all drivetrain motors.
