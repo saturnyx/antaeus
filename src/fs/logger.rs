@@ -33,8 +33,8 @@
 //!
 //! Example output:
 //! ```text
-//! INFO [2m 5s 123ms] antaeus::motion::pid - PID Control Loop Started
-//! WARN [2m 5s 456ms] antaeus::drivetrain - Controller State Error: Disconnected
+//! INFO [2m 5s 123ms] antaeus::motion::feedback_control::legacy_pid::linear_pid - PID Control Loop Started
+//! WARN [2m 5s 456ms] antaeus::peripherals::drivetrain - Controller State Error: Disconnected
 //! ```
 
 use std::{

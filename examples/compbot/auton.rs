@@ -1,12 +1,11 @@
 use antaeus::{
+    misc::units::Length,
     motion::{
-        odom::{self, devices::Pose},
+        localization::{self},
         pursuit::{control, geo},
         *,
     },
-    to_mutex,
 };
-use measurements::Length;
 
 use crate::hardware::Robot;
 pub async fn main_auton(robot: &mut Robot) {
@@ -20,28 +19,30 @@ pub async fn main_auton(robot: &mut Robot) {
         tolerance:   Length::from_inches(0.5),
     };
 
-    let vertical = odom::devices::Tracker {
-        sensor:         odom::devices::TrackingSensor::RotationSensor(robot.v_tracker.clone()),
-        offset:         0.0,
-        wheel_diameter: 3.25,
+    let vertical = localization::tracker::devices::TrackerPod {
+        sensor:         localization::tracker::devices::TrackingSensor::RotationSensor(
+            robot.v_tracker.clone(),
+        ),
+        offset:         Length::from_inches(0.0),
+        wheel_diameter: Length::from_inches(3.25),
         driven_gear:    1.0,
         driving_gear:   1.0,
     };
 
-    let horizontal = odom::devices::Tracker {
-        sensor:         odom::devices::TrackingSensor::RotationSensor(robot.h_tracker.clone()),
-        offset:         0.0,
-        wheel_diameter: 3.25,
+    let horizontal = localization::tracker::devices::TrackerPod {
+        sensor:         localization::tracker::devices::TrackingSensor::RotationSensor(
+            robot.h_tracker.clone(),
+        ),
+        offset:         Length::from_inches(0.0),
+        wheel_diameter: Length::from_inches(3.25),
         driven_gear:    1.0,
         driving_gear:   1.0,
     };
 
-    let trackers = odom::devices::TrackerMech::new(vertical, horizontal, robot.imu.clone());
+    let trackers =
+        localization::tracker::devices::TrackerMech::new(vertical, horizontal, robot.imu.clone());
 
-    let odomtrack = odom::tracker::OdomTracker {
-        trackermech: trackers,
-        global_pose: to_mutex(Pose::origin()),
-    };
+    let odomtrack = localization::tracker::Tracker::new(trackers);
     let pursuit = pursuit::Pursuit {
         lookahead: Length::from_inches(10.0),
     };

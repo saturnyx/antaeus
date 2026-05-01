@@ -1,24 +1,8 @@
-//! # vexide-motorgroup
+//! # MotorGroup
 //!
-//! Missing `MotorGroup` from VEXCode or PROS? This is a simple implementation of a
-//! `MotorGroup` for vexide which allows you to group motors together and control
-//! them as one.
-//!
-//! ## Installation
-//!
-//! Add the following to your `Cargo.toml`:
-//!
-//! ```toml,ignore
-//! [dependencies]
-//! # ... other dependencies
-//! vexide-motorgroup = "2.1.0"
-//! ```
-//!
-//! Or if you prefer the command line:
-//!
-//! ```sh,ignore
-//! cargo add vexide-motorgroup
-//! ```
+//! Missing `MotorGroup` from VEXCode or PROS? This is a lightweight
+//! `MotorGroup` implementation bundled with Antaeus (adapted from the
+//! original `vexide-motorgroup` crate). No extra dependency is required.
 //!
 //! ## Usage
 //!
@@ -33,7 +17,7 @@
 //! use std::time::Duration;
 //!
 //! use alloc::vec;
-//! use vexide_motorgroup::*;
+//! use antaeus::peripherals::motorgroup::*;
 //!
 //! use vexide::prelude::*;
 //!
@@ -76,7 +60,7 @@
 //!
 //! ### Write errors
 //!
-//! vexide-motorgroup provides two different strategies for handling write
+//! This module provides two different strategies for handling write
 //! errors. Both of them will return an `Err` when any motor returns an error.
 //!
 //! 1. [`WriteErrorStrategy::Ignore`] (default): This strategy will ignore
@@ -103,9 +87,10 @@ use vexide::{
 ///
 /// A MotorGroupError is guaranteed to have at least one error in it.
 ///
-/// MotorGroupError also implements `Into<MotorError>`, which will return the
-/// first error that occurred. This means that you can use the `?` operator
-/// with a `MotorGroupError` to return a `MotorError` to a result.
+/// `MotorGroupError` implements conversions to [`PortError`] and
+/// [`SetGearsetError`], returning the first error encountered. This means
+/// you can use the `?` operator to bubble the first error when your
+/// function returns one of those error types.
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct MotorGroupError<E = PortError, T = ()> {
@@ -220,13 +205,13 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Creates a new motor group from a vector of motors.
     ///
     /// You can set the write handling mode afterwards by calling
-    /// [`write_error_handling_mode`].
+    /// [`write_error_strategy`].
     ///
     /// # Examples
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -261,7 +246,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     pub fn write_error_strategy(&mut self, mode: WriteErrorStrategy) -> &mut Self {
         self.write_error_strategy = mode;
         self
@@ -273,13 +258,13 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
+    /// - A [`MotorGroupError`] (containing one or more [`PortError`] values) is returned if a motor device is not currently connected to the Smart Port.
     ///
     /// # Examples
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -315,13 +300,13 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
+    /// - A [`MotorGroupError`] (containing one or more [`PortError`] values) is returned if a motor device is not currently connected to the Smart Port.
     ///
     /// # Examples
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -359,7 +344,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
+    /// - A [`MotorGroupError`] (containing one or more [`PortError`] values) is returned if a motor device is not currently connected to the Smart Port.
     ///
     /// # Examples
     ///
@@ -367,7 +352,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -405,7 +390,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
+    /// - A [`MotorGroupError`] (containing one or more [`PortError`] values) is returned if a motor device is not currently connected to the Smart Port.
     ///
     /// # Examples
     ///
@@ -413,7 +398,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -429,7 +414,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -468,13 +453,13 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
+    /// - A [`MotorGroupError`] (containing one or more [`PortError`] values) is returned if a motor device is not currently connected to the Smart Port.
     ///
     /// # Examples
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     ///
@@ -515,13 +500,13 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
+    /// - A [`MotorGroupError`] (containing one or more [`PortError`] values) is returned if a motor device is not currently connected to the Smart Port.
     ///
     /// # Examples
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -557,14 +542,14 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
-    /// - A [`MotorError::SetGearsetExp`] is returned if the motor is a 5.5W EXP Smart Motor, which has no swappable gearset.
+    /// - A [`MotorGroupError`] (containing one or more [`SetGearsetError`] values) is returned if any motor encounters an error.
+    ///   This includes EXP motors, which do not support swappable gearsets.
     ///
     /// # Examples
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -606,7 +591,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -629,7 +614,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -653,7 +638,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Run a motor group at max speed, agnostic of its type:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// fn run_motor_group_at_max_speed(motor_group: &mut MotorGroup) {
     ///     motor_group.set_voltage(motor_group.max_voltage()).unwrap();
@@ -694,7 +679,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Get the current velocity of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -710,7 +695,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Calculate acceleration of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -770,7 +755,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Print the power drawn by a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -817,7 +802,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Print the torque of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -864,7 +849,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Print the voltage of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -911,7 +896,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Print the position of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -958,7 +943,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Print the current of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -1005,7 +990,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Print the efficiency of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -1045,14 +1030,14 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
+    /// - A [`MotorGroupError`] (containing one or more [`PortError`] values) is returned if a motor device is not currently connected to the Smart Port.
     ///
     /// # Examples
     ///
     /// Reset the position of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -1087,14 +1072,14 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
+    /// - A [`MotorGroupError`] (containing one or more [`PortError`] values) is returned if a motor device is not currently connected to the Smart Port.
     ///
     /// # Examples
     ///
     /// Set the position of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -1129,14 +1114,14 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
+    /// - A [`MotorGroupError`] (containing one or more [`PortError`] values) is returned if a motor device is not currently connected to the Smart Port.
     ///
     /// # Examples
     ///
     /// Set the current limit of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -1171,14 +1156,14 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
+    /// - A [`MotorGroupError`] (containing one or more [`PortError`] values) is returned if a motor device is not currently connected to the Smart Port.
     ///
     /// # Examples
     ///
     /// Set the voltage limit of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -1220,7 +1205,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Print the temperature of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -1270,7 +1255,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Check if a motor group is over temperature:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -1314,7 +1299,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Check if a motor group is over current:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -1358,7 +1343,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Check if a motor group has a driver fault:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -1402,7 +1387,7 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     /// Check if a motor group is over current:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {
@@ -1436,14 +1421,14 @@ impl<M: AsRef<[Motor]> + AsMut<[Motor]>> MotorGroup<M> {
     ///
     /// # Errors
     ///
-    /// - A [`MotorError::Port`] error is returned if a motor device is not currently connected to the Smart Port.
+    /// - A [`MotorGroupError`] (containing one or more [`PortError`] values) is returned if a motor device is not currently connected to the Smart Port.
     ///
     /// # Examples
     ///
     /// Set the direction of a motor group:
     /// ```rust,ignore
     /// use vexide::prelude::*;
-    /// use vexide_motorgroup::*;
+    /// use antaeus::peripherals::motorgroup::*;
     ///
     /// #[vexide::main]
     /// async fn main(peripherals: Peripherals) {

@@ -12,7 +12,7 @@
 //! # Example
 //!
 //! ```ignore
-//! use antaeus::motion::pid::singlepid::{SinglePIDMovement, SinglePIDValues};
+//! use antaeus::motion::feedback_control::legacy_pid::singlepid::{SinglePIDMovement, SinglePIDValues};
 //!
 //! let arm_pid = SinglePIDMovement { /* ... */ };
 //! arm_pid.init();
@@ -171,7 +171,7 @@ impl SinglePIDMovement {
 
 /// PID controller for a single motor group.
 ///
-/// Unlike [`PIDMovement`](super::pid::PIDMovement), which controls
+/// Unlike [`PIDMovement`](super::linear_pid::PIDMovement), which controls
 /// a differential drivetrain, this controller manages a single group
 /// of motors moving together.
 ///
@@ -221,7 +221,7 @@ pub struct SinglePIDValues {
 }
 
 impl SinglePIDValues {
-    /// Uses default ArcPID Values
+    /// Uses default SinglePID values.
     pub fn default() -> SinglePIDValues {
         SinglePIDValues {
             kp:        0.5,

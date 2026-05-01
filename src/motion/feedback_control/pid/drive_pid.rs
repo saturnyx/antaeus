@@ -12,7 +12,7 @@
 //! - Gear-ratio + wheel-diameter based distance conversion
 //!
 //! ## Units and Conversions
-//! - Targets/tolerance are expressed as [`measurements::Length`]
+//! - Targets/tolerance are expressed as [`Length`](crate::misc::units::Length)
 //! - Internal PID values are currently computed in inches (`f64`)
 //! - Encoder/motor position is converted using:
 //!   - motor-to-wheel ratio
@@ -26,11 +26,14 @@
 
 use std::{num::NonZeroU32, time::Duration};
 
-use measurements::Length;
 use vexide::{math::Angle, smart::imu::InertialSensor, time::user_uptime};
 
 use super::core_pid::CorePID;
-use crate::{motion::feedback_control::DriveControl, peripherals::drivetrain::Differential};
+use crate::{
+    misc::units::Length,
+    motion::feedback_control::DriveControl,
+    peripherals::drivetrain::Differential,
+};
 
 /// Outcome of [`DrivePID::autotick`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

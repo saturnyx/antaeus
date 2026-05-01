@@ -19,7 +19,7 @@
 //! # Example
 //!
 //! ```ignore
-//! use antaeus::motion::pid::arcpid::ArcPIDMovement;
+//! use antaeus::motion::feedback_control::legacy_pid::arcpid::ArcPIDMovement;
 //!
 //! let arc_pid = ArcPIDMovement { /* ... */ };
 //! arc_pid.init();
@@ -174,7 +174,7 @@ impl ArcPIDMovement {
     /// # Examples
     ///
     /// ```ignore
-    /// use antaeus::motion::pid::arcpid::ArcPIDMovement;
+    /// use antaeus::motion::feedback_control::legacy_pid::arcpid::ArcPIDMovement;
     ///
     /// async fn auton(arcpid: ArcPIDMovement) {
     ///     arcpid.init(); // Initialize the ArcPID before any movements
@@ -191,7 +191,7 @@ impl ArcPIDMovement {
         mainloop.detach();
     }
 
-    /// Sets the tolerance, Kp, and Kd values for ArcPD.
+    /// Sets the tolerance, Kp, and Kd values for ArcPID.
     ///
     /// # Arguments
     ///
@@ -290,8 +290,8 @@ impl ArcPIDMovement {
 /// Creating an ArcPIDMovement instance:
 ///
 /// ```ignore
-/// use antaeus::motion::pid::arcpid::{ArcPIDMovement, ArcPIDValues};
-/// use antaeus::motion::pid::DrivetrainConfig;
+/// use antaeus::motion::feedback_control::legacy_pid::arcpid::{ArcPIDMovement, ArcPIDValues};
+/// use antaeus::motion::feedback_control::legacy_pid::DrivetrainConfig;
 /// use antaeus::peripherals::drivetrain::Differential;
 /// use vexide::prelude::*;
 ///

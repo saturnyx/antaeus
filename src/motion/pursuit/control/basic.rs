@@ -1,10 +1,8 @@
-use measurements::Length;
-
-use crate::motion::pursuit::control::PursuitControl;
+use crate::{misc::units::Length, motion::pursuit::control::PursuitControl};
 
 /// A Basic Control Algorithm that generates wheel velocities depending on a
 /// point relative to the robot.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct BasicControl {
     pub track_width: Length,
     pub tolerance:   Length,
@@ -70,9 +68,10 @@ impl PursuitControl for BasicControl {
 
 #[cfg(test)]
 mod tests {
-    use measurements::{Length, test_utils::assert_almost_eq};
-
-    use crate::motion::pursuit::control::{PursuitControl, basic::BasicControl};
+    use crate::{
+        misc::units::{Length, assert_almost_eq},
+        motion::pursuit::control::{PursuitControl, basic::BasicControl},
+    };
 
     #[test]
     fn basic_normal() {

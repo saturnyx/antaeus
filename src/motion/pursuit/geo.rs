@@ -12,7 +12,7 @@
 
 use std::vec;
 
-use measurements::{Length, Measurement};
+use crate::misc::units::Length;
 
 /// A 2D point in the coordinate system.
 ///
@@ -21,7 +21,8 @@ use measurements::{Length, Measurement};
 /// # Example
 ///
 /// ```ignore
-/// let waypoint = Point::new(24.0, 12.0);
+/// use antaeus::misc::units::Length;
+/// let waypoint = Point::new(Length::from_inches(24.0), Length::from_inches(12.0));
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point {
@@ -90,7 +91,7 @@ impl Path {
 
     /// Create a path with a start point at origin (0,0)
     pub fn origin() -> Self {
-        let vec = vec![Point::new(Length::from_base_units(0.0), Length::from_base_units(0.0))];
+        let vec = vec![Point::new(Length::from_inches(0.0), Length::from_inches(0.0))];
         Self { waypoints: vec }
     }
 

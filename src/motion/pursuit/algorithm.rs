@@ -3,7 +3,7 @@ use std::f64::{EPSILON, MAX};
 use log::{error, info};
 
 use super::geo;
-use crate::motion::odom::devices::Pose;
+use crate::motion::localization::tracker::devices::Pose;
 
 fn point_in_circle(p: &geo::Point, cir: &geo::Circle) -> bool {
     let h = cir.x;
@@ -187,8 +187,8 @@ pub fn pursuit_target(path: geo::Path, cir: geo::Circle) -> geo::Point {
 
 pub fn abs_arc_point(current_pose: Pose, x: f64, y: f64) -> (f64, f64) {
     // Calculate difference in global coordinates
-    let delta_x = x - current_pose.x;
-    let delta_y = y - current_pose.y;
+    let delta_x = x - current_pose.x.as_inches();
+    let delta_y = y - current_pose.y.as_inches();
 
     // Convert heading from degrees to radians and rotate to get local coordinates
     let heading_rad = current_pose.t.as_radians();

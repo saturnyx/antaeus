@@ -19,7 +19,8 @@
 //! # Example
 //!
 //! ```ignore
-//! use antaeus::motion::pid::pid::{PIDMovement, PIDValues, DrivetrainConfig};
+//! use antaeus::motion::feedback_control::legacy_pid::linear_pid::{PIDMovement, PIDValues};
+//! use antaeus::motion::feedback_control::legacy_pid::DrivetrainConfig;
 //!
 //! // Create and initialize PID controller
 //! let pid = PIDMovement { /* ... */ };
@@ -32,9 +33,9 @@
 
 /// Odometry tracking for position estimation.
 ///
-/// Provides the [`OdomMovement`](odom::OdomMovement) struct for tracking
-/// the robot's global position using tracking wheels and an inertial sensor.
-pub mod odom;
+/// Provides the [`Tracker`](localization::tracker::Tracker) implementation
+/// for tracking the robot's global position using tracking wheels and an inertial sensor.
+pub mod localization;
 
 /// Candidate-Based Pursuit path following algorithm.
 ///

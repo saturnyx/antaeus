@@ -15,7 +15,7 @@
 //! ## Quick Start
 //!
 //! ```ignore
-//! use antaeus::drivetrain::Differential;
+//! use antaeus::peripherals::drivetrain::Differential;
 //! use vexide::prelude::*;
 //!
 //! #[vexide::main]
@@ -40,10 +40,10 @@
 //!
 //! ## Modules
 //!
-//! - [`drivetrain`]: Differential drivetrain control with multiple drive modes.
-//! - [`motion`]: Autonomous motion algorithms including PID, odometry, and pursuit.
+//! - [`peripherals::drivetrain`]: Differential drivetrain control with multiple drive modes.
+//! - [`motion`]: Autonomous motion algorithms including PID, localization, and pursuit.
 //! - [`display`]: V5 Brain display graphics using `embedded-graphics`.
-//! - [`opcontrol`]: Controller input mapping to motors and pneumatics.
+//! - [`peripherals`]: Controller input mapping to motors, pneumatics, and sensors.
 //! - [`fs`]: Filesystem utilities including logging.
 
 use std::{cell::RefCell, rc::Rc, sync::Arc};
