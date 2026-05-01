@@ -3,10 +3,10 @@
 //! This module provides utilities for mapping controller button presses
 //! to motor voltages and ADI digital outputs. It supports:
 //!
-//! - **Toggle controls**: Button press toggles a state (e.g., open/close piston).
-//! - **Momentary controls**: Button held activates, release deactivates.
-//! - **Dual-button controls**: Two buttons for forward/reverse or extend/retract.
-//! - **Control button modifiers**: Require a "shift" button to be held.
+//! * **Toggle controls**: Button press toggles a state (e.g., open/close piston).
+//! * **Momentary controls**: Button held activates, release deactivates.
+//! * **Dual-button controls**: Two buttons for forward/reverse or extend/retract.
+//! * **Control button modifiers**: Require a "shift" button to be held.
 //!
 //! # Example
 //!

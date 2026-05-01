@@ -4,9 +4,9 @@
 //! for path following. It handles edge cases that standard pure pursuit
 //! struggles with, such as:
 //!
-//! - Robot starting off the path.
-//! - Robot near path endpoints.
-//! - Multiple valid lookahead intersections.
+//! * Robot starting off the path.
+//! * Robot near path endpoints.
+//! * Multiple valid lookahead intersections.
 //!
 //! # Algorithm Overview
 //!

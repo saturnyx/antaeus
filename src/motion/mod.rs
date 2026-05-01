@@ -3,10 +3,10 @@
 //! This module provides tools for precise robot movement during autonomous
 //! periods. It includes:
 //!
-//! - **Odometry**: Position tracking using tracking wheels and an inertial sensor.
-//! - **PID Control**: Proportional-Integral-Derivative controllers for accurate
+//! * **Odometry**: Position tracking using tracking wheels and an inertial sensor.
+//! * **PID Control**: Proportional-Integral-Derivative controllers for accurate
 //!   linear and rotational movement.
-//! - **Path Following**: The Candidate-Based Pursuit algorithm for smooth path
+//! * **Path Following**: The Candidate-Based Pursuit algorithm for smooth path
 //!   tracking.
 //!
 //! # Architecture

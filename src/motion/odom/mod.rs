@@ -5,10 +5,10 @@
 //!
 //! # Module Structure
 //!
-//! - **[`devices`]**: Sensor abstractions and position types.
-//! - **[`tracker`]**: The main odometry tracking controller.
-//! - **[`ptsht`]**: Point-and-shoot navigation using odometry.
-//! - **[`legacy`]**: Legacy odometry implementation (deprecated).
+//! * **[`devices`]**: Sensor abstractions and position types.
+//! * **[`tracker`]**: The main odometry tracking controller.
+//! * **[`ptsht`]**: Point-and-shoot navigation using odometry.
+//! * **[`legacy`]**: Legacy odometry implementation (deprecated).
 //!
 //! # How It Works
 //!
