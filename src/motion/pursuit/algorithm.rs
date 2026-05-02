@@ -2,9 +2,7 @@ use std::f64::{EPSILON, MAX};
 
 use log::{error, info};
 
-use super::geo;
-use crate::motion::localization::tracker::devices::Pose;
-
+use crate::utils::geo;
 fn point_in_circle(p: &geo::Point, cir: &geo::Circle) -> bool {
     let h = cir.x;
     let k = cir.y;
@@ -185,7 +183,7 @@ pub fn pursuit_target(path: geo::Path, cir: geo::Circle) -> geo::Point {
     get_target(candidates, path)
 }
 
-pub fn abs_arc_point(current_pose: Pose, x: f64, y: f64) -> (f64, f64) {
+pub fn abs_arc_point(current_pose: geo::Pose, x: f64, y: f64) -> (f64, f64) {
     // Calculate difference in global coordinates
     let delta_x = x - current_pose.x.as_inches();
     let delta_y = y - current_pose.y.as_inches();

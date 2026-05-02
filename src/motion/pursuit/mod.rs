@@ -37,12 +37,6 @@
 /// Internal algorithm calculations for path following.
 mod algorithm;
 
-/// Geometry primitives for path definition.
-///
-/// Provides `Point`, `Line`, `Path`, and `Circle` types
-/// used by the pursuit algorithm.
-pub mod geo;
-
 pub mod control;
 
 const LOOPRATE: Duration = Duration::from_millis(10);
@@ -53,15 +47,12 @@ use control::PursuitControl;
 use vexide::time::sleep;
 
 use crate::{
-    misc::units::Length,
     motion::{
-        localization::{
-            Localizer,
-            tracker::{Tracker, devices::Pose},
-        },
+        localization::{Localizer, tracker::Tracker},
         pursuit::algorithm::abs_arc_point,
     },
     peripherals::drivetrain::Differential,
+    utils::{geo, geo::Pose, units::Length},
 };
 
 /// Candidate-Based Pursuit path follower.

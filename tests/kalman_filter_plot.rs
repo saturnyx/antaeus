@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use antaeus::{
-    misc::units::{Length, Speed},
+    utils::units::{Length, Speed},
     peripherals::range_sensor::{KalmanRangeSensor, RangeSensor},
 };
 use rand::rng;

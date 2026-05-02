@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use devices::{Pose, TrackerMech};
+use devices::TrackerMech;
 use log::warn;
 use vexide::{math::Angle, prelude::InertialSensor, sync::Mutex};
 
 use super::Localizer;
-use crate::misc::units::Length;
+use crate::utils::{geo::Pose, units::Length};
 
 pub mod devices;
 
@@ -27,7 +27,7 @@ impl Tracker {
             tracker_mech,
             pose: Pose::origin(),
             state: TrackerState {
-                prev_t: Angle::from_radians(0.0),
+                prev_t: Angle::ZERO,
                 prev_v: Length::zero(),
                 prev_h: Length::zero(),
             },
@@ -39,7 +39,7 @@ impl Tracker {
             tracker_mech,
             pose,
             state: TrackerState {
-                prev_t: Angle::from_radians(0.0),
+                prev_t: Angle::ZERO,
                 prev_v: Length::zero(),
                 prev_h: Length::zero(),
             },
@@ -72,7 +72,7 @@ impl Localizer for Tracker {
             (t - self.state.prev_t, v - self.state.prev_v, h - self.state.prev_h);
         let delta_pose;
         // A really rare case scenario where the robot moves in an exactly straight line
-        if delta_t == Angle::from_radians(0.0) {
+        if delta_t == Angle::ZERO {
             delta_pose = Pose::new(delta_h, delta_v, delta_t);
         } else {
             // Here we go... (somewhat complex math)
@@ -96,7 +96,7 @@ impl Localizer for Tracker {
 async fn get_imu_angle(imu: &Arc<Mutex<InertialSensor>>) -> Angle {
     imu.lock().await.rotation().unwrap_or_else(|e| {
         warn!("IMU Error: {}", e);
-        Angle::from_radians(0.0)
+        Angle::ZERO
     })
 }
 

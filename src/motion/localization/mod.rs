@@ -63,8 +63,7 @@
 //! let odom = Tracker::new(mechanism);
 //! ```
 
-use crate::motion::localization::tracker::devices::Pose;
-
+use crate::utils::geo::Pose;
 pub mod tracker;
 
 #[allow(async_fn_in_trait)]

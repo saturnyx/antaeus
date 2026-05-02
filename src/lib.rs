@@ -50,12 +50,6 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use vexide::sync::Mutex;
 
-/// Filesystem utilities module.
-///
-/// Contains logging functionality for recording robot telemetry and debug
-/// information to files on the V5 Brain's SD card.
-pub mod fs;
-
 /// Autonomous motion control module.
 ///
 /// Provides algorithms for precise robot movement during autonomous periods:
@@ -85,7 +79,13 @@ pub mod peripherals;
 pub mod display;
 
 /// Miscellaneous utilities module.
-pub mod misc;
+pub mod utils;
+
+/// File-based logging for the V5 Brain.
+///
+/// Provides a logger implementation that writes to both the console
+/// and a file on the SD card.
+pub mod logger;
 
 /// Makes an object clonable by wrapping it in `Rc` and `RefCell`
 pub fn make_cloneable<T>(v: T) -> Rc<RefCell<T>> { Rc::new(RefCell::new(v)) }

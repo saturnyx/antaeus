@@ -43,7 +43,7 @@ use vexide::{
     sync::Mutex,
 };
 
-use crate::{misc::units::Length, peripherals::drivetrain::Differential};
+use crate::{peripherals::drivetrain::Differential, utils::units::Length};
 
 /// An abstraction over different encoder types used for tracking.
 ///
@@ -89,7 +89,7 @@ impl TrackingSensor {
     /// # Arguments
     ///
     /// * `encoder` - The ADI optical encoder to use for tracking.
-    pub fn new_adi_optical_encoder(encoder: AdiOpticalEncoder) -> Self {
+    pub fn from_adi_optical_encoder(encoder: AdiOpticalEncoder) -> Self {
         Self::AdiOpticalEncoder(Arc::new(Mutex::new(encoder)))
     }
 
@@ -98,7 +98,7 @@ impl TrackingSensor {
     /// # Arguments
     ///
     /// * `sensor` - The rotation sensor to use for tracking.
-    pub fn new_rotation_sensor(sensor: RotationSensor) -> Self {
+    pub fn from_rotation_sensor(sensor: RotationSensor) -> Self {
         Self::RotationSensor(Arc::new(Mutex::new(sensor)))
     }
 
@@ -106,8 +106,8 @@ impl TrackingSensor {
     ///
     /// # Arguments
     ///
-    /// * `diff` - The differential drivetrain whose motor encoders will be used.
-    pub fn new_differential(diff: Differential) -> Self { Self::Differential(diff) }
+    /// * `drivetrain` - The differential drivetrain whose motor encoders will be used.
+    pub fn from_differential(drivetrain: Differential) -> Self { Self::Differential(drivetrain) }
 
     /// Creates a placeholder TrackingSensor that always returns zero.
     pub fn new_none() -> Self { Self::None }
@@ -123,17 +123,17 @@ impl TrackingSensor {
             TrackingSensor::AdiOpticalEncoder(encoder) => {
                 encoder.lock().await.position().unwrap_or_else(|e| {
                     warn!("ADI Optical Encoder Position Error: {}", e);
-                    Angle::from_radians(0.0)
+                    Angle::ZERO
                 })
             }
             TrackingSensor::RotationSensor(encoder) => {
                 encoder.lock().await.position().unwrap_or_else(|e| {
                     warn!("Rotation Sensor Position Error: {}", e);
-                    Angle::from_radians(0.0)
+                    Angle::ZERO
                 })
             }
             TrackingSensor::Differential(dt) => dt.position().value(),
-            TrackingSensor::None => Angle::from_radians(0.0),
+            TrackingSensor::None => Angle::ZERO,
         }
     }
 
@@ -299,58 +299,6 @@ impl TrackerMech {
             vertical_tracker,
             horizontal_tracker,
             imu,
-        }
-    }
-}
-
-/// A 2D position with heading.
-///
-/// Represents the robot's position on the field with x and y coordinates
-/// and a heading angle.
-///
-/// # Example
-///
-/// ```ignore
-/// use antaeus::motion::localization::tracker::devices::Pose;
-/// use antaeus::misc::units::Length;
-/// use vexide::math::Angle;
-///
-/// // Start at origin facing forward
-/// let pose = Pose::origin();
-///
-/// // Create a custom pose
-/// let pose = Pose::new(
-///     Length::from_inches(24.0),
-///     Length::from_inches(12.0),
-///     Angle::from_degrees(45.0),
-/// );
-/// ```
-#[derive(Debug, Clone, Copy)]
-pub struct Pose {
-    /// The x-coordinate in inches.
-    pub x: Length,
-    /// The y-coordinate in inches.
-    pub y: Length,
-    /// The heading angle.
-    pub t: Angle,
-}
-
-impl Pose {
-    /// Creates a new Pose with the specified position and heading.
-    ///
-    /// # Arguments
-    ///
-    /// * `x` - The x-coordinate in inches.
-    /// * `y` - The y-coordinate in inches.
-    /// * `t` - The heading angle.
-    pub fn new(x: Length, y: Length, t: Angle) -> Self { Self { x, y, t } }
-
-    /// Creates a Pose at the origin (0, 0) with heading 0.
-    pub fn origin() -> Self {
-        Self {
-            x: Length::zero(),
-            y: Length::zero(),
-            t: Angle::from_radians(0.0),
         }
     }
 }

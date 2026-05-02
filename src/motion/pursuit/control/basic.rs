@@ -1,4 +1,4 @@
-use crate::{misc::units::Length, motion::pursuit::control::PursuitControl};
+use crate::{utils::units::Length, motion::pursuit::control::PursuitControl};
 
 /// A Basic Control Algorithm that generates wheel velocities depending on a
 /// point relative to the robot.
@@ -69,7 +69,7 @@ impl PursuitControl for BasicControl {
 #[cfg(test)]
 mod tests {
     use crate::{
-        misc::units::{Length, assert_almost_eq},
+        utils::units::{Length, assert_almost_eq},
         motion::pursuit::control::{PursuitControl, basic::BasicControl},
     };
 

@@ -1,15 +1,15 @@
 use antaeus::{
-    misc::units::Length,
     motion::{
         localization::{self},
-        pursuit::{control, geo},
+        pursuit::control,
         *,
     },
+    utils::{geo, units::Length},
 };
 
 use crate::hardware::Robot;
 pub async fn main_auton(robot: &mut Robot) {
-    let mut path = pursuit::geo::Path::origin();
+    let mut path = geo::Path::origin();
     path.add(geo::Point::new(Length::from_inches(20.0), Length::from_inches(20.0)));
     path.add(geo::Point::new(Length::from_inches(-20.0), Length::from_inches(20.0)));
     path.add(geo::Point::origin());

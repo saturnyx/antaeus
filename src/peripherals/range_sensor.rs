@@ -53,7 +53,7 @@ use vexide::{
     time::user_uptime,
 };
 
-use crate::misc::{
+use crate::utils::{
     error::Report,
     units::{Length, Speed},
 };

@@ -12,7 +12,9 @@
 
 use std::vec;
 
-use crate::misc::units::Length;
+use vexide::math::Angle;
+
+use crate::utils::units::Length;
 
 /// A 2D point in the coordinate system.
 ///
@@ -166,4 +168,56 @@ impl Circle {
     }
 
     pub fn rnew(x: f64, y: f64, r: f64) -> Circle { Circle { x: x, y: y, r: r } }
+}
+
+/// A 2D position with heading.
+///
+/// Represents the robot's position on the field with x and y coordinates
+/// and a heading angle.
+///
+/// # Example
+///
+/// ```ignore
+/// use antaeus::motion::localization::tracker::devices::Pose;
+/// use antaeus::misc::units::Length;
+/// use vexide::math::Angle;
+///
+/// // Start at origin facing forward
+/// let pose = Pose::origin();
+///
+/// // Create a custom pose
+/// let pose = Pose::new(
+///     Length::from_inches(24.0),
+///     Length::from_inches(12.0),
+///     Angle::from_degrees(45.0),
+/// );
+/// ```
+#[derive(Debug, Clone, Copy)]
+pub struct Pose {
+    /// The x-coordinate in inches.
+    pub x: Length,
+    /// The y-coordinate in inches.
+    pub y: Length,
+    /// The heading angle.
+    pub t: Angle,
+}
+
+impl Pose {
+    /// Creates a new Pose with the specified position and heading.
+    ///
+    /// # Arguments
+    ///
+    /// * `x` - The x-coordinate in inches.
+    /// * `y` - The y-coordinate in inches.
+    /// * `t` - The heading angle.
+    pub fn new(x: Length, y: Length, t: Angle) -> Self { Self { x, y, t } }
+
+    /// Creates a Pose at the origin (0, 0) with heading 0.
+    pub fn origin() -> Self {
+        Self {
+            x: Length::zero(),
+            y: Length::zero(),
+            t: Angle::ZERO,
+        }
+    }
 }
