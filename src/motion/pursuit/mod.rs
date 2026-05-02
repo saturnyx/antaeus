@@ -103,7 +103,7 @@ impl Pursuit {
     /// ```
     pub async fn follow<C: PursuitControl>(
         &self,
-        odom: &Tracker,
+        odom: &mut Tracker,
         drivetrain: &Differential,
         ctrl_algorithm: &C,
         path: geo::Path,
@@ -128,9 +128,11 @@ impl Pursuit {
                 Length::from_inches(tary),
                 self.lookahead,
             );
+
             drivetrain.set_left_voltage(powl);
             drivetrain.set_right_voltage(powr);
             run = run_curr;
+            odom.tick().await;
             sleep(LOOPRATE).await;
         }
     }

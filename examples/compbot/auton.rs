@@ -42,9 +42,9 @@ pub async fn main_auton(robot: &mut Robot) {
     let trackers =
         localization::tracker::devices::TrackerMech::new(vertical, horizontal, robot.imu.clone());
 
-    let odomtrack = localization::tracker::Tracker::new(trackers);
+    let mut odomtrack = localization::tracker::Tracker::new(trackers);
     let pursuit = pursuit::Pursuit {
         lookahead: Length::from_inches(10.0),
     };
-    let _ = pursuit.follow(&odomtrack, &robot.dt, &basic_ctrl, path.clone());
+    let _ = pursuit.follow(&mut odomtrack, &robot.dt, &basic_ctrl, path.clone());
 }
