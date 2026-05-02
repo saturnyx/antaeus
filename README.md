@@ -8,18 +8,21 @@ Antaeus is a versatile, next-gen framework based on [Vexide](https://vexide.dev)
 
 # Philosophy
 
-Antaeus aims to be a cutting-edge, batteries-included framework that can be
-to code Vex v5 robots. It aims to integrate newer, features that are 
-specialized for such robots.
+Antaeus aims to be a bleeding-edge, batteries-included framework that can be
+to code Vex v5 robots. It aims to integrate newer, features that are
+specialized for such robots. Its modular approach allows algorithms to be
+stacked on top of each other to create more advanced composite algorithms.
 
 ## Comparison with Evian
 
-[Evian](https://github.com/vexide/evian) is a complete framework based on Vexide
-as well that Antaeus was inspired by. It aims to be a extensible framework that
-is easy to use as well. However, Antaeus aims to be less extensible but a more
-advanced, modern framework that can bring Vex to a new level. It includes heavily
-modified algorithms suited specifically for Vex Robots. Hence, it is important 
-that you carefully pick which library you would like to use before continuing.
+[Evian](https://github.com/vexide/evian) is a framework based on Vexide as well
+that Antaeus was inspired by. It aims to be a extensible framework that
+is easy to use as well. However, Antaeus aims to be a more advanced, modern
+framework that can bring Vex to a new level. It includes heavily modified
+algorithms suited specifically for Vex Robots. It is bleeding edge as well,
+which means that the API will often change between versions. Hence, it is
+important that you carefully pick which library you would like to use before
+continuing.
 
 ## A Notice before using Antaeus
 
@@ -37,7 +40,7 @@ If you:
  - would want a easy-to-use/plug & play library for your team, or
  - are a new team and would like a beginner-friendly library, or
  - don't know what is pure pursuit, odometry or a Kalman filter, or
- - have only a week left for teh competition and need to code fast,
+ - have only a week left for the competition and need to code fast,
 
 I'm sorry, this library isn't for you. But if you:
 
@@ -55,11 +58,11 @@ then, this framework will be helpful.
 Anteaus is currently in the early stages of development. We are working on
 implementing the core features and improving the documentation. We are also
 looking for contributors to help us with the development process. If you are
-interested in contributing, please check out our 
-[CONTRIBUTING.md](./CONTRIBUTING.md) file. 
+interested in contributing, please check out our
+[CONTRIBUTING.md](./CONTRIBUTING.md) file.
 
 > [!WARNING]
-> Anateus is lacking testers! More information can be found in 
+> Anateus is lacking testers! More information can be found in
 > [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 # License
