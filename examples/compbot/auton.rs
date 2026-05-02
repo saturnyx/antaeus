@@ -23,7 +23,7 @@ pub async fn main_auton(robot: &mut Robot) {
         sensor:         localization::tracker::devices::TrackingSensor::RotationSensor(
             robot.v_tracker.clone(),
         ),
-        offset:         Length::from_inches(0.0),
+        offset:         Length::zero(),
         wheel_diameter: Length::from_inches(3.25),
         driven_gear:    1.0,
         driving_gear:   1.0,
@@ -33,7 +33,7 @@ pub async fn main_auton(robot: &mut Robot) {
         sensor:         localization::tracker::devices::TrackingSensor::RotationSensor(
             robot.h_tracker.clone(),
         ),
-        offset:         Length::from_inches(0.0),
+        offset:         Length::zero(),
         wheel_diameter: Length::from_inches(3.25),
         driven_gear:    1.0,
         driving_gear:   1.0,

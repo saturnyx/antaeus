@@ -26,8 +26,8 @@
 //! let pursuit = Pursuit { lookahead: Length::from_inches(12.0) };
 //!
 //! let path = Path::from_vec(vec![
-//!     Point::new(Length::from_inches(0.0), Length::from_inches(0.0)),
-//!     Point::new(Length::from_inches(24.0), Length::from_inches(0.0)),
+//!     Point::new(Length::zero(), Length::zero()),
+//!     Point::new(Length::from_inches(24.0), Length::zero()),
 //!     Point::new(Length::from_inches(24.0), Length::from_inches(24.0)),
 //! ]);
 //!
@@ -103,9 +103,9 @@ impl Pursuit {
     /// ```ignore
     /// use antaeus::misc::units::Length;
     /// let path = Path::from_vec(vec![
-    ///     Point::new(Length::from_inches(0.0), Length::from_inches(0.0)),
+    ///     Point::new(Length::zero(), Length::zero()),
     ///     Point::new(Length::from_inches(24.0), Length::from_inches(12.0)),
-    ///     Point::new(Length::from_inches(48.0), Length::from_inches(0.0)),
+    ///     Point::new(Length::from_inches(48.0), Length::zero()),
     /// ]);
     ///
     /// pursuit.follow(odom, path).await;

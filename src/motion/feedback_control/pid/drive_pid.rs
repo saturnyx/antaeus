@@ -264,7 +264,7 @@ impl DriveControl for DrivePID {
     /// Positive and negative `angle` values rotate in opposite directions.
     async fn rotate(&mut self, angle: Angle, timeout: Duration) {
         let len = track_rad_rotate(angle, self.track_width);
-        self.set_relative_target(len, Length::from_inches(0.0) - len);
+        self.set_relative_target(len, -len);
         self.autotick(timeout).await;
         // TODO: Add snafu error handling
     }
@@ -277,9 +277,9 @@ impl DriveControl for DrivePID {
     async fn pivot(&mut self, angle: Angle, timeout: Duration) {
         let len = track_rad_pivot(angle, self.track_width);
         if angle.as_degrees() > 0.0 {
-            self.set_relative_target(len, Length::from_inches(0.0));
+            self.set_relative_target(len, Length::zero());
         } else if angle.as_degrees() < 0.0 {
-            self.set_relative_target(Length::from_inches(0.0), len);
+            self.set_relative_target(Length::zero(), len);
         } else {
             return;
         }

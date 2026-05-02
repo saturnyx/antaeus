@@ -29,7 +29,7 @@
 //!     Length::from_inches(2.75),
 //!     1.0,
 //!     1.0,
-//!     Length::from_inches(0.0),
+//!     Length::zero(),
 //! );
 //! ```
 
@@ -195,7 +195,7 @@ impl TrackingSensor {
 ///     Length::from_inches(2.75),
 ///     1.0,
 ///     1.0,
-///     Length::from_inches(0.0),
+///     Length::zero(),
 /// );
 /// ```
 #[derive(Clone)]
@@ -348,8 +348,8 @@ impl Pose {
     /// Creates a Pose at the origin (0, 0) with heading 0.
     pub fn origin() -> Self {
         Self {
-            x: Length::from_inches(0.0),
-            y: Length::from_inches(0.0),
+            x: Length::zero(),
+            y: Length::zero(),
             t: Angle::from_radians(0.0),
         }
     }

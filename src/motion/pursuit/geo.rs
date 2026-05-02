@@ -91,7 +91,7 @@ impl Path {
 
     /// Create a path with a start point at origin (0,0)
     pub fn origin() -> Self {
-        let vec = vec![Point::new(Length::from_inches(0.0), Length::from_inches(0.0))];
+        let vec = vec![Point::origin()];
         Self { waypoints: vec }
     }
 

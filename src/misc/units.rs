@@ -1,6 +1,6 @@
 use std::{
     cmp::Ordering,
-    ops::{Add, Div, Mul, Sub},
+    ops::{Add, Div, Mul, Neg, Sub},
     time::Duration,
 };
 
@@ -17,6 +17,8 @@ pub struct Length {
 
 impl Length {
     // --- Constructors ---
+
+    pub fn zero() -> Self { Self { inches: 0.0 } }
 
     pub fn from_inches(inches: f64) -> Self { Self { inches } }
 
@@ -107,6 +109,12 @@ impl Div<Duration> for Length {
     }
 }
 
+impl Neg for Length {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output { Self::from_inches(-self.inches) }
+}
+
 // ==================
 // Speed
 // ==================
@@ -118,6 +126,12 @@ pub struct Speed {
 
 impl Speed {
     // --- Constructors ---
+
+    pub fn zero() -> Self {
+        Self {
+            inches_per_second: 0.0,
+        }
+    }
 
     pub fn from_inches_per_second(in_per_s: f64) -> Self {
         Self {
@@ -224,6 +238,12 @@ impl Mul<Duration> for Speed {
         let seconds = rhs.as_secs_f64();
         Length::from_inches(self.inches_per_second * seconds)
     }
+}
+
+impl Neg for Speed {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output { Self::from_inches_per_second(-self.inches_per_second) }
 }
 
 // ==================

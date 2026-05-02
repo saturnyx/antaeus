@@ -28,8 +28,8 @@ impl Tracker {
             pose: Pose::origin(),
             state: TrackerState {
                 prev_t: Angle::from_radians(0.0),
-                prev_v: Length::from_inches(0.0),
-                prev_h: Length::from_inches(0.0),
+                prev_v: Length::zero(),
+                prev_h: Length::zero(),
             },
         }
     }
@@ -40,8 +40,8 @@ impl Tracker {
             pose,
             state: TrackerState {
                 prev_t: Angle::from_radians(0.0),
-                prev_v: Length::from_inches(0.0),
-                prev_h: Length::from_inches(0.0),
+                prev_v: Length::zero(),
+                prev_h: Length::zero(),
             },
         }
     }
@@ -53,11 +53,11 @@ impl Tracker {
         };
         self.pose.x = match x {
             Some(x) => x,
-            None => Length::from_inches(0.0),
+            None => Length::zero(),
         };
         self.pose.y = match y {
             Some(y) => y,
-            None => Length::from_inches(0.0),
+            None => Length::zero(),
         };
     }
 }
