@@ -15,7 +15,8 @@
 //! # Usage
 //!
 //! ```ignore
-//! use antaeus::motion::pid::pid::{PIDMovement, PIDValues, DrivetrainConfig};
+//! use antaeus::motion::feedback_control::legacy_pid::linear_pid::{PIDMovement, PIDValues};
+//! use antaeus::motion::feedback_control::legacy_pid::DrivetrainConfig;
 //!
 //! let pid = PIDMovement { /* ... */ };
 //! pid.init();  // Start the PID control loop
@@ -186,7 +187,7 @@ impl PIDMovement {
     /// # Examples
     ///
     /// ```ignore
-    /// use antaeus::motion::pid::pid::PIDMovement;
+    /// use antaeus::motion::feedback_control::legacy_pid::linear_pid::PIDMovement;
     ///
     /// async fn auton(pid: PIDMovement) {
     ///     pid.init(); // Initialize the PID before any movements
@@ -404,8 +405,8 @@ impl PIDMovement {
 /// Creating a PIDMovement instance:
 ///
 /// ```ignore
-/// use antaeus::motion::pid::pid::{PIDMovement, PIDValues};
-/// use antaeus::motion::pid::DrivetrainConfig;
+/// use antaeus::motion::feedback_control::legacy_pid::linear_pid::{PIDMovement, PIDValues};
+/// use antaeus::motion::feedback_control::legacy_pid::DrivetrainConfig;
 /// use antaeus::peripherals::drivetrain::Differential;
 /// use vexide::prelude::*;
 ///
@@ -480,7 +481,7 @@ pub struct PIDValues {
 }
 
 impl PIDValues {
-    /// Uses default ArcPID Values
+    /// Uses default PID values.
     pub fn default() -> PIDValues {
         PIDValues {
             kp:           0.5,

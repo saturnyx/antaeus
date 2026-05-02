@@ -4,7 +4,7 @@
 //! odometry tracking system. It includes:
 //!
 //! * **TrackingSensor**: An abstraction over different encoder types.
-//! * **Tracker**: Configuration for a tracking wheel with gear ratios.
+//! * **TrackerPod**: Configuration for a tracking wheel with gear ratios.
 //! * **TrackerMech**: The complete tracking mechanism with vertical/horizontal
 //!   trackers and an IMU.
 //! * **Pose**: A 2D position with heading.
@@ -12,7 +12,8 @@
 //! # Example
 //!
 //! ```ignore
-//! use antaeus::motion::odom::devices::{TrackingSensor, Tracker, TrackerMech, Pose};
+//! use antaeus::motion::localization::tracker::devices::{TrackingSensor, TrackerPod, TrackerMech, Pose};
+//! use antaeus::misc::units::Length;
 //! use vexide::prelude::*;
 //! use std::sync::Arc;
 //! use vexide::sync::Mutex;
@@ -22,8 +23,14 @@
 //!     RotationSensor::new(peripherals.port_5, Direction::Forward)
 //! );
 //!
-//! // Create a tracker with wheel diameter, gear ratio, and offset
-//! let tracker = Tracker::new(sensor, 2.75, 1.0, 1.0, 0.0);
+//! // Create a tracker pod with wheel diameter, gear ratio, and offset
+//! let tracker = TrackerPod::new(
+//!     sensor,
+//!     Length::from_inches(2.75),
+//!     1.0,
+//!     1.0,
+//!     Length::zero(),
+//! );
 //! ```
 
 use std::sync::Arc;
@@ -36,7 +43,7 @@ use vexide::{
     sync::Mutex,
 };
 
-use crate::peripherals::drivetrain::Differential;
+use crate::{peripherals::drivetrain::Differential, utils::units::Length};
 
 /// An abstraction over different encoder types used for tracking.
 ///
@@ -53,7 +60,7 @@ use crate::peripherals::drivetrain::Differential;
 /// # Example
 ///
 /// ```ignore
-/// use antaeus::motion::odom::devices::TrackingSensor;
+/// use antaeus::motion::localization::tracker::devices::TrackingSensor;
 /// use vexide::prelude::*;
 ///
 /// // Using a rotation sensor
@@ -82,7 +89,7 @@ impl TrackingSensor {
     /// # Arguments
     ///
     /// * `encoder` - The ADI optical encoder to use for tracking.
-    pub fn new_adi_optical_encoder(encoder: AdiOpticalEncoder) -> Self {
+    pub fn from_adi_optical_encoder(encoder: AdiOpticalEncoder) -> Self {
         Self::AdiOpticalEncoder(Arc::new(Mutex::new(encoder)))
     }
 
@@ -91,7 +98,7 @@ impl TrackingSensor {
     /// # Arguments
     ///
     /// * `sensor` - The rotation sensor to use for tracking.
-    pub fn new_rotation_sensor(sensor: RotationSensor) -> Self {
+    pub fn from_rotation_sensor(sensor: RotationSensor) -> Self {
         Self::RotationSensor(Arc::new(Mutex::new(sensor)))
     }
 
@@ -99,8 +106,8 @@ impl TrackingSensor {
     ///
     /// # Arguments
     ///
-    /// * `diff` - The differential drivetrain whose motor encoders will be used.
-    pub fn new_differential(diff: Differential) -> Self { Self::Differential(diff) }
+    /// * `drivetrain` - The differential drivetrain whose motor encoders will be used.
+    pub fn from_differential(drivetrain: Differential) -> Self { Self::Differential(drivetrain) }
 
     /// Creates a placeholder TrackingSensor that always returns zero.
     pub fn new_none() -> Self { Self::None }
@@ -116,17 +123,17 @@ impl TrackingSensor {
             TrackingSensor::AdiOpticalEncoder(encoder) => {
                 encoder.lock().await.position().unwrap_or_else(|e| {
                     warn!("ADI Optical Encoder Position Error: {}", e);
-                    Angle::from_radians(0.0)
+                    Angle::ZERO
                 })
             }
             TrackingSensor::RotationSensor(encoder) => {
                 encoder.lock().await.position().unwrap_or_else(|e| {
                     warn!("Rotation Sensor Position Error: {}", e);
-                    Angle::from_radians(0.0)
+                    Angle::ZERO
                 })
             }
             TrackingSensor::Differential(dt) => dt.position().value(),
-            TrackingSensor::None => Angle::from_radians(0.0),
+            TrackingSensor::None => Angle::ZERO,
         }
     }
 
@@ -174,7 +181,8 @@ impl TrackingSensor {
 /// # Example
 ///
 /// ```ignore
-/// use antaeus::motion::odom::devices::{TrackingSensor, Tracker};
+/// use antaeus::motion::localization::tracker::devices::{TrackingSensor, TrackerPod};
+/// use antaeus::misc::units::Length;
 /// use vexide::prelude::*;
 ///
 /// let sensor = TrackingSensor::new_rotation_sensor(
@@ -182,24 +190,30 @@ impl TrackingSensor {
 /// );
 ///
 /// // 2.75" wheel, 1:1 gear ratio, no offset
-/// let tracker = Tracker::new(sensor, 2.75, 1.0, 1.0, 0.0);
+/// let tracker = TrackerPod::new(
+///     sensor,
+///     Length::from_inches(2.75),
+///     1.0,
+///     1.0,
+///     Length::zero(),
+/// );
 /// ```
 #[derive(Clone)]
-pub struct Tracker {
+pub struct TrackerPod {
     /// The sensor measuring wheel rotation.
     pub sensor:         TrackingSensor,
     /// The diameter of the tracking wheel in inches.
-    pub wheel_diameter: f64,
+    pub wheel_diameter: Length,
     /// The number of teeth on the driven (wheel-side) gear.
     pub driven_gear:    f64,
     /// The number of teeth on the driving (encoder-side) gear.
     pub driving_gear:   f64,
     /// The perpendicular distance from the tracking center in inches.
-    pub offset:         f64,
+    pub offset:         Length,
 }
 
-impl Tracker {
-    /// Creates a new Tracker configuration.
+impl TrackerPod {
+    /// Creates a new tracker pod configuration.
     ///
     /// # Arguments
     ///
@@ -210,10 +224,10 @@ impl Tracker {
     /// * `offset` - The perpendicular distance from the tracking center in inches.
     pub fn new(
         sensor: TrackingSensor,
-        wheel_diameter: f64,
+        wheel_diameter: Length,
         driven_gear: f64,
         driving_gear: f64,
-        offset: f64,
+        offset: Length,
     ) -> Self {
         Self {
             sensor,
@@ -231,11 +245,11 @@ impl Tracker {
     /// # Returns
     ///
     /// The distance traveled in inches.
-    pub async fn dist(&self) -> f64 {
+    pub async fn dist(&self) -> Length {
         let angle = self.sensor.position().await;
         let gear_ratio = self.driving_gear as f64 / self.driven_gear as f64;
         let distance = angle.as_radians() * gear_ratio * (self.wheel_diameter / 2.0);
-        distance + self.offset
+        distance
     }
 }
 
@@ -247,13 +261,13 @@ impl Tracker {
 /// # Example
 ///
 /// ```ignore
-/// use antaeus::motion::odom::devices::{TrackingSensor, Tracker, TrackerMech};
+/// use antaeus::motion::localization::tracker::devices::{TrackingSensor, TrackerPod, TrackerMech};
 /// use vexide::prelude::*;
 /// use std::sync::Arc;
 /// use vexide::sync::Mutex;
 ///
-/// let vertical = Tracker::new(/* ... */);
-/// let horizontal = Tracker::new(/* ... */);
+/// let vertical = TrackerPod::new(/* ... */);
+/// let horizontal = TrackerPod::new(/* ... */);
 /// let imu = Arc::new(Mutex::new(InertialSensor::new(peripherals.port_10)));
 ///
 /// let mechanism = TrackerMech::new(vertical, horizontal, imu);
@@ -261,9 +275,9 @@ impl Tracker {
 #[derive(Clone)]
 pub struct TrackerMech {
     /// The vertical (forward/backward) tracking wheel.
-    pub vertical_tracker:   Tracker,
+    pub vertical_tracker:   TrackerPod,
     /// The horizontal (left/right) tracking wheel.
-    pub horizontal_tracker: Tracker,
+    pub horizontal_tracker: TrackerPod,
     /// The inertial sensor for heading measurement.
     pub imu:                Arc<Mutex<InertialSensor>>,
 }
@@ -277,61 +291,14 @@ impl TrackerMech {
     /// * `horizontal_tracker` - The horizontal (left/right) tracking wheel.
     /// * `imu` - The inertial sensor wrapped in a thread-safe Mutex.
     pub fn new(
-        vertical_tracker: Tracker,
-        horizontal_tracker: Tracker,
+        vertical_tracker: TrackerPod,
+        horizontal_tracker: TrackerPod,
         imu: Arc<Mutex<InertialSensor>>,
     ) -> Self {
         Self {
             vertical_tracker,
             horizontal_tracker,
             imu,
-        }
-    }
-}
-
-/// A 2D position with heading.
-///
-/// Represents the robot's position on the field with x and y coordinates
-/// and a heading angle.
-///
-/// # Example
-///
-/// ```ignore
-/// use antaeus::motion::odom::devices::Pose;
-/// use vexide::math::Angle;
-///
-/// // Start at origin facing forward
-/// let pose = Pose::origin();
-///
-/// // Create a custom pose
-/// let pose = Pose::new(24.0, 12.0, Angle::from_degrees(45.0));
-/// ```
-#[derive(Debug, Clone, Copy)]
-pub struct Pose {
-    /// The x-coordinate in inches.
-    pub x: f64,
-    /// The y-coordinate in inches.
-    pub y: f64,
-    /// The heading angle.
-    pub t: Angle,
-}
-
-impl Pose {
-    /// Creates a new Pose with the specified position and heading.
-    ///
-    /// # Arguments
-    ///
-    /// * `x` - The x-coordinate in inches.
-    /// * `y` - The y-coordinate in inches.
-    /// * `t` - The heading angle.
-    pub fn new(x: f64, y: f64, t: Angle) -> Self { Self { x, y, t } }
-
-    /// Creates a Pose at the origin (0, 0) with heading 0.
-    pub fn origin() -> Self {
-        Self {
-            x: 0.0,
-            y: 0.0,
-            t: Angle::from_radians(0.0),
         }
     }
 }

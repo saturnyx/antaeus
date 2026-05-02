@@ -43,7 +43,6 @@ dependencies = [
  "getrandom",
  "humantime",
  "log",
- "measurements",
  "plotly",
  "rand",
  "rand_distr",
@@ -746,15 +745,6 @@ name = "log"
 version = "0.4.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
-
-[[package]]
-name = "measurements"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f72b38901c571007811f0483e64a7e215ac9e6e3688e9f83705a717621d81513"
-dependencies = [
- "libm",
-]
 
 [[package]]
 name = "memchr"

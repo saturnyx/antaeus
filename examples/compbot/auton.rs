@@ -1,16 +1,15 @@
 use antaeus::{
     motion::{
-        odom::{self, devices::Pose},
-        pursuit::{control, geo},
+        localization::{self},
+        pursuit::control,
         *,
     },
-    to_mutex,
+    utils::{geo, units::Length},
 };
-use measurements::Length;
 
 use crate::hardware::Robot;
 pub async fn main_auton(robot: &mut Robot) {
-    let mut path = pursuit::geo::Path::origin();
+    let mut path = geo::Path::origin();
     path.add(geo::Point::new(Length::from_inches(20.0), Length::from_inches(20.0)));
     path.add(geo::Point::new(Length::from_inches(-20.0), Length::from_inches(20.0)));
     path.add(geo::Point::origin());
@@ -20,30 +19,32 @@ pub async fn main_auton(robot: &mut Robot) {
         tolerance:   Length::from_inches(0.5),
     };
 
-    let vertical = odom::devices::Tracker {
-        sensor:         odom::devices::TrackingSensor::RotationSensor(robot.v_tracker.clone()),
-        offset:         0.0,
-        wheel_diameter: 3.25,
+    let vertical = localization::tracker::devices::TrackerPod {
+        sensor:         localization::tracker::devices::TrackingSensor::RotationSensor(
+            robot.v_tracker.clone(),
+        ),
+        offset:         Length::zero(),
+        wheel_diameter: Length::from_inches(3.25),
         driven_gear:    1.0,
         driving_gear:   1.0,
     };
 
-    let horizontal = odom::devices::Tracker {
-        sensor:         odom::devices::TrackingSensor::RotationSensor(robot.h_tracker.clone()),
-        offset:         0.0,
-        wheel_diameter: 3.25,
+    let horizontal = localization::tracker::devices::TrackerPod {
+        sensor:         localization::tracker::devices::TrackingSensor::RotationSensor(
+            robot.h_tracker.clone(),
+        ),
+        offset:         Length::zero(),
+        wheel_diameter: Length::from_inches(3.25),
         driven_gear:    1.0,
         driving_gear:   1.0,
     };
 
-    let trackers = odom::devices::TrackerMech::new(vertical, horizontal, robot.imu.clone());
+    let trackers =
+        localization::tracker::devices::TrackerMech::new(vertical, horizontal, robot.imu.clone());
 
-    let odomtrack = odom::tracker::OdomTracker {
-        trackermech: trackers,
-        global_pose: to_mutex(Pose::origin()),
-    };
+    let mut odomtrack = localization::tracker::Tracker::new(trackers);
     let pursuit = pursuit::Pursuit {
         lookahead: Length::from_inches(10.0),
     };
-    let _ = pursuit.follow(&odomtrack, &robot.dt, &basic_ctrl, path.clone());
+    let _ = pursuit.follow(&mut odomtrack, &robot.dt, &basic_ctrl, path.clone());
 }

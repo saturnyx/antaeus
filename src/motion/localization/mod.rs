@@ -1,14 +1,12 @@
-//! Odometry tracking for robot position estimation.
+//! Localization (odometry) tracking for robot position estimation.
 //!
 //! This module provides odometry tracking using perpendicular tracking wheels
 //! and an inertial sensor to estimate the robot's global position on the field.
 //!
 //! # Module Structure
 //!
-//! * **[`devices`]**: Sensor abstractions and position types.
 //! * **[`tracker`]**: The main odometry tracking controller.
-//! * **[`ptsht`]**: Point-and-shoot navigation using odometry.
-//! * **[`legacy`]**: Legacy odometry implementation (deprecated).
+//! * **[`tracker::devices`]**: Sensor abstractions and pose types.
 //!
 //! # How It Works
 //!
@@ -26,8 +24,9 @@
 //! # Example
 //!
 //! ```ignore
-//! use antaeus::motion::odom::tracker::OdomTracker;
-//! use antaeus::motion::odom::devices::{TrackerMech, Tracker, TrackingSensor};
+//! use antaeus::motion::localization::tracker::Tracker;
+//! use antaeus::motion::localization::tracker::devices::{TrackerMech, TrackerPod, TrackingSensor};
+//! use antaeus::misc::units::Length;
 //! use vexide::prelude::*;
 //! use std::sync::Arc;
 //! use vexide::sync::Mutex;
@@ -40,26 +39,35 @@
 //!     RotationSensor::new(peripherals.port_6, Direction::Forward)
 //! );
 //!
-//! // Create trackers (2.75" wheel, 1:1 ratio, offset from center)
-//! let vertical = Tracker::new(v_sensor, 2.75, 1.0, 1.0, 2.0);
-//! let horizontal = Tracker::new(h_sensor, 2.75, 1.0, 1.0, 3.5);
+//! // Create tracker pods (2.75" wheel, 1:1 ratio, offset from center)
+//! let vertical = TrackerPod::new(
+//!     v_sensor,
+//!     Length::from_inches(2.75),
+//!     1.0,
+//!     1.0,
+//!     Length::from_inches(2.0),
+//! );
+//! let horizontal = TrackerPod::new(
+//!     h_sensor,
+//!     Length::from_inches(2.75),
+//!     1.0,
+//!     1.0,
+//!     Length::from_inches(3.5),
+//! );
 //!
 //! // Create mechanism with IMU
 //! let imu = Arc::new(Mutex::new(InertialSensor::new(peripherals.port_10)));
 //! let mechanism = TrackerMech::new(vertical, horizontal, imu);
 //!
-//! // Create and start odometry
-//! let odom = OdomTracker::new(mechanism);
-//! odom.init();
+//! // Create the tracker (call `tick` in your control loop)
+//! let odom = Tracker::new(mechanism);
 //! ```
 
-mod algorithm;
-
-/// Tracking devices and position types.
-pub mod devices;
-
-/// Point-and-shoot navigation.
-pub mod ptsht;
-
-/// Main odometry tracking controller.
+use crate::utils::geo::Pose;
 pub mod tracker;
+
+#[allow(async_fn_in_trait)]
+pub trait Localizer {
+    fn get_coords(&self) -> Pose;
+    async fn tick(&mut self);
+}

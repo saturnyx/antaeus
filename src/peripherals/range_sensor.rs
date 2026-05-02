@@ -21,7 +21,7 @@
 //!
 //! ```ignore
 //! use antaeus::peripherals::range_sensor::{KalmanRangeSensor, RangeSensor};
-//! use measurements::{Distance, Speed};
+//! use antaeus::misc::units::{Length, Speed};
 //! use vexide::smart::distance::DistanceSensor;
 //!
 //! let sensor = DistanceSensor::new(1);
@@ -30,7 +30,7 @@
 //!     range,
 //!     0.02,
 //!     0.1,
-//!     Distance::from_metres(0.5),
+//!     Length::from_metres(0.5),
 //!     Speed::from_metres_per_second(0.0),
 //! );
 //!
@@ -42,7 +42,6 @@ use std::{sync::Arc, time::Duration};
 
 #[allow(unused_imports)]
 use log::debug;
-use measurements::{Distance, Length, Speed};
 use snafu::Snafu;
 use vexide::{
     adi::range_finder::AdiRangeFinder,
@@ -54,7 +53,10 @@ use vexide::{
     time::user_uptime,
 };
 
-use crate::misc::error::Report;
+use crate::utils::{
+    error::Report,
+    units::{Length, Speed},
+};
 
 /// Unified range sensor interface for smart and ADI hardware.
 pub enum RangeSensor {
@@ -64,7 +66,7 @@ pub enum RangeSensor {
     AdiDistanceSensor(Arc<Mutex<AdiRangeFinder>>),
     #[cfg(any(test, debug_assertions))]
     Mock {
-        distance: Option<Distance>,
+        distance: Option<Length>,
         velocity: Option<Speed>,
     },
 }
@@ -95,18 +97,18 @@ impl RangeSensor {
     }
 
     /// Read the current distance measurement, if available.
-    pub async fn distance(&self) -> Report<Distance, RangeSensorError> {
+    pub async fn distance(&self) -> Report<Length, RangeSensorError> {
         match self {
             RangeSensor::AdiDistanceSensor(sensor) => match sensor.lock().await.distance() {
                 Ok(dist) => match dist {
-                    Some(d) => Report::new(Distance::from_centimeters(d as f64)),
+                    Some(d) => Report::new(Length::from_centimeters(d as f64)),
                     None => Report::from_parts(
-                        Distance::from_centimeters(0.0),
+                        Length::from_centimeters(0.0),
                         RangeSensorError::NoDistance,
                     ),
                 },
                 Err(e) => Report::from_parts(
-                    Distance::from_centimeters(0.0),
+                    Length::from_centimeters(0.0),
                     RangeSensorError::PortError { port_error: e },
                 ),
             },
@@ -114,9 +116,9 @@ impl RangeSensor {
                 let object = sensor.lock().await.object();
                 match object {
                     Ok(obj) => match obj {
-                        Some(obj) => Report::new(Distance::from_centimetres(obj.distance as f64)),
+                        Some(obj) => Report::new(Length::from_centimetres(obj.distance as f64)),
                         None => Report::from_parts(
-                            Distance::from_centimeters(0.0),
+                            Length::from_centimeters(0.0),
                             RangeSensorError::NoDistance,
                         ),
                     },
@@ -188,12 +190,12 @@ pub struct KalmanRangeSensor {
     process_var:     f64,
     measurement_var: f64,
     last_update:     Duration, // time_step
-    prev_m:          Distance, // State
+    prev_m:          Length,   // State
     prev_vel:        Speed,    // Velocity
     prev_var:        f64,
-    est_m:           Distance,
+    est_m:           Length,
     est_var:         f64,
-    new_m:           Distance,
+    new_m:           Length,
     new_var:         f64,
 }
 impl KalmanRangeSensor {
@@ -210,7 +212,7 @@ impl KalmanRangeSensor {
         sensor: RangeSensor,
         process_var: f64,
         measurement_var: f64,
-        initial_distance: Distance,
+        initial_distance: Length,
         initial_velocity: Speed,
     ) -> Self {
         Self {
@@ -284,7 +286,7 @@ impl KalmanRangeSensor {
     }
 
     /// Return the most recent filtered distance measurement.
-    pub fn measurement(&self) -> Distance { self.new_m }
+    pub fn measurement(&self) -> Length { self.new_m }
 
     /// Return the current measurement variance.
     pub fn variance(&self) -> f64 { self.new_var }
@@ -293,13 +295,13 @@ impl KalmanRangeSensor {
     pub fn velocity(&self) -> Speed { self.prev_vel }
 
     /// Return the predicted distance measurement.
-    pub fn predicted_measurement(&self) -> Distance { self.est_m }
+    pub fn predicted_measurement(&self) -> Length { self.est_m }
 
     /// Return the predicted measurement variance.
     pub fn predicted_variance(&self) -> f64 { self.est_var }
 
     /// Reset the filter state to new initial values.
-    pub fn reset(&mut self, initial_distance: Distance, initial_velocity: Speed) {
+    pub fn reset(&mut self, initial_distance: Length, initial_velocity: Speed) {
         self.prev_m = initial_distance;
         self.prev_vel = initial_velocity;
         self.prev_var = self.measurement_var;
@@ -312,7 +314,7 @@ impl KalmanRangeSensor {
 
     /// Update the sensor with mock data (test-only helper).
     #[cfg(any(test, debug_assertions))]
-    pub fn set_sensor_mock(&mut self, distance: Distance, velocity: Speed) {
+    pub fn set_sensor_mock(&mut self, distance: Length, velocity: Speed) {
         self.sensor = RangeSensor::Mock {
             distance: Some(distance),
             velocity: Some(velocity),
@@ -326,9 +328,9 @@ mod tests {
 
     use super::*;
 
-    /// Test data structure with proper Distance and Speed types
+    /// Test data structure with proper Length and Speed types
     struct TestDataPoint {
-        distance: Distance,
+        distance: Length,
         velocity: Speed,
         dt:       Duration,
     }
@@ -339,33 +341,33 @@ mod tests {
         // Scenario 1: Clean data - object at constant 1 m/s
         let test_data_clean = vec![
             TestDataPoint {
-                distance: Distance::from_metres(1.0),
+                distance: Length::from_metres(1.0),
                 velocity: Speed::from_metres_per_second(1.0),
                 dt:       Duration::from_millis(100),
             },
             TestDataPoint {
-                distance: Distance::from_metres(1.1),
+                distance: Length::from_metres(1.1),
                 velocity: Speed::from_metres_per_second(1.0),
                 dt:       Duration::from_millis(100),
             },
             TestDataPoint {
-                distance: Distance::from_metres(1.2),
+                distance: Length::from_metres(1.2),
                 velocity: Speed::from_metres_per_second(1.0),
                 dt:       Duration::from_millis(100),
             },
             TestDataPoint {
-                distance: Distance::from_metres(1.3),
+                distance: Length::from_metres(1.3),
                 velocity: Speed::from_metres_per_second(1.0),
                 dt:       Duration::from_millis(100),
             },
             TestDataPoint {
-                distance: Distance::from_metres(1.4),
+                distance: Length::from_metres(1.4),
                 velocity: Speed::from_metres_per_second(1.0),
                 dt:       Duration::from_millis(100),
             },
         ];
 
-        let initial_dist = Distance::from_metres(1.0);
+        let initial_dist = Length::from_metres(1.0);
         let initial_vel = Speed::from_metres_per_second(1.0);
 
         let mut kalman = KalmanRangeSensor::new(
@@ -392,7 +394,7 @@ mod tests {
             let updated_var = kalman.variance();
 
             // Assertions for clean data
-            assert!(updated_dist > 0.0, "Step {}: Distance should be positive", i + 1);
+            assert!(updated_dist > 0.0, "Step {}: Length should be positive", i + 1);
             assert!(
                 updated_var < predicted_var,
                 "Step {}: Variance should decrease after update",
@@ -412,33 +414,33 @@ mod tests {
         // Scenario 2: Noisy data - object at constant 2 m/s with measurement noise
         let test_data_noisy = vec![
             TestDataPoint {
-                distance: Distance::from_metres(2.0),
+                distance: Length::from_metres(2.0),
                 velocity: Speed::from_metres_per_second(2.0),
                 dt:       Duration::from_millis(50),
             },
             TestDataPoint {
-                distance: Distance::from_metres(2.15),
+                distance: Length::from_metres(2.15),
                 velocity: Speed::from_metres_per_second(2.0),
                 dt:       Duration::from_millis(50),
             },
             TestDataPoint {
-                distance: Distance::from_metres(2.05),
+                distance: Length::from_metres(2.05),
                 velocity: Speed::from_metres_per_second(2.0),
                 dt:       Duration::from_millis(50),
             },
             TestDataPoint {
-                distance: Distance::from_metres(2.25),
+                distance: Length::from_metres(2.25),
                 velocity: Speed::from_metres_per_second(2.0),
                 dt:       Duration::from_millis(50),
             },
             TestDataPoint {
-                distance: Distance::from_metres(2.20),
+                distance: Length::from_metres(2.20),
                 velocity: Speed::from_metres_per_second(2.0),
                 dt:       Duration::from_millis(50),
             },
         ];
 
-        let initial_dist = Distance::from_metres(2.0);
+        let initial_dist = Length::from_metres(2.0);
         let initial_vel = Speed::from_metres_per_second(2.0);
 
         let mut kalman = KalmanRangeSensor::new(
@@ -478,7 +480,7 @@ mod tests {
 
     #[test]
     fn test_reset_functionality() {
-        let initial_dist = Distance::from_metres(1.0);
+        let initial_dist = Length::from_metres(1.0);
         let initial_vel = Speed::from_metres_per_second(0.0);
 
         let mut kalman = KalmanRangeSensor::new(
@@ -496,7 +498,7 @@ mod tests {
         assert_eq!(kalman.measurement().as_metres(), 1.0);
 
         // Reset to different values
-        let new_dist = Distance::from_metres(5.0);
+        let new_dist = Length::from_metres(5.0);
         let new_vel = Speed::from_metres_per_second(0.5);
         kalman.reset(new_dist, new_vel);
 

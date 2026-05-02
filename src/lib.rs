@@ -15,7 +15,7 @@
 //! ## Quick Start
 //!
 //! ```ignore
-//! use antaeus::drivetrain::Differential;
+//! use antaeus::peripherals::drivetrain::Differential;
 //! use vexide::prelude::*;
 //!
 //! #[vexide::main]
@@ -40,21 +40,15 @@
 //!
 //! ## Modules
 //!
-//! - [`drivetrain`]: Differential drivetrain control with multiple drive modes.
-//! - [`motion`]: Autonomous motion algorithms including PID, odometry, and pursuit.
+//! - [`peripherals::drivetrain`]: Differential drivetrain control with multiple drive modes.
+//! - [`motion`]: Autonomous motion algorithms including PID, localization, and pursuit.
 //! - [`display`]: V5 Brain display graphics using `embedded-graphics`.
-//! - [`opcontrol`]: Controller input mapping to motors and pneumatics.
+//! - [`peripherals`]: Controller input mapping to motors, pneumatics, and sensors.
 //! - [`fs`]: Filesystem utilities including logging.
 
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use vexide::sync::Mutex;
-
-/// Filesystem utilities module.
-///
-/// Contains logging functionality for recording robot telemetry and debug
-/// information to files on the V5 Brain's SD card.
-pub mod fs;
 
 /// Autonomous motion control module.
 ///
@@ -85,7 +79,13 @@ pub mod peripherals;
 pub mod display;
 
 /// Miscellaneous utilities module.
-pub mod misc;
+pub mod utils;
+
+/// File-based logging for the V5 Brain.
+///
+/// Provides a logger implementation that writes to both the console
+/// and a file on the SD card.
+pub mod logger;
 
 /// Makes an object clonable by wrapping it in `Rc` and `RefCell`
 pub fn make_cloneable<T>(v: T) -> Rc<RefCell<T>> { Rc::new(RefCell::new(v)) }

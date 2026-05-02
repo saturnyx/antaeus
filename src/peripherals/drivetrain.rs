@@ -64,7 +64,7 @@ use vexide::{
     smart::{PortError, motor::BrakeMode},
 };
 
-use crate::misc::error::Report;
+use crate::utils::error::Report;
 
 /// A left/right (“tank”) drivetrain controller.
 ///
@@ -587,7 +587,7 @@ impl Differential {
                         warn!("{}", err);
                         errors.push(err);
                         denom -= 1.0;
-                        Angle::from_radians(0.0)
+                        Angle::ZERO
                     });
                     denom += 1.0;
                 }
@@ -609,7 +609,7 @@ impl Differential {
                         warn!("{}", err);
                         errors.push(err);
                         denom -= 1.0;
-                        Angle::from_radians(0.0)
+                        Angle::ZERO
                     });
                     denom += 1.0;
                 }
@@ -651,7 +651,7 @@ impl Differential {
                         warn!("{}", err);
                         errors.push(err);
                         denom -= 1.0;
-                        Angle::from_radians(0.0)
+                        Angle::ZERO
                     });
                     denom += 1.0;
                 }
@@ -693,7 +693,7 @@ impl Differential {
                         warn!("{}", err);
                         errors.push(err);
                         denom -= 1.0;
-                        Angle::from_radians(0.0)
+                        Angle::ZERO
                     });
                     denom += 1.0;
                 }

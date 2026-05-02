@@ -1,0 +1,168 @@
+use std::sync::Arc;
+
+use devices::TrackerMech;
+use log::warn;
+use vexide::{math::Angle, prelude::InertialSensor, sync::Mutex};
+
+use super::Localizer;
+use crate::utils::{geo::Pose, units::Length};
+
+pub mod devices;
+
+const ANGLE_EPS_RAD: f64 = 1e-6;
+
+pub struct TrackerState {
+    pub prev_t: Angle,
+    pub prev_v: Length,
+    pub prev_h: Length,
+}
+
+pub struct Tracker {
+    pub tracker_mech: TrackerMech,
+    pub pose:         Pose,
+    pub state:        TrackerState,
+}
+
+impl Tracker {
+    pub fn new(tracker_mech: TrackerMech) -> Self {
+        Self {
+            tracker_mech,
+            pose: Pose::origin(),
+            state: TrackerState {
+                prev_t: Angle::ZERO,
+                prev_v: Length::zero(),
+                prev_h: Length::zero(),
+            },
+        }
+    }
+
+    pub fn from_pose(tracker_mech: TrackerMech, pose: Pose) -> Self {
+        Self {
+            tracker_mech,
+            pose,
+            state: TrackerState {
+                prev_t: Angle::ZERO,
+                prev_v: Length::zero(),
+                prev_h: Length::zero(),
+            },
+        }
+    }
+
+    pub async fn reset_origin(&mut self, t: Option<Angle>, x: Option<Length>, y: Option<Length>) {
+        self.pose.t = t.unwrap_or(Angle::ZERO);
+        self.pose.x = x.unwrap_or_else(Length::zero);
+        self.pose.y = y.unwrap_or_else(Length::zero);
+
+        let imu_t = get_imu_angle(&self.tracker_mech.imu, Angle::ZERO).await;
+        let v = self.tracker_mech.vertical_tracker.dist().await;
+        let h = self.tracker_mech.horizontal_tracker.dist().await;
+
+        self.state.prev_t = imu_t;
+        self.state.prev_v = v;
+        self.state.prev_h = h;
+    }
+}
+
+impl Localizer for Tracker {
+    async fn tick(&mut self) {
+        let t = get_imu_angle(&self.tracker_mech.imu, self.state.prev_t).await;
+        let v = self.tracker_mech.vertical_tracker.dist().await;
+        let h = self.tracker_mech.horizontal_tracker.dist().await;
+
+        let delta_t = t - self.state.prev_t;
+        let delta_v = v - self.state.prev_v;
+        let delta_h = h - self.state.prev_h;
+
+        let delta_pose = if is_small_angle(delta_t) {
+            Pose::new(delta_h, delta_v, delta_t)
+        } else {
+            Pose::new(
+                local_arc_delta(delta_t, delta_h, self.tracker_mech.horizontal_tracker.offset),
+                local_arc_delta(delta_t, delta_v, self.tracker_mech.vertical_tracker.offset),
+                delta_t,
+            )
+        };
+
+        let avg_t = self.state.prev_t + (delta_t / 2.0);
+        let (global_delta_x, global_delta_y) = rotate_vec(delta_pose.x, delta_pose.y, avg_t);
+
+        self.pose.t = t;
+        self.pose.x = self.pose.x + global_delta_x;
+        self.pose.y = self.pose.y + global_delta_y;
+
+        self.state.prev_t = t;
+        self.state.prev_v = v;
+        self.state.prev_h = h;
+    }
+
+    fn get_coords(&self) -> Pose { self.pose }
+}
+
+async fn get_imu_angle(imu: &Arc<Mutex<InertialSensor>>, def: Angle) -> Angle {
+    imu.lock().await.rotation().unwrap_or_else(|e| {
+        warn!("IMU Error: {}", e);
+        def
+    })
+}
+
+fn is_small_angle(delta_t: Angle) -> bool { delta_t.as_radians().abs() < ANGLE_EPS_RAD }
+
+fn local_arc_delta(delta_t: Angle, delta_dist: Length, offset: Length) -> Length {
+    let dt = delta_t.as_radians();
+    if dt.abs() < ANGLE_EPS_RAD {
+        delta_dist
+    } else {
+        2.0 * (delta_t / 2.0).sin() * (delta_dist / dt + offset)
+    }
+}
+
+fn rotate_vec(x: Length, y: Length, t: Angle) -> (Length, Length) {
+    let new_x = x * t.cos() - y * t.sin();
+    let new_y = x * t.sin() + y * t.cos();
+    (new_x, new_y)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rotate_vec_test_basic() {
+        let (x, y) = (1.0, 3.0);
+        let (new_x, new_y) = rotate_vec(
+            Length::from_inches(x),
+            Length::from_inches(y),
+            Angle::from_degrees(90.0),
+        );
+        let expected = (Length::from_inches(-3.0), Length::from_inches(1.0));
+        let tolerance = Length::from_inches(1e-10);
+        assert!((new_x - expected.0).abs() < tolerance);
+        assert!((new_y - expected.1).abs() < tolerance);
+    }
+
+    #[test]
+    fn rotate_vec_test_adv() {
+        let (x, y) = (4.65, 7.89);
+        let (new_x, new_y) = rotate_vec(
+            Length::from_inches(x),
+            Length::from_inches(y),
+            Angle::from_radians(0.34),
+        );
+        let expected = (Length::from_inches(1.7383), Length::from_inches(8.9938));
+        let tolerance = Length::from_inches(0.02);
+        assert!((new_x - expected.0).abs() < tolerance);
+        assert!((new_y - expected.1).abs() < tolerance);
+    }
+
+    #[test]
+    fn local_arc_delta_straight_line_epsilon() {
+        let delta_t = Angle::from_radians(ANGLE_EPS_RAD / 10.0);
+        let delta_dist = Length::from_inches(5.0);
+        let offset = Length::from_inches(2.0);
+
+        let result = local_arc_delta(delta_t, delta_dist, offset);
+        let tolerance = Length::from_inches(1e-9);
+
+        assert!((result - delta_dist).abs() < tolerance);
+    }
+}

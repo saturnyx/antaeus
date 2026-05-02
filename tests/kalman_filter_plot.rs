@@ -1,13 +1,15 @@
 use std::time::Duration;
 
-use antaeus::peripherals::range_sensor::{KalmanRangeSensor, RangeSensor};
-use measurements::{Distance, Speed};
+use antaeus::{
+    utils::units::{Length, Speed},
+    peripherals::range_sensor::{KalmanRangeSensor, RangeSensor},
+};
 use rand::rng;
 use rand_distr::{Distribution, Normal};
 use vexide::prelude::Peripherals;
 
 struct TestDataPoint {
-    distance: Distance,
+    distance: Length,
     velocity: Speed,
     dt:       Duration,
 }
@@ -38,7 +40,7 @@ fn generate_random_test_data(
         let measurement = true_distance + normal.sample(&mut rng);
 
         data.push(TestDataPoint {
-            distance: Distance::from_metres(measurement.max(0.0)),
+            distance: Length::from_metres(measurement.max(0.0)),
             velocity: Speed::from_metres_per_second(velocity),
             dt,
         });
@@ -97,7 +99,7 @@ impl FilterTestData {
                 )
                 .y_axis(
                     plotly::layout::Axis::new()
-                        .title(plotly::common::Title::with_text("Distance (m)")),
+                        .title(plotly::common::Title::with_text("Length (m)")),
                 ),
         );
 
@@ -133,7 +135,7 @@ async fn test_kalman_filter_visualization(_p: Peripherals) {
         0.15, // gaussian noise std-dev
     );
 
-    let initial_dist = Distance::from_metres(2.0);
+    let initial_dist = Length::from_metres(2.0);
     let initial_vel = Speed::from_metres_per_second(2.0);
 
     let mut kalman = KalmanRangeSensor::new(

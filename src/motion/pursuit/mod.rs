@@ -20,14 +20,15 @@
 //! # Example
 //!
 //! ```ignore
+//! use antaeus::misc::units::Length;
 //! use antaeus::motion::pursuit::{Pursuit, geo::{Path, Point}};
 //!
-//! let pursuit = Pursuit { lookahead: 12.0 };
+//! let pursuit = Pursuit { lookahead: Length::from_inches(12.0) };
 //!
 //! let path = Path::from_vec(vec![
-//!     Point::new(0.0, 0.0),
-//!     Point::new(24.0, 0.0),
-//!     Point::new(24.0, 24.0),
+//!     Point::new(Length::zero(), Length::zero()),
+//!     Point::new(Length::from_inches(24.0), Length::zero()),
+//!     Point::new(Length::from_inches(24.0), Length::from_inches(24.0)),
 //! ]);
 //!
 //! pursuit.follow(odom, path).await;
@@ -36,12 +37,6 @@
 /// Internal algorithm calculations for path following.
 mod algorithm;
 
-/// Geometry primitives for path definition.
-///
-/// Provides `Point`, `Line`, `Path`, and `Circle` types
-/// used by the pursuit algorithm.
-pub mod geo;
-
 pub mod control;
 
 const LOOPRATE: Duration = Duration::from_millis(10);
@@ -49,16 +44,17 @@ const LOOPRATE: Duration = Duration::from_millis(10);
 use std::time::Duration;
 
 use control::PursuitControl;
-use measurements::Length;
 use vexide::time::sleep;
 
 use crate::{
     motion::{
-        odom::{devices::Pose, tracker::OdomTracker},
+        localization::{Localizer, tracker::Tracker},
         pursuit::algorithm::abs_arc_point,
     },
     peripherals::drivetrain::Differential,
+    utils::{geo, geo::Pose, units::Length},
 };
+
 /// Candidate-Based Pursuit path follower.
 ///
 /// Follows a path using the lookahead distance to determine targets.
@@ -96,29 +92,26 @@ impl Pursuit {
     /// # Example
     ///
     /// ```ignore
+    /// use antaeus::misc::units::Length;
     /// let path = Path::from_vec(vec![
-    ///     Point::new(0.0, 0.0),
-    ///     Point::new(24.0, 12.0),
-    ///     Point::new(48.0, 0.0),
+    ///     Point::new(Length::zero(), Length::zero()),
+    ///     Point::new(Length::from_inches(24.0), Length::from_inches(12.0)),
+    ///     Point::new(Length::from_inches(48.0), Length::zero()),
     /// ]);
     ///
     /// pursuit.follow(odom, path).await;
     /// ```
     pub async fn follow<C: PursuitControl>(
         &self,
-        odom: &OdomTracker,
+        odom: &mut Tracker,
         drivetrain: &Differential,
         ctrl_algorithm: &C,
         path: geo::Path,
     ) {
         let mut run = true;
         while run {
-            let odometry_values = odom.global_pose.lock().await;
-            let (x, y, t) = (
-                Length::from_inches(odometry_values.x),
-                Length::from_inches(odometry_values.y),
-                odometry_values.t,
-            );
+            let odometry_values = odom.get_coords();
+            let (x, y, t) = (odometry_values.x, odometry_values.y, odometry_values.t);
             let cir = geo::Circle {
                 x: x.as_inches(),
                 y: y.as_inches(),
@@ -126,18 +119,20 @@ impl Pursuit {
             };
             let target = algorithm::pursuit_target(path.clone(), cir);
             let (tarx, tary) = abs_arc_point(
-                Pose::new(Length::as_inches(&x), Length::as_inches(&y), t),
-                Length::as_inches(&Length::from_inches(target.x)),
-                Length::as_inches(&Length::from_inches(target.y)),
+                Pose::new(x, y, t),
+                Length::as_inches(Length::from_inches(target.x)),
+                Length::as_inches(Length::from_inches(target.y)),
             );
             let ((powl, powr), run_curr) = ctrl_algorithm.control(
                 Length::from_inches(tarx),
                 Length::from_inches(tary),
                 self.lookahead,
             );
+
             drivetrain.set_left_voltage(powl);
             drivetrain.set_right_voltage(powr);
             run = run_curr;
+            odom.tick().await;
             sleep(LOOPRATE).await;
         }
     }
@@ -155,17 +150,13 @@ impl Pursuit {
     /// * `path` - The path to follow, defined as a series of waypoints.
     pub async fn tick<C: PursuitControl>(
         &self,
-        odom: &OdomTracker,
+        odom: &mut Tracker,
         drivetrain: &Differential,
         ctrl_algorithm: &C,
         path: geo::Path,
     ) -> bool {
-        let odometry_values = odom.global_pose.lock().await;
-        let (x, y, t) = (
-            Length::from_inches(odometry_values.x),
-            Length::from_inches(odometry_values.y),
-            odometry_values.t,
-        );
+        let odometry_values = odom.get_coords();
+        let (x, y, t) = (odometry_values.x, odometry_values.y, odometry_values.t);
         let cir = geo::Circle {
             x: x.as_inches(),
             y: y.as_inches(),
@@ -173,9 +164,9 @@ impl Pursuit {
         };
         let target = algorithm::pursuit_target(path.clone(), cir);
         let (tarx, tary) = abs_arc_point(
-            Pose::new(Length::as_inches(&x), Length::as_inches(&y), t),
-            Length::as_inches(&Length::from_inches(target.x)),
-            Length::as_inches(&Length::from_inches(target.y)),
+            Pose::new(x, y, t),
+            Length::as_inches(Length::from_inches(target.x)),
+            Length::as_inches(Length::from_inches(target.y)),
         );
         let ((powl, powr), run_curr) = ctrl_algorithm.control(
             Length::from_inches(tarx),
@@ -184,6 +175,7 @@ impl Pursuit {
         );
         drivetrain.set_left_voltage(powl);
         drivetrain.set_right_voltage(powr);
+        odom.tick().await;
 
         run_curr
     }

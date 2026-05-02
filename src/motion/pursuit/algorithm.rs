@@ -2,9 +2,7 @@ use std::f64::{EPSILON, MAX};
 
 use log::{error, info};
 
-use super::geo;
-use crate::motion::odom::devices::Pose;
-
+use crate::utils::geo;
 fn point_in_circle(p: &geo::Point, cir: &geo::Circle) -> bool {
     let h = cir.x;
     let k = cir.y;
@@ -185,10 +183,10 @@ pub fn pursuit_target(path: geo::Path, cir: geo::Circle) -> geo::Point {
     get_target(candidates, path)
 }
 
-pub fn abs_arc_point(current_pose: Pose, x: f64, y: f64) -> (f64, f64) {
+pub fn abs_arc_point(current_pose: geo::Pose, x: f64, y: f64) -> (f64, f64) {
     // Calculate difference in global coordinates
-    let delta_x = x - current_pose.x;
-    let delta_y = y - current_pose.y;
+    let delta_x = x - current_pose.x.as_inches();
+    let delta_y = y - current_pose.y.as_inches();
 
     // Convert heading from degrees to radians and rotate to get local coordinates
     let heading_rad = current_pose.t.as_radians();
@@ -348,7 +346,7 @@ mod tests {
         let path = geo::Path::from_vec(vec![pt1, pt2, pt3, pt4]);
         let o = geo::Point::rnew(0.0, 0.0);
         let d = prox_point_on_path(&path, o);
-        assert_eq!(d, (geo::Point::rnew(0.0, 1.5000000000000002), 1.5000000000000002))
+        assert_eq!(d, (geo::Point::rnew(0.0, 1.5), 1.5))
     }
 
     #[test]

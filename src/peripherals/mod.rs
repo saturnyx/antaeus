@@ -12,7 +12,7 @@
 //! # Example
 //!
 //! ```ignore
-//! use antaeus::opcontrol::controller::{ControllerControl, ControllerButton};
+//! use antaeus::peripherals::controller::{ControllerControl, ControllerButton};
 //!
 //! let controller = Controller::new(ControllerId::Primary);
 //! let control = ControllerControl::new(&controller, ControllerButton::ButtonA);

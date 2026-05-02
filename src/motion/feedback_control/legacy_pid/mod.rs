@@ -5,7 +5,7 @@
 //!
 //! # Available Controllers
 //!
-//! * `pid`: Standard PID for controlling a differential drivetrain.
+//! * `linear_pid`: Standard PID for controlling a differential drivetrain.
 //!   Supports linear movement, rotation, and swing turns.
 //! * `arcpid`: Arc PID for curved movements where the robot doesn't
 //!   stop to turn.
@@ -49,7 +49,7 @@ pub mod singlepid;
 /// Physical configuration of the drivetrain for distance calculations.
 ///
 /// These values are used to convert between motor rotations and
-/// linear distance traveled by the robot.#[derive(Clone, Copy)]
+/// linear distance traveled by the robot.
 #[derive(Clone, Copy)]
 pub struct DrivetrainConfig {
     /// The wheel diameter in inches.
