@@ -346,7 +346,7 @@ mod tests {
         let path = geo::Path::from_vec(vec![pt1, pt2, pt3, pt4]);
         let o = geo::Point::rnew(0.0, 0.0);
         let d = prox_point_on_path(&path, o);
-        assert_eq!(d, (geo::Point::rnew(0.0, 1.5000000000000002), 1.5000000000000002))
+        assert_eq!(d, (geo::Point::rnew(0.0, 1.5), 1.5))
     }
 
     #[test]
