@@ -1,19 +1,18 @@
-use antaeus::peripherals::controller::*;
+use antaeus::peripherals::mapper::{DigitalInput, motor::MotorMapper};
 
 use crate::hardware::Robot;
 
 pub fn opcontrol(robot: &mut Robot) {
-    let cc = ControllerControl::new(&robot.main_con, ControllerButton::ButtonRight);
     loop {
         robot.dt.tank(&robot.main_con);
-        cc.dual_button_to_motors(
-            ControllerButton::ButtonR1,
-            ControllerButton::ButtonR2,
-            vec![&mut robot.intake1, &mut robot.intake2],
+
+        let state = robot.main_con.state().unwrap_or_default();
+        let _ = robot.intake1.from_dual_input(
+            DigitalInput::Button(state.button_r1),
+            DigitalInput::Button(state.button_r2),
             12.0,
             -12.0,
             0.0,
-            false,
         );
     }
 }

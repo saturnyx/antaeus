@@ -37,6 +37,7 @@
 ///
 /// Provides [`ControllerControl`](controller::ControllerControl) for
 /// mapping buttons to motors and ADI devices.
+#[cfg(feature = "legacy")]
 pub mod controller;
 
 /// Differential drivetrain control module.
@@ -52,3 +53,5 @@ pub mod drivetrain;
 pub mod motorgroup;
 
 pub mod range_sensor;
+
+pub mod mapper;

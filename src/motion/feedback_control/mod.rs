@@ -11,6 +11,7 @@ pub mod pid;
 /// - [`linear_pid`](legacy_pid::linear_pid): Standard PID for drivetrain control.
 /// - [`arcpid`](legacy_pid::arcpid): PID that allows arc movements.
 /// - [`singlepid`](legacy_pid::singlepid): PID for single motor groups.
+#[cfg(feature = "legacy")]
 pub mod legacy_pid;
 
 pub trait DriveControl {

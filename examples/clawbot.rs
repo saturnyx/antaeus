@@ -5,13 +5,17 @@
 //!
 //! [`v5-drivecode`]: https://github.com/jpearman/v5-drivecode
 
-use std::sync::Arc;
+use std::{num::NonZeroU32, time::Duration};
 
 use antaeus::{
-    motion::feedback_control::legacy_pid::{DrivetrainConfig, linear_pid::*},
-    peripherals::{controller::*, drivetrain::Differential},
+    motion::feedback_control::pid::drive_pid::DrivePID,
+    peripherals::{
+        drivetrain::Differential,
+        mapper::{DigitalInput, motor::MotorMapper},
+    },
+    utils::units::Length,
 };
-use vexide::{prelude::*, sync::Mutex};
+use vexide::prelude::*;
 struct Clawbot {
     drivetrain: Differential,
     claw:       Motor,
@@ -21,55 +25,43 @@ struct Clawbot {
 
 impl Compete for Clawbot {
     async fn autonomous(&mut self) {
-        let dt_conf = DrivetrainConfig {
-            wheel_diameter: 4.15,
-            driving_gear:   1.0,
-            driven_gear:    1.0,
-            track_width:    12.0,
-        };
-        let pid_values = PIDValues {
-            kp:           0.1,
-            ki:           0.0,
-            kd:           0.01,
-            tolerance:    0.5,
-            maxpwr:       12.0,
-            active:       false,
-            target_left:  0.0,
-            target_right: 0.0,
-        };
-        let pid = PIDMovement {
-            drivetrain:        self.drivetrain.clone(),
-            drivetrain_config: dt_conf,
-            pid_values:        Arc::new(Mutex::new(pid_values)),
-        };
+        let mut pid = DrivePID::new(
+            self.drivetrain.clone(),
+            0.5,
+            0.0,
+            0.0,
+            12.0,
+            Length::from_inches(3.25),
+            NonZeroU32::new(4).unwrap(),
+            NonZeroU32::new(4).unwrap(),
+            Length::from_inches(13.0),
+            Length::from_inches(0.0),
+            Length::from_inches(0.5),
+        );
 
-        pid.init();
-        pid.set_maximum_power(12.0).await;
-        pid.travel(10.0, 2000, 10).await;
-        pid.rotate(180.0, 2000, 10).await;
+        pid.set_relative_target(Length::from_inches(10.0), Length::from_inches(10.0));
+        pid.autotick(Duration::from_secs(5)).await;
+        pid.set_relative_target(Length::from_inches(-10.0), Length::from_inches(10.0));
+        pid.autotick(Duration::from_secs(5)).await;
     }
 
     async fn driver(&mut self) {
-        let control = ControllerControl::new(&self.controller, ControllerButton::ButtonX);
         loop {
             self.drivetrain.tank(&self.controller);
-            control.dual_button_to_motors(
-                ControllerButton::ButtonUp,
-                ControllerButton::ButtonDown,
-                vec![&mut self.arm],
+            let state = self.controller.state().unwrap_or_default();
+            let _ = self.arm.from_dual_input(
+                DigitalInput::Button(state.button_up),
+                DigitalInput::Button(state.button_down),
                 8.0,
                 -8.0,
                 0.0,
-                false,
             );
-            control.dual_button_to_motors(
-                ControllerButton::ButtonLeft,
-                ControllerButton::ButtonRight,
-                vec![&mut self.claw],
+            let _ = self.claw.from_dual_input(
+                DigitalInput::Button(state.button_left),
+                DigitalInput::Button(state.button_right),
                 8.0,
                 -8.0,
-                4.0,
-                false,
+                2.0,
             );
         }
     }
