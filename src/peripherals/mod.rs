@@ -33,21 +33,6 @@
 //! );
 //! ```
 
-/// Legacy Controller input mapping utilities.
-///
-/// Provides [`ControllerControl`](controller::ControllerControl) for
-/// mapping buttons to motors and ADI devices.
-#[cfg(feature = "legacy")]
-pub mod controller;
-
-/// Differential drivetrain control module.
-///
-/// Provides the [`Differential`](drivetrain::Differential) struct for controlling
-/// robots with left and right motor groups. Supports multiple control schemes:
-///
-/// - **Tank**: Each joystick controls one side of the robot.
-/// - **Arcade**: Left stick for forward/backward, right stick for turning.
-/// - **Reverse**: Inverted controls for driving in reverse.
 pub mod drivetrain;
 
 pub mod motorgroup;
@@ -55,3 +40,8 @@ pub mod motorgroup;
 pub mod range_sensor;
 
 pub mod mapper;
+
+// LEGACY ---------------------------------------------------------------------+
+
+#[cfg(feature = "legacy")]
+pub mod controller;

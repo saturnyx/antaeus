@@ -1,19 +1,61 @@
+//! Mappers for ADI devices (e.g. pneumatic solenoids)
+//!
+//! This module provides traits and implementations for mapping digital and
+//! analog inputs to ADI devices, allowing for easy control of mechanisms like
+//! pneumatic solenoids using controller inputs or other sensors.
+
 use vexide::prelude::AdiDigitalOut;
 
 use super::*;
 pub trait AdiOutMapper {
+    /// Maps a digital input to a device (e.g. pneumatic solenoid)
+    ///
+    /// # Arguments
+    /// - `input`: The digital input from another peripheral (e.g. controller
+    ///    button)
+    /// - `inverse`: If true, the output will be inverted (e.g. high becomes
+    ///    low)
     fn from_digital_input(&mut self, input: DigitalInput, inverse: bool) -> Result<(), PortError>;
+    /// Maps a digital input to a device (e.g. pneumatic solenoid)
+    /// (Toggles the device instead of direct mapping)
+    ///
+    /// # Arguments
+    /// - `input`: The digital input from another peripheral (e.g. controller
+    ///    button)
+    /// - `inverse`: If true, the output will be inverted (e.g. high becomes
+    ///    low)
     fn toggle_from_digital_input(
         &mut self,
         input: DigitalInput,
         inverse: bool,
     ) -> Result<(), PortError>;
+
+    /// Maps a analog input to a ADI device (e.g. pneumatic solenoid)
+    ///
+    /// # Arguments
+    /// - `input`: The analog input from another peripheral (e.g. controller
+    ///    joystick)
+    /// - `threshold`: The threshold the input has to reach in order for the
+    ///    device to be activated
+    /// - `inverse`: If true, the output will be inverted (e.g. high becomes
+    ///    low)
     fn from_analog_input(
         &mut self,
         input: AnalogInput,
         threshold: f64,
         inverse: bool,
     ) -> Result<(), PortError>;
+
+    /// Maps a analog input to a ADI device (e.g. pneumatic solenoid)
+    /// (Toggles the device instead of direct mapping)
+    ///
+    /// # Arguments
+    /// - `input`: The analog input from another peripheral (e.g. controller
+    ///    joystick)
+    /// - `threshold`: The threshold the input has to reach in order for the
+    ///    device to be activated
+    /// - `inverse`: If true, the output will be inverted (e.g. high becomes
+    ///    low)
     fn toggle_from_analog_input(
         &mut self,
         input: AnalogInput,
