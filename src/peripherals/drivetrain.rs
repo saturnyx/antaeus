@@ -119,19 +119,31 @@ pub struct Differential {
 /// others succeed).
 #[derive(Debug, Snafu)]
 pub enum DrivetrainError {
+    /// An error occurred while accessing a motor port (e.g. invalid port
+    /// number, hardware failure, etc.).
     #[snafu(display("Failed to access port: {port_error}"))]
     PortError {
+        /// The underlying error from the when trying to access a motor port.
         port_error: PortError,
     },
+    /// An error occurred while reading the controller state (e.g. disconnected
+    /// controller, communication error, etc.).
     #[snafu(display("Failed to access controller: {controller_error}"))]
     ControllerError {
+        /// The underlying error from the when trying to read the controller
+        /// state.
         controller_error: ControllerError,
     },
+    /// Failed to borrow the motor group mutably (e.g. already borrowed
+    /// elsewhere).
     #[snafu(display("Failed to borrow RefCell mutably: {borrow_mut_error}"))]
     BorrowMutError {
+        /// The underlying error from trying to borrow the motor group mutably.
         borrow_mut_error: BorrowMutError,
     },
+    /// An unknown error occurred (catch-all for unexpected issues).
     Unknown {
+        /// A string describing the unknown error.
         string: String,
     },
 }

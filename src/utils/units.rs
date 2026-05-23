@@ -1,3 +1,8 @@
+//! Geometry primitives for path definition.
+//!
+//! Provides `Point`, `Line`, `Path`, and `Circle` types
+//! used by the pursuit algorithm.
+
 use std::{
     cmp::Ordering,
     ops::{Add, Div, Mul, Neg, Sub},
@@ -10,6 +15,8 @@ const MM_PER_INCH_FACTOR: f64 = 25.4;
 // Length
 // ==================
 
+/// A length measurement, stored internally as inches but with constructors and
+/// accessors for various units. Supports basic arithmetic and comparisons.
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Length {
     inches: f64,
@@ -18,46 +25,63 @@ pub struct Length {
 impl Length {
     // --- Constructors ---
 
+    /// A length of zero inches.
     pub fn zero() -> Self { Self { inches: 0.0 } }
 
+    /// Create a length from a value in inches.
     pub fn from_inches(inches: f64) -> Self { Self { inches } }
 
+    /// Create a length from a value in millimeters.
     pub fn from_millimeters(mm: f64) -> Self {
         Self {
             inches: mm / MM_PER_INCH_FACTOR,
         }
     }
 
+    /// Create a length from a value in centimeters.
     pub fn from_centimeters(cm: f64) -> Self { Self::from_millimeters(cm * 10.0) }
 
+    /// Create a length from a value in centimeters.
     pub fn from_centimetres(cm: f64) -> Self { Self::from_centimeters(cm) }
 
+    /// Create a length from a value in meters.
     pub fn from_meters(m: f64) -> Self { Self::from_millimeters(m * 1000.0) }
 
+    /// Create a length from a value in meters.
     pub fn from_metres(m: f64) -> Self { Self::from_meters(m) }
 
     // --- Accessors ---
 
+    /// Get the length in inches.
     pub fn as_inches(self) -> f64 { self.inches }
 
+    /// Get the length in millimeters.
     pub fn as_millimeters(self) -> f64 { self.inches * MM_PER_INCH_FACTOR }
 
+    /// Get the length in centimeters.
     pub fn as_centimeters(self) -> f64 { self.as_millimeters() / 10.0 }
 
+    /// Get the length in meters.
     pub fn as_meters(self) -> f64 { self.as_millimeters() / 1000.0 }
 
+    /// Get the length in metres.
     pub fn as_metres(self) -> f64 { self.as_meters() }
 
     // --- Curated helpers ---
 
+    /// Get the absolute value of this length.
     pub fn abs(self) -> Self { Self::from_inches(self.inches.abs()) }
 
+    /// Check if this length is finite (not infinite or NaN).
     pub fn is_finite(self) -> bool { self.inches.is_finite() }
 
+    /// Check if this length is NaN (not a number).
     pub fn is_nan(self) -> bool { self.inches.is_nan() }
 
+    /// Get the minimum of this length and another length.
     pub fn min(self, other: Self) -> Self { if self < other { self } else { other } }
 
+    /// Get the maximum of this length and another length.
     pub fn max(self, other: Self) -> Self { if self > other { self } else { other } }
 
     /// Compute average speed over a duration in seconds.
@@ -119,6 +143,9 @@ impl Neg for Length {
 // Speed
 // ==================
 
+/// A speed measurement, stored internally as inches per second but with
+/// constructors and accessors for various units. Supports basic arithmetic and
+/// comparisons.
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Speed {
     inches_per_second: f64,
@@ -127,60 +154,77 @@ pub struct Speed {
 impl Speed {
     // --- Constructors ---
 
+    /// A speed of zero inches per second.
     pub fn zero() -> Self {
         Self {
             inches_per_second: 0.0,
         }
     }
 
+    /// Create a speed from a value in inches per second.
     pub fn from_inches_per_second(in_per_s: f64) -> Self {
         Self {
             inches_per_second: in_per_s,
         }
     }
 
+    /// Create a speed from a value in millimeters per second.
     pub fn from_millimeters_per_second(mm_per_s: f64) -> Self {
         Self {
             inches_per_second: mm_per_s / MM_PER_INCH_FACTOR,
         }
     }
 
+    /// Create a speed from a value in centimeters per second.
     pub fn from_centimeters_per_second(cm_per_s: f64) -> Self {
         Self::from_millimeters_per_second(cm_per_s * 10.0)
     }
 
+    /// Create a speed from a value in centimeters per second.
     pub fn from_centimetres_per_second(cm_per_s: f64) -> Self {
         Self::from_centimeters_per_second(cm_per_s)
     }
 
+    /// Create a speed from a value in meters per second.
     pub fn from_meters_per_second(m_per_s: f64) -> Self {
         Self::from_millimeters_per_second(m_per_s * 1000.0)
     }
 
+    /// Create a speed from a value in meters per second.
     pub fn from_metres_per_second(m_per_s: f64) -> Self { Self::from_meters_per_second(m_per_s) }
 
     // --- Accessors ---
 
+    /// Get the speed in inches per second.
     pub fn as_inches_per_second(self) -> f64 { self.inches_per_second }
 
+    /// Get the speed in millimeters per second.
     pub fn as_millimeters_per_second(self) -> f64 { self.inches_per_second * MM_PER_INCH_FACTOR }
 
+    /// Get the speed in centimeters per second.
     pub fn as_centimeters_per_second(self) -> f64 { self.as_millimeters_per_second() / 10.0 }
 
+    /// Get the speed in meters per second.
     pub fn as_meters_per_second(self) -> f64 { self.as_millimeters_per_second() / 1000.0 }
 
+    /// Get the speed in metres per second.
     pub fn as_metres_per_second(self) -> f64 { self.as_meters_per_second() }
 
     // --- Curated helpers ---
 
+    /// Get the absolute value of this speed.
     pub fn abs(self) -> Self { Self::from_inches_per_second(self.inches_per_second.abs()) }
 
+    /// Check if this speed is finite (not infinite or NaN).
     pub fn is_finite(self) -> bool { self.inches_per_second.is_finite() }
 
+    /// Check if this speed is NaN (not a number).
     pub fn is_nan(self) -> bool { self.inches_per_second.is_nan() }
 
+    /// Get the minimum of this speed and another speed.
     pub fn min(self, other: Self) -> Self { if self < other { self } else { other } }
 
+    /// Get the maximum of this speed and another speed.
     pub fn max(self, other: Self) -> Self { if self > other { self } else { other } }
 
     /// Distance covered in `seconds` at this constant speed.

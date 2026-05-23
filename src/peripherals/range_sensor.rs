@@ -59,28 +59,47 @@ use crate::utils::{
 };
 
 /// Unified range sensor interface for smart and ADI hardware.
+#[derive(Debug, Clone)]
 pub enum RangeSensor {
     /// Smart distance sensor with distance and velocity data.
     SmartDistSensor(Arc<Mutex<DistanceSensor>>),
     /// ADI range finder (distance only).
     AdiDistanceSensor(Arc<Mutex<AdiRangeFinder>>),
+    /// Mock sensor for testing, allowing manual setting of distance and
+    /// velocity.
     #[cfg(any(test, debug_assertions))]
     Mock {
+        /// Optional distance value (None simulates no reading).
         distance: Option<Length>,
+        /// Optional velocity value (None simulates no reading).
         velocity: Option<Speed>,
     },
 }
 
-#[derive(Debug, Snafu)]
+/// Errors that can occur when reading from a range sensor.
+#[derive(Debug, Snafu, Clone, Copy)]
 pub enum RangeSensorError {
+    /// Errors related to accessing the sensor port (e.g., disconnected,
+    /// invalid port).
     #[snafu(display("Failed to access port: {port_error}"))]
-    PortError { port_error: PortError },
+    PortError {
+        /// The underlying port error.
+        port_error: PortError,
+    },
+    /// Errors related to retrieving the distance object from a smart distance
+    /// sensor (e.g., sensor malfunction, communication failure).
     #[snafu(display("Failed to get object's distance : {distance_object_error}"))]
     DistanceObjectError {
+        /// The underlying distance object error.
         distance_object_error: DistanceObjectError,
     },
+    /// Errors indicating that the sensor did not detect a valid distance
+    /// measurement.
     #[snafu(display("Sensor did not detect a distance"))]
     NoDistance,
+    /// Errors indicating that the sensor did not detect a valid velocity
+    /// measurement (applicable to smart distance sensors that support
+    /// velocity).
     #[snafu(display("Sensor did not detect a velocity"))]
     NoVelocity,
 }
@@ -185,6 +204,7 @@ impl RangeSensor {
 /// Maintains a constant-velocity Kalman filter state over distance
 /// measurements. Call [`KalmanRangeSensor::predict`] to advance the estimate,
 /// then [`KalmanRangeSensor::update`] to incorporate a new measurement.
+#[derive(Debug)]
 pub struct KalmanRangeSensor {
     sensor:          RangeSensor,
     process_var:     f64,

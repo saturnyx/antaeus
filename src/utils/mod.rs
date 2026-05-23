@@ -1,9 +1,10 @@
+//! Utility functions and types.
+//!
+//! This module contains various utility functions and types used throughout the
+//! Antaeus codebase.
+
 pub mod error;
 
 pub mod units;
 
-/// Geometry primitives for path definition.
-///
-/// Provides `Point`, `Line`, `Path`, and `Circle` types
-/// used by the pursuit algorithm.
 pub mod geo;

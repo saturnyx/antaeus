@@ -16,7 +16,9 @@ use vexide::{
 ///  or "low").
 #[derive(Debug, PartialEq, Eq)]
 pub enum DigitalInput {
+    /// A button's state on the controller (e.g. A, B, L1, R2)
     Button(ButtonState),
+    /// An ADI digital input (e.g. a limit switch)
     AdiIn(AdiDigitalIn),
 }
 
@@ -43,7 +45,9 @@ impl DigitalInput {
 /// Your Joystick Axis (X or Y)
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum JoystickAxes {
+    /// The X axis of the joystick (left and right)
     X,
+    /// The Y axis of the joystick (forward and backward)
     Y,
 }
 
@@ -52,7 +56,9 @@ pub enum JoystickAxes {
 /// values (e.g. 1.0 to -1.0).
 #[derive(Debug, PartialEq, Eq)]
 pub enum AnalogInput {
+    /// A joystick axis on the controller (e.g. left stick X, right stick Y)
     Joystick(JoystickState, JoystickAxes),
+    /// An ADI analog input (e.g. a potentiometer)
     AdiIn(AdiAnalogIn),
 }
 

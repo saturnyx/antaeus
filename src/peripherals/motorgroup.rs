@@ -94,7 +94,10 @@ use vexide::{
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct MotorGroupError<E = PortError, T = ()> {
+    /// A list of all the errors that occurred during the motor group operation.
     pub errors: Vec<E>,
+    /// The result of the motor group operation, if any motors returned a
+    /// successful result.
     pub result: Option<T>,
 }
 

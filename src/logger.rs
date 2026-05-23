@@ -52,6 +52,7 @@ use vexide::time::user_uptime;
 ///
 /// Writes log messages to both the console and a file (`log.txt`).
 /// The file is created/truncated when the logger is initialized.
+#[derive(Debug)]
 pub struct AntLogger {
     /// Buffered file writer for log output.
     ///
@@ -77,9 +78,9 @@ impl AntLogger {
 }
 
 impl log::Log for AntLogger {
-    fn enabled(&self, metadata: &Metadata) -> bool { metadata.level() <= log::max_level() }
+    fn enabled(&self, metadata: &Metadata<'_>) -> bool { metadata.level() <= log::max_level() }
 
-    fn log(&self, record: &Record) {
+    fn log(&self, record: &Record<'_>) {
         if self.enabled(record.metadata()) {
             let log_line = format!(
                 "{} [{}] {} - {}\n",

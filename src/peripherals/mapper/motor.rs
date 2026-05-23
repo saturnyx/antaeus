@@ -8,6 +8,8 @@ use vexide::smart::{PortError, motor::Motor};
 
 use super::*;
 
+/// A trait for mapping digital and analog inputs to motors, allowing for easy
+/// control of mechanisms using controller inputs or other sensors.
 pub trait MotorMapper {
     /// Maps a digital input to a motor's voltage
     ///

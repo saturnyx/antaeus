@@ -50,14 +50,8 @@
 //!
 //! [`embedded-graphics` docs]: https://docs.rs/embedded-graphics/latest/embedded_graphics/examples/index.html
 
-/// Pre-loaded TrueType fonts for text rendering.
-///
-/// See the `fonts` module documentation for available fonts and usage examples.
 pub mod fonts;
 
-/// Antaeus logo and badge display utilities.
-///
-/// Functions for displaying the Antaeus branding on the V5 Brain screen.
 pub mod logo;
 
 use core::convert::Infallible;

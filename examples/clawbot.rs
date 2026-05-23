@@ -30,7 +30,7 @@ impl Compete for Clawbot {
             0.5,
             0.0,
             0.0,
-            12.0,
+            1000.0,
             Length::from_inches(3.25),
             NonZeroU32::new(4).unwrap(),
             NonZeroU32::new(4).unwrap(),

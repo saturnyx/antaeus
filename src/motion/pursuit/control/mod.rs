@@ -1,11 +1,21 @@
+//! Pursuit control algorithms and interfaces.
+//!
+//! Defines the `PursuitControl` trait used by higher-level pursuit logic to
+//! convert a lookahead point into drivetrain commands, along with built-in
+//! control implementations.
 use crate::utils::units::Length;
 
+/// Direction policy for the pursuit controller.
+#[derive(Debug, Clone, Copy, Default)]
 pub enum PursuitDirection {
+    /// Always drive forward toward the lookahead point.
     Forward,
+    /// Always drive backward toward the lookahead point.
     Backward,
+    /// Choose direction automatically based on the target location.
+    #[default]
     Auto,
 }
-
 pub mod basic;
 
 /// # `PursuitControl` Trait

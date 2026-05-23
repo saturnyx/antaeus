@@ -1,3 +1,13 @@
+//! Tracking-wheel localization.
+//!
+//! Implements a `Localizer` that fuses two tracking wheels (vertical/horizontal)
+//! with an IMU heading to integrate robot pose over time. Handles small-angle
+//! straight-line motion as well as arc-based deltas during rotation.
+//!
+//! The `devices` submodule defines the hardware wrapper (`TrackerMech`) for
+//! sensors. `Tracker` maintains the current pose and previous sensor readings
+//! to compute incremental updates in `tick`.
+
 use std::sync::Arc;
 
 use devices::TrackerMech;
@@ -11,19 +21,32 @@ pub mod devices;
 
 const ANGLE_EPS_RAD: f64 = 1e-6;
 
+/// State for the `Tracker` localizer, storing previous sensor readings for
+/// delta calculations.
 pub struct TrackerState {
+    /// Previous Angle
     pub prev_t: Angle,
+    /// Previous vertical tracking wheel distance
     pub prev_v: Length,
+    /// Previous horizontal tracking wheel distance
     pub prev_h: Length,
 }
 
+/// Localization controller that fuses two tracking wheels and an IMU to
+/// estimate the robot's position and orientation.
 pub struct Tracker {
+    /// The tracking mechanism containing the sensors and their configurations.
     pub tracker_mech: TrackerMech,
+    /// The current estimated pose of the robot (x, y in inches, t in radians).
     pub pose:         Pose,
+    /// The internal state storing previous sensor readings for delta
+    /// calculations.
     pub state:        TrackerState,
 }
 
 impl Tracker {
+    /// Creates a new `Tracker` instance with the specified mechanism and an
+    /// initial pose at the origin (0, 0, 0).
     pub fn new(tracker_mech: TrackerMech) -> Self {
         Self {
             tracker_mech,
@@ -36,6 +59,8 @@ impl Tracker {
         }
     }
 
+    /// Creates a new `Tracker` instance with the specified mechanism and an
+    /// initial pose.
     pub fn from_pose(tracker_mech: TrackerMech, pose: Pose) -> Self {
         Self {
             tracker_mech,
@@ -48,6 +73,9 @@ impl Tracker {
         }
     }
 
+    /// Resets the tracker's pose to the specified values (or origin if None)
+    /// and synchronizes the previous sensor readings to prevent jumps in the
+    /// next tick.
     pub async fn reset_origin(&mut self, t: Option<Angle>, x: Option<Length>, y: Option<Length>) {
         self.pose.t = t.unwrap_or(Angle::ZERO);
         self.pose.x = x.unwrap_or_else(Length::zero);

@@ -31,16 +31,8 @@
 //! pid.rotate(90.0, 2000, 100).await;  // Turn 90 degrees
 //! ```
 
-/// Odometry tracking for position estimation.
-///
-/// Provides the [`Tracker`](localization::tracker::Tracker) implementation
-/// for tracking the robot's global position using tracking wheels and an inertial sensor.
 pub mod localization;
 
-/// Candidate-Based Pursuit path following algorithm.
-///
-/// A more robust variant of pure pursuit that handles edge cases
-/// like the robot being off the path or near path endpoints.
 pub mod pursuit;
 
 pub mod feedback_control;

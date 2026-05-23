@@ -7,6 +7,9 @@
 use vexide::prelude::AdiDigitalOut;
 
 use super::*;
+/// A trait for mapping digital and analog inputs to ADI devices (e.g. pneumatic
+/// solenoids), allowing for easy control of mechanisms using controller inputs
+/// or other sensors.
 pub trait AdiOutMapper {
     /// Maps a digital input to a device (e.g. pneumatic solenoid)
     ///

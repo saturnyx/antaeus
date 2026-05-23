@@ -48,7 +48,7 @@ pub struct Path {
 ///
 /// Used internally for path calculations. Not an infinite line—
 /// only the segment between `point1` and `point2`.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Line {
     /// The starting point of the segment.
     pub point1: Point,
@@ -59,7 +59,7 @@ pub struct Line {
 /// A circle defined by center coordinates and radius.
 ///
 /// Used as the lookahead circle in the pursuit algorithm.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Circle {
     /// X-coordinate of the circle center.
     pub x: f64,
@@ -78,8 +78,10 @@ impl Point {
         }
     }
 
+    /// Create a new point using `x` and `y` coordinates in inches
     pub fn rnew(x: f64, y: f64) -> Self { Point { x: x, y: y } }
 
+    /// Create a point at the origin (0, 0)
     pub fn origin() -> Self { Point { x: 0.0, y: 0.0 } }
 }
 
@@ -167,6 +169,7 @@ impl Circle {
         }
     }
 
+    /// Create a new circle using coordinates in inches
     pub fn rnew(x: f64, y: f64, r: f64) -> Circle { Circle { x: x, y: y, r: r } }
 }
 

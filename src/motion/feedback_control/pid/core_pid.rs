@@ -5,13 +5,19 @@
 /// The Core PID instance
 #[derive(Debug, Clone)]
 pub struct CorePID {
+    /// target the PID should reach
     pub target:     f64,
+    /// Proportional term of PID
     pub kp:         f64,
+    /// Integral term of PID
     pub ki:         f64,
+    /// Derivative term of PID
     pub kd:         f64,
     /// Maximum Output
     pub max:        f64,
+    /// Previous error, used for derivative term
     pub prev_error: f64,
+    /// Integral term accumulator
     pub integral:   f64,
     /// Leeway/Tolerance
     pub tolerance:  f64,

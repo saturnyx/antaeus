@@ -46,48 +46,23 @@
 //! - [`peripherals`]: Controller input mapping to motors, pneumatics, and sensors.
 //! - [`fs`]: Filesystem utilities including logging.
 
+#![warn(missing_docs, rust_2018_idioms, unused, future_incompatible)]
+
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use vexide::sync::Mutex;
 
-/// Autonomous motion control module.
-///
-/// Provides algorithms for precise robot movement during autonomous periods:
-///
-/// - **PID Control**: Proportional-Integral-Derivative controllers for linear
-///   and rotational movement.
-/// - **Odometry**: Position tracking using tracking wheels and an inertial sensor.
-/// - **Pursuit**: Path following using the Candidate-Based Pursuit algorithm,
-///   a robust variant of pure pursuit.
 pub mod motion;
 
-/// Operator control utilities module.
-///
-/// Simplifies controller input handling during driver control periods.
-/// Maps controller buttons to motor voltages and ADI digital outputs
-/// with support for toggle, momentary, and dual-button controls.
 pub mod peripherals;
 
-/// V5 Brain display graphics module.
-///
-/// Provides an [`embedded-graphics`](https://crates.io/crates/embedded-graphics)
-/// compatible [`DrawTarget`](embedded_graphics_core::draw_target::DrawTarget)
-/// for rendering graphics on the V5 Brain display. Includes:
-///
-/// - Pre-loaded TTF fonts for text rendering.
-/// - Antaeus logo and badge display utilities.
 pub mod display;
 
-/// Miscellaneous utilities module.
 pub mod utils;
 
-/// File-based logging for the V5 Brain.
-///
-/// Provides a logger implementation that writes to both the console
-/// and a file on the SD card.
 pub mod logger;
 
-/// Makes an object clonable by wrapping it in `Rc` and `RefCell`
+/// Makes an object cloneable by wrapping it in `Rc` and `RefCell`
 pub fn make_cloneable<T>(v: T) -> Rc<RefCell<T>> { Rc::new(RefCell::new(v)) }
 
 /// Turns a object into a mutex

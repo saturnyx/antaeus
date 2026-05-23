@@ -1,10 +1,19 @@
-use crate::{utils::units::Length, motion::pursuit::control::PursuitControl};
+//! Basic pursuit control.
+//!
+//! Provides a simple curvature-based controller that converts a lookahead
+//! point (expressed in the robot frame) into left/right wheel voltages for a
+//! differential drive.
+
+use crate::{motion::pursuit::control::PursuitControl, utils::units::Length};
 
 /// A Basic Control Algorithm that generates wheel velocities depending on a
 /// point relative to the robot.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct BasicControl {
+    /// The width of the drivetrain
     pub track_width: Length,
+    /// A leeway at which the algorithm will end. Smaller tolerances mean more
+    /// accuracy but more time spent.
     pub tolerance:   Length,
 }
 
@@ -69,8 +78,8 @@ impl PursuitControl for BasicControl {
 #[cfg(test)]
 mod tests {
     use crate::{
-        utils::units::{Length, assert_almost_eq},
         motion::pursuit::control::{PursuitControl, basic::BasicControl},
+        utils::units::{Length, assert_almost_eq},
     };
 
     #[test]

@@ -34,7 +34,6 @@
 //! pursuit.follow(odom, path).await;
 //! ```
 
-/// Internal algorithm calculations for path following.
 mod algorithm;
 
 pub mod control;

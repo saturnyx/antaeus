@@ -1,3 +1,5 @@
+//! Internal algorithm calculations for path following.
+
 use std::f64::{EPSILON, MAX};
 
 use log::{error, info};
