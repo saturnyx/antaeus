@@ -64,3 +64,10 @@ interested in contributing, please check out our
 > [!WARNING]
 > Anateus is lacking testers! More information can be found in
 > [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+# Use of AI
+
+It is often impossible to completely negate the use of AI in our modern 
+world. However, I have greatly limited the use of AI in this repo. 
+Currently, more than 90% of source code is written by humans only. AI
+has only been used to write doc comments.
