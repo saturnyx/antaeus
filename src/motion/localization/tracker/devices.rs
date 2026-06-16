@@ -35,7 +35,7 @@
 
 use std::sync::Arc;
 
-use log::warn;
+use snafu::Snafu;
 use vexide::{
     adi::encoder::AdiOpticalEncoder,
     math::Angle,
@@ -43,7 +43,34 @@ use vexide::{
     sync::Mutex,
 };
 
-use crate::{peripherals::drivetrain::Differential, utils::units::Length};
+use crate::{
+    peripherals::drivetrain::{Differential, DrivetrainError},
+    utils::units::Length,
+};
+
+/// Errors that can occur while commanding or reading from the a tracking sensor.
+#[derive(Debug, Snafu)]
+pub enum TrackingSensorError {
+    /// An error occurred while accessing a motor port (e.g. invalid port
+    /// number, hardware failure, etc.).
+    #[snafu(transparent)]
+    PortError {
+        /// The underlying error from the when trying to access a motor port.
+        source: PortError,
+    },
+    /// Failed to borrow the motor group mutably (e.g. already borrowed
+    /// elsewhere).
+    #[snafu(transparent)]
+    DrivetrainError {
+        /// Errors that can occur while commanding or reading from the drivetrain.
+        source: DrivetrainError,
+    },
+    /// An unknown error occurred (catch-all for unexpected issues).
+    Unknown {
+        /// A string describing the unknown error.
+        string: String,
+    },
+}
 
 /// An abstraction over different encoder types used for tracking.
 ///
@@ -118,22 +145,12 @@ impl TrackingSensor {
     ///
     /// The position as an [`Angle`]. Returns zero if the device
     /// encounters an error (a warning is logged).
-    pub async fn position(&self) -> Angle {
+    pub async fn position(&self) -> Result<Angle, TrackingSensorError> {
         match self {
-            TrackingSensor::AdiOpticalEncoder(encoder) => {
-                encoder.lock().await.position().unwrap_or_else(|e| {
-                    warn!("ADI Optical Encoder Position Error: {}", e);
-                    Angle::ZERO
-                })
-            }
-            TrackingSensor::RotationSensor(encoder) => {
-                encoder.lock().await.position().unwrap_or_else(|e| {
-                    warn!("Rotation Sensor Position Error: {}", e);
-                    Angle::ZERO
-                })
-            }
-            TrackingSensor::Differential(dt) => dt.position().value(),
-            TrackingSensor::None => Angle::ZERO,
+            TrackingSensor::AdiOpticalEncoder(encoder) => Ok(encoder.lock().await.position()?),
+            TrackingSensor::RotationSensor(encoder) => Ok(encoder.lock().await.position()?),
+            TrackingSensor::Differential(dt) => Ok(dt.position().value()),
+            TrackingSensor::None => Ok(Angle::ZERO),
         }
     }
 
@@ -142,11 +159,13 @@ impl TrackingSensor {
     /// # Errors
     ///
     /// Returns a [`PortError`] if the sensor is disconnected or encounters an error.
-    pub async fn reset_position(&self) -> Result<(), PortError> {
+    pub async fn reset_position(&self) -> Result<(), TrackingSensorError> {
         match self {
-            TrackingSensor::AdiOpticalEncoder(encoder) => encoder.lock().await.reset_position(),
-            TrackingSensor::RotationSensor(encoder) => encoder.lock().await.reset_position(),
-            TrackingSensor::Differential(dt) => Ok(dt.reset_position().unwrap_or_default()), // TODO: implement error types
+            TrackingSensor::AdiOpticalEncoder(encoder) => {
+                Ok(encoder.lock().await.reset_position()?)
+            }
+            TrackingSensor::RotationSensor(encoder) => Ok(encoder.lock().await.reset_position()?),
+            TrackingSensor::Differential(dt) => Ok(dt.reset_position()?),
             TrackingSensor::None => Ok(()),
         }
     }
@@ -160,13 +179,15 @@ impl TrackingSensor {
     /// # Errors
     ///
     /// Returns a [`PortError`] if the sensor is disconnected or encounters an error.
-    pub async fn set_position(&self, position: Angle) -> Result<(), PortError> {
+    pub async fn set_position(&self, position: Angle) -> Result<(), TrackingSensorError> {
         match self {
             TrackingSensor::AdiOpticalEncoder(encoder) => {
-                encoder.lock().await.set_position(position)
+                Ok(encoder.lock().await.set_position(position)?)
             }
-            TrackingSensor::RotationSensor(encoder) => encoder.lock().await.set_position(position),
-            TrackingSensor::Differential(dt) => Ok(dt.set_position(position).unwrap_or_default()), // TODO: implement error types
+            TrackingSensor::RotationSensor(encoder) => {
+                Ok(encoder.lock().await.set_position(position)?)
+            }
+            TrackingSensor::Differential(dt) => Ok(dt.set_position(position)?),
             TrackingSensor::None => Ok(()),
         }
     }
@@ -245,11 +266,11 @@ impl TrackerPod {
     /// # Returns
     ///
     /// The distance traveled in inches.
-    pub async fn dist(&self) -> Length {
-        let angle = self.sensor.position().await;
+    pub async fn dist(&self) -> Result<Length, TrackingSensorError> {
+        let angle = self.sensor.position().await?;
         let gear_ratio = self.driving_gear as f64 / self.driven_gear as f64;
         let distance = angle.as_radians() * gear_ratio * (self.wheel_diameter / 2.0);
-        distance
+        Ok(distance)
     }
 }
 

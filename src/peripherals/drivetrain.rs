@@ -112,10 +112,6 @@ pub struct Differential {
 }
 
 /// Errors that can occur while commanding or reading from the drivetrain.
-///
-/// Most public methods return a `Vec<DrivetrainError>` to report *all* issues
-/// encountered while iterating over motors (for example: one port fails while
-/// others succeed).
 #[derive(Debug, Snafu)]
 pub enum DrivetrainError {
     /// An error occurred while accessing a motor port (e.g. invalid port
@@ -147,7 +143,6 @@ pub enum DrivetrainError {
     },
 }
 
-#[allow(dead_code)]
 impl Differential {
     /// Creates a new drivetrain from left/right motor groups.
     ///

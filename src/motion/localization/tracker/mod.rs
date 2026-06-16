@@ -15,7 +15,10 @@ use log::warn;
 use vexide::{math::Angle, prelude::InertialSensor, sync::Mutex};
 
 use super::Localizer;
-use crate::utils::{geo::Pose, units::Length};
+use crate::{
+    motion::localization::tracker::devices::TrackingSensorError,
+    utils::{geo::Pose, units::Length},
+};
 
 pub mod devices;
 
@@ -76,26 +79,35 @@ impl Tracker {
     /// Resets the tracker's pose to the specified values (or origin if None)
     /// and synchronizes the previous sensor readings to prevent jumps in the
     /// next tick.
-    pub async fn reset_origin(&mut self, t: Option<Angle>, x: Option<Length>, y: Option<Length>) {
+    pub async fn reset_origin(
+        &mut self,
+        t: Option<Angle>,
+        x: Option<Length>,
+        y: Option<Length>,
+    ) -> Result<(), TrackingSensorError> {
         self.pose.t = t.unwrap_or(Angle::ZERO);
         self.pose.x = x.unwrap_or_else(Length::zero);
         self.pose.y = y.unwrap_or_else(Length::zero);
 
         let imu_t = get_imu_angle(&self.tracker_mech.imu, Angle::ZERO).await;
-        let v = self.tracker_mech.vertical_tracker.dist().await;
-        let h = self.tracker_mech.horizontal_tracker.dist().await;
+        let v = self.tracker_mech.vertical_tracker.dist().await?;
+        let h = self.tracker_mech.horizontal_tracker.dist().await?;
 
         self.state.prev_t = imu_t;
         self.state.prev_v = v;
         self.state.prev_h = h;
+
+        Ok(())
     }
 }
 
-impl Localizer for Tracker {
-    async fn tick(&mut self) {
+impl<E> Localizer<E> for Tracker
+where E: From<TrackingSensorError>
+{
+    async fn tick(&mut self) -> Result<(), E> {
         let t = get_imu_angle(&self.tracker_mech.imu, self.state.prev_t).await;
-        let v = self.tracker_mech.vertical_tracker.dist().await;
-        let h = self.tracker_mech.horizontal_tracker.dist().await;
+        let v = self.tracker_mech.vertical_tracker.dist().await?;
+        let h = self.tracker_mech.horizontal_tracker.dist().await?;
 
         let delta_t = t - self.state.prev_t;
         let delta_v = v - self.state.prev_v;
@@ -121,6 +133,8 @@ impl Localizer for Tracker {
         self.state.prev_t = t;
         self.state.prev_v = v;
         self.state.prev_h = h;
+
+        Ok(())
     }
 
     fn get_coords(&self) -> Pose { self.pose }
