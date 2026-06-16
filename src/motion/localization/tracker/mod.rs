@@ -101,10 +101,8 @@ impl Tracker {
     }
 }
 
-impl<E> Localizer<E> for Tracker
-where E: From<TrackingSensorError>
-{
-    async fn tick(&mut self) -> Result<(), E> {
+impl Localizer<TrackingSensorError> for Tracker {
+    async fn tick(&mut self) -> Result<(), TrackingSensorError> {
         let t = get_imu_angle(&self.tracker_mech.imu, self.state.prev_t).await;
         let v = self.tracker_mech.vertical_tracker.dist().await?;
         let h = self.tracker_mech.horizontal_tracker.dist().await?;

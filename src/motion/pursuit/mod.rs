@@ -59,22 +59,22 @@ use crate::{
 };
 
 /// A marker trait to isolate tracking sensor error types
-pub trait IsTrackingError: std::error::Error + 'static {}
+pub trait IsLocalizerError: std::error::Error + 'static {}
 
 // Implement it for your default tracking error
-impl IsTrackingError for TrackingSensorError {}
+impl IsLocalizerError for TrackingSensorError {}
 
 /// An error that occured when the CBP Algorithm was running.
 #[derive(Debug, Snafu)]
-pub enum PursuitError<TE = TrackingSensorError>
-where TE: IsTrackingError {
-    // Require TE to be a valid error type {
+pub enum PursuitError<E = TrackingSensorError>
+where E: IsLocalizerError {
+    // Require E to be a valid error type {
     /// An error occurred while accessing a tracking sensor.
     /// This variant is now completely generic.
     #[snafu(transparent)]
-    TrackingSensorError {
+    LocalizerError {
         /// The underlying generic error from the tracking hardware.
-        source: TE,
+        source: E,
     },
 
     /// Failed to borrow the motor group mutably (e.g. already borrowed
@@ -144,10 +144,10 @@ impl Pursuit {
         drivetrain: &Differential,
         ctrl_algorithm: &C,
         path: geo::Path,
-    ) -> Result<(), PursuitError>
+    ) -> Result<(), PursuitError<E>>
+    // <-- Changed from PursuitError to PursuitError<TE>
     where
-        // This bound allows the ? operator to convert the localizer error into PursuitError
-        PursuitError: From<E>,
+        E: IsLocalizerError, // <-- Constrain TE instead of using From<TE>
     {
         let mut run = true;
         while run {
@@ -196,10 +196,10 @@ impl Pursuit {
         drivetrain: &Differential,
         ctrl_algorithm: &C,
         path: geo::Path,
-    ) -> Result<bool, PursuitError>
+    ) -> Result<bool, PursuitError<E>>
+    // <-- Changed from PursuitError to PursuitError<TE>
     where
-        // This bound allows the ? operator to convert the localizer error into PursuitError
-        PursuitError: From<E>,
+        E: IsLocalizerError, // <-- Constrain TE instead of using From<TE>
     {
         let odometry_values = odom.get_coords();
         let (x, y, t) = (odometry_values.x, odometry_values.y, odometry_values.t);
