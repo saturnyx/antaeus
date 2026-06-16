@@ -1,3 +1,6 @@
+//! WARNING: This is a LEGACY Module
+//! Support for this module has dropped
+
 //! Controller input mapping for operator control.
 //!
 //! This module provides utilities for mapping controller button presses

@@ -160,8 +160,8 @@ impl DrivePID {
                 .as_inches(),
             dt,
         );
-        self.drivetrain.set_left_voltage(left_power);
-        self.drivetrain.set_right_voltage(right_power);
+        let _ = self.drivetrain.set_left_voltage(left_power); // TODO: Implement Errors
+        let _ = self.drivetrain.set_right_voltage(right_power); // TODO: Implement Errors
         self.last_update = now;
     }
 
@@ -243,7 +243,7 @@ impl DrivePID {
                 return AutoTickOutcome::TimedOut;
             }
         }
-        self.drivetrain.set_voltage(0.0);
+        let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
         AutoTickOutcome::Completed
     }
 }
@@ -315,7 +315,7 @@ impl DriveControl for DrivePID {
 
         loop {
             if (user_uptime() - start_time) > timeout {
-                self.drivetrain.set_voltage(0.0);
+                let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
                 return; // TODO: Add snafu error handling
             }
 
@@ -329,7 +329,7 @@ impl DriveControl for DrivePID {
 
             let heading_error = target_heading - current_heading;
             if heading_error.as_degrees().abs() <= angle_tolerance.as_degrees() {
-                self.drivetrain.set_voltage(0.0);
+                let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
                 return; // TODO: Add snafu error handling
             }
 
@@ -387,7 +387,7 @@ impl DriveControl for DrivePID {
         } else if angle.as_degrees() < 0.0 {
             false
         } else {
-            self.drivetrain.set_voltage(0.0);
+            let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
             return; // TODO: Add snafu error handling
         };
 
@@ -399,7 +399,7 @@ impl DriveControl for DrivePID {
 
         loop {
             if (user_uptime() - start_time) > timeout {
-                self.drivetrain.set_voltage(0.0);
+                let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
                 return; // TODO: Add snafu error handling
             }
 
@@ -413,7 +413,7 @@ impl DriveControl for DrivePID {
 
             let heading_error = target_heading - current_heading;
             if heading_error.as_degrees().abs() <= angle_tolerance.as_degrees() {
-                self.drivetrain.set_voltage(0.0);
+                let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
                 return; // TODO: Add snafu error handling
             }
 

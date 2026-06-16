@@ -47,7 +47,7 @@ impl Compete for Clawbot {
 
     async fn driver(&mut self) {
         loop {
-            self.drivetrain.tank(&self.controller);
+            let _ = self.drivetrain.tank(&self.controller);
             let state = self.controller.state().unwrap_or_default();
             let _ = self.arm.from_dual_input(
                 DigitalInput::Button(state.button_up),

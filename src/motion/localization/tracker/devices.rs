@@ -146,7 +146,7 @@ impl TrackingSensor {
         match self {
             TrackingSensor::AdiOpticalEncoder(encoder) => encoder.lock().await.reset_position(),
             TrackingSensor::RotationSensor(encoder) => encoder.lock().await.reset_position(),
-            TrackingSensor::Differential(dt) => dt.reset_position(),
+            TrackingSensor::Differential(dt) => Ok(dt.reset_position().unwrap_or_default()), // TODO: implement error types
             TrackingSensor::None => Ok(()),
         }
     }
@@ -166,7 +166,7 @@ impl TrackingSensor {
                 encoder.lock().await.set_position(position)
             }
             TrackingSensor::RotationSensor(encoder) => encoder.lock().await.set_position(position),
-            TrackingSensor::Differential(dt) => dt.set_position(position),
+            TrackingSensor::Differential(dt) => Ok(dt.set_position(position).unwrap_or_default()), // TODO: implement error types
             TrackingSensor::None => Ok(()),
         }
     }

@@ -1,45 +1,33 @@
-//! Operator control utilities for driver control periods.
+//! # Peripheral Control
+//! Module that assists in controlling of peripherals
 //!
-//! This module simplifies mapping controller inputs to robot actions
-//! during the driver-controlled portion of a match.
+//! ## Drivetrain
+//! Originally forked from evian's drivetrain module. It now has various
+//! upgrades and integrations within Antaeus. Currently only supports
+//! differential drivetrains (tank drive).
 //!
-//! # Features
+//! ## Range Sensor
+//! A sensor that can be used to measure distances. This class of sensors
+//! include the newer Smart v5 Distance Sensor and the older ADI RangeFinder.
 //!
-//! - **Button-to-ADI mapping**: Control pneumatics with button presses.
-//! - **Button-to-Motor mapping**: Control mechanisms with button holds.
-//! - **Control button modifiers**: Combine buttons for extended controls.
+//! ## Mapper
+//! This module contains the code for mapping the inputs from the controller and
+//! other peripherals to the outputs of the motors and ADI devices. This allows
+//! for easy control of mechanisms like pneumatic solenoids using controller
+//! inputs or other sensors.
 //!
-//! # Example
-//!
-//! ```ignore
-//! use antaeus::peripherals::controller::{ControllerControl, ControllerButton};
-//!
-//! let controller = Controller::new(ControllerId::Primary);
-//! let control = ControllerControl::new(&controller, ControllerButton::ButtonA);
-//!
-//! // Button B toggles a piston
-//! control.button_to_adi_toggle(
-//!     ControllerButton::ButtonB,
-//!     vec![&mut piston],
-//!     false,
-//! );
-//!
-//! // L1 runs intake forward, L2 runs it backward
-//! control.dual_button_to_motors(
-//!     ControllerButton::ButtonL1,
-//!     ControllerButton::ButtonL2,
-//!     vec![&mut intake],
-//!     12.0, -12.0, 0.0, false,
-//! );
-//! ```
+//! ## Motorgroup
+//! A re-export of Zabackary's `vexide_motorgroup`
 
 pub mod drivetrain;
-
-pub mod motorgroup;
 
 pub mod range_sensor;
 
 pub mod mapper;
+
+// REMAPPED LIBRARIES ---------------------------------------------------------+
+
+pub use vexide_motorgroup as motorgroup;
 
 // LEGACY ---------------------------------------------------------------------+
 

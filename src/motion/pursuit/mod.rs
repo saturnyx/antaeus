@@ -128,8 +128,8 @@ impl Pursuit {
                 self.lookahead,
             );
 
-            drivetrain.set_left_voltage(powl);
-            drivetrain.set_right_voltage(powr);
+            let _ = drivetrain.set_left_voltage(powl); // TODO: Implement Errors
+            let _ = drivetrain.set_right_voltage(powr); // TODO: Implement Errors
             run = run_curr;
             odom.tick().await;
             sleep(LOOPRATE).await;
@@ -172,8 +172,8 @@ impl Pursuit {
             Length::from_inches(tary),
             self.lookahead,
         );
-        drivetrain.set_left_voltage(powl);
-        drivetrain.set_right_voltage(powr);
+        let _ = drivetrain.set_left_voltage(powl); // TODO: Implement Errors
+        let _ = drivetrain.set_right_voltage(powr); // TODO: Implement Errors
         odom.tick().await;
 
         run_curr
