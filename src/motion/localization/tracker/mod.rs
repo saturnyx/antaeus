@@ -8,11 +8,8 @@
 //! sensors. `Tracker` maintains the current pose and previous sensor readings
 //! to compute incremental updates in `tick`.
 
-use std::sync::Arc;
-
 use devices::TrackerMech;
-use log::warn;
-use vexide::{math::Angle, prelude::InertialSensor, sync::Mutex};
+use vexide::math::Angle;
 
 use super::Localizer;
 use crate::{
@@ -89,7 +86,7 @@ impl Tracker {
         self.pose.x = x.unwrap_or_else(Length::zero);
         self.pose.y = y.unwrap_or_else(Length::zero);
 
-        let imu_t = get_imu_angle(&self.tracker_mech.imu, Angle::ZERO).await;
+        let imu_t = self.tracker_mech.imu.lock().await.rotation()?;
         let v = self.tracker_mech.vertical_tracker.dist().await?;
         let h = self.tracker_mech.horizontal_tracker.dist().await?;
 
@@ -103,7 +100,7 @@ impl Tracker {
 
 impl Localizer<TrackingSensorError> for Tracker {
     async fn tick(&mut self) -> Result<(), TrackingSensorError> {
-        let t = get_imu_angle(&self.tracker_mech.imu, self.state.prev_t).await;
+        let t = self.tracker_mech.imu.lock().await.rotation()?;
         let v = self.tracker_mech.vertical_tracker.dist().await?;
         let h = self.tracker_mech.horizontal_tracker.dist().await?;
 
@@ -136,13 +133,6 @@ impl Localizer<TrackingSensorError> for Tracker {
     }
 
     fn get_coords(&self) -> Pose { self.pose }
-}
-
-async fn get_imu_angle(imu: &Arc<Mutex<InertialSensor>>, def: Angle) -> Angle {
-    imu.lock().await.rotation().unwrap_or_else(|e| {
-        warn!("IMU Error: {}", e);
-        def
-    })
 }
 
 fn is_small_angle(delta_t: Angle) -> bool { delta_t.as_radians().abs() < ANGLE_EPS_RAD }

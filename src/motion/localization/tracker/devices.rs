@@ -39,7 +39,11 @@ use snafu::Snafu;
 use vexide::{
     adi::encoder::AdiOpticalEncoder,
     math::Angle,
-    smart::{PortError, imu::InertialSensor, rotation::RotationSensor},
+    smart::{
+        PortError,
+        imu::{InertialError, InertialSensor},
+        rotation::RotationSensor,
+    },
     sync::Mutex,
 };
 
@@ -64,6 +68,12 @@ pub enum TrackingSensorError {
     DrivetrainError {
         /// Errors that can occur while commanding or reading from the drivetrain.
         source: DrivetrainError,
+    },
+    /// Failed to retrieve IMU Reading
+    #[snafu(transparent)]
+    InertialError {
+        /// IMU error
+        source: InertialError,
     },
     /// An unknown error occurred (catch-all for unexpected issues).
     Unknown {

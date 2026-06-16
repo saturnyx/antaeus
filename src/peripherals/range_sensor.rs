@@ -274,20 +274,8 @@ impl KalmanRangeSensor {
     pub async fn update(&mut self) {
         let m = match self.sensor.distance().await {
             Report::Ok(d) => d,
-            Report::Warn { value: d, error: e } => {
-                // best-effort policy: log, but keep the returned value
-                log::warn!("{}", e);
-                d
-            }
+            Report::Warn { value: d, error: _ } => d,
         };
-
-        // Ok(val) => val,
-        // Warn => {
-        //     warn!("Error getting distance");
-        //     self.new_m = self.est_m;
-        //     self.new_var = self.est_var;
-        //     return; // Exit fn
-        // }
 
         let residual = m - self.est_m;
         let kalman_gain = self.est_var / (self.est_var + self.measurement_var);
