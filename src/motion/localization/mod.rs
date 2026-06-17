@@ -68,9 +68,9 @@ pub mod tracker;
 
 /// Trait for localization controllers that estimate robot pose over time.
 #[allow(async_fn_in_trait)]
-pub trait Localizer {
+pub trait Localizer<E> {
     /// Returns the current estimated pose of the robot.
     fn get_coords(&self) -> Pose;
     /// Updates the internal pose estimate based on sensor readings
-    async fn tick(&mut self);
+    async fn tick(&mut self) -> Result<(), E>;
 }

@@ -1,9 +1,5 @@
 use antaeus::{
-    motion::{
-        localization::{self},
-        pursuit::control,
-        *,
-    },
+    motion::{localization, pursuit::control, *},
     utils::{geo, units::Length},
 };
 

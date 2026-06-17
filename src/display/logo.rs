@@ -20,7 +20,6 @@ use embedded_graphics::{
     pixelcolor::Rgb888,
     prelude::Point,
 };
-use log::warn;
 use tinybmp::{Bmp, ParseError};
 use vexide::display::Display;
 
@@ -56,10 +55,6 @@ pub fn print_logo(display: &mut DisplayDriver) {
             ),
         );
         let _ = logo.draw(display);
-    } else if let Err(e) = bmp {
-        warn!("Error Parsing Bitmap: {:?}", e);
-    } else {
-        warn!("Error Parsing Bitmap")
     }
 }
 
@@ -105,10 +100,6 @@ pub fn print_badge(display: &mut DisplayDriver) {
             ),
         );
         let _ = logo.draw(display);
-    } else if let Err(e) = bmp {
-        panic!("Error Parsing Bitmap {:?}", e);
-    } else {
-        panic!("Unknown Error")
     }
 }
 
