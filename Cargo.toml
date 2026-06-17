@@ -1,6 +1,6 @@
 [package]
 name = "antaeus"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2024"
 readme = "README.md"
 license = "MIT"
@@ -21,9 +21,9 @@ embedded-graphics = "0.8.2"
 embedded-graphics-core = "0.4.1"
 embedded-ttf = "=0.2.2"
 humantime = "2.3.0"
-log = "0.4.29"
+log = "0.4.32"
 rusttype = "0.9.3"
-snafu = "0.9.0"
+snafu = "0.9.1"
 tinybmp = "0.7.0"
 vex-sdk = "0.28.0"
 vexide = { version = "0.8.0", features = ["full"] }
@@ -32,8 +32,8 @@ vexide-motorgroup = "2.2.0"
 [dev-dependencies]
 embedded-graphics-simulator = "0.8.0"
 vexide = { version = "0.8.0", features = ["full", "vex-sdk-mock"] }
-plotly = "0.14"
-rand = "0.10"
-rand_distr = "0.6"
+plotly = "0.14.1"
+rand = "0.10.1"
+rand_distr = "0.6.0"
 getrandom = { version = "^0.4.2" }
 tempfile = "3.27.0"
