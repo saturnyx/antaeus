@@ -17,6 +17,7 @@ name = "antaeus"
 legacy = []
 
 [dependencies]
+csv = "1.4.0"
 embedded-graphics = "0.8.2"
 embedded-graphics-core = "0.4.1"
 embedded-ttf = "=0.2.2"
