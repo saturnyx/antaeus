@@ -51,7 +51,7 @@ use crate::{
         localization::{Localizer, tracker::devices::TrackingSensorError},
         pursuit::algorithm::abs_arc_point,
     },
-    peripherals::drivetrain::{Differential, DrivetrainError},
+    peripherals::drivetrain::{DrivetrainError, differential::Differential},
     utils::{
         geo::{self, Pose},
         units::Length,

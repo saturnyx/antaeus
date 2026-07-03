@@ -1,4 +1,7 @@
-use antaeus::peripherals::mapper::{DigitalInput, motor::MotorMapper};
+use antaeus::peripherals::{
+    drivetrain::Drivable,
+    mapper::{DigitalInput, motor::MotorMapper},
+};
 
 use crate::hardware::Robot;
 

@@ -10,7 +10,7 @@ use std::{num::NonZeroU32, time::Duration};
 use antaeus::{
     motion::feedback_control::pid::drive_pid::DrivePID,
     peripherals::{
-        drivetrain::Differential,
+        drivetrain::{Drivable, differential::Differential},
         mapper::{DigitalInput, motor::MotorMapper},
     },
     utils::units::Length,

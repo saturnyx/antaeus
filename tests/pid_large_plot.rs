@@ -50,7 +50,7 @@ fn large_pid_step_response_plot() {
     }
 
     let final_error = (pid.target - x).abs();
-    assert!(final_error < threshold, "Final error too large: {final_error:.3}"); // TODO: Reduce this error
+    assert!(final_error < threshold, "Final error too large: {final_error:.3}");
 
     // --- Generate Background Rectangles for Small Error Threshold ---
     let mut shapes = Vec::new();

@@ -31,7 +31,7 @@ use vexide::{math::Angle, smart::imu::InertialSensor, time::user_uptime};
 use super::core_pid::CorePID;
 use crate::{
     motion::feedback_control::DriveControl,
-    peripherals::drivetrain::Differential,
+    peripherals::drivetrain::differential::Differential,
     utils::units::Length,
 };
 

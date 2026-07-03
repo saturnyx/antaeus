@@ -48,7 +48,7 @@ use vexide::{
 };
 
 use crate::{
-    peripherals::drivetrain::{Differential, DrivetrainError},
+    peripherals::drivetrain::{DrivetrainError, differential::Differential},
     utils::units::Length,
 };
 
