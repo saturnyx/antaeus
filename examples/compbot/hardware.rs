@@ -5,12 +5,12 @@ use vexide::{prelude::*, sync::Mutex};
 
 pub struct Robot {
     pub main_con: Controller,
-    pub dt:       peripherals::drivetrain::differential::Differential,
+    pub dt:       peripherals::drivetrain::differential::StandardDifferential,
     pub intake1:  Motor,
     pub intake2:  Motor,
 
-    pub h_tracker: Arc<Mutex<RotationSensor>>,
-    pub v_tracker: Arc<Mutex<RotationSensor>>,
+    pub h_tracker: RotationSensor,
+    pub v_tracker: RotationSensor,
     pub imu:       Arc<Mutex<InertialSensor>>,
 }
 
@@ -18,7 +18,7 @@ impl Robot {
     pub fn default_config(peripherals: Peripherals) -> Robot {
         Robot {
             main_con: peripherals.primary_controller,
-            dt:       peripherals::drivetrain::differential::Differential::new(
+            dt:       peripherals::drivetrain::differential::StandardDifferential::new(
                 [
                     Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
@@ -33,8 +33,8 @@ impl Robot {
             intake1:  Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
             intake2:  Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
 
-            h_tracker: to_mutex(RotationSensor::new(peripherals.port_9, Direction::Forward)),
-            v_tracker: to_mutex(RotationSensor::new(peripherals.port_10, Direction::Forward)),
+            h_tracker: RotationSensor::new(peripherals.port_9, Direction::Forward),
+            v_tracker: RotationSensor::new(peripherals.port_10, Direction::Forward),
             imu:       to_mutex(InertialSensor::new(peripherals.port_12)),
         }
     }

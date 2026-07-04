@@ -1,5 +1,9 @@
 use antaeus::{
-    motion::{localization, pursuit::control, *},
+    motion::{
+        localization::{self},
+        pursuit::control,
+        *,
+    },
     utils::{geo, units::Length},
 };
 
@@ -16,9 +20,7 @@ pub async fn main_auton(robot: &mut Robot) {
     };
 
     let vertical = localization::tracker::devices::TrackerPod {
-        sensor:         localization::tracker::devices::TrackingSensor::RotationSensor(
-            robot.v_tracker.clone(),
-        ),
+        sensor:         &mut robot.dt.clone(),
         offset:         Length::zero(),
         wheel_diameter: Length::from_inches(3.25),
         driven_gear:    1.0,
@@ -26,9 +28,7 @@ pub async fn main_auton(robot: &mut Robot) {
     };
 
     let horizontal = localization::tracker::devices::TrackerPod {
-        sensor:         localization::tracker::devices::TrackingSensor::RotationSensor(
-            robot.h_tracker.clone(),
-        ),
+        sensor:         &mut robot.h_tracker,
         offset:         Length::zero(),
         wheel_diameter: Length::from_inches(3.25),
         driven_gear:    1.0,

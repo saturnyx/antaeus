@@ -51,7 +51,7 @@ use crate::{
         localization::{Localizer, tracker::devices::TrackingSensorError},
         pursuit::algorithm::abs_arc_point,
     },
-    peripherals::drivetrain::{DrivetrainError, differential::Differential},
+    peripherals::drivetrain::{Differential, DrivetrainError},
     utils::{
         geo::{self, Pose},
         units::Length,
@@ -138,10 +138,13 @@ impl Pursuit {
     ///
     /// pursuit.follow(odom, path).await;
     /// ```
-    pub async fn follow<C: PursuitControl, E>(
+    // TODO: Instead of getting a drivetrain from a argument, use the drivetrain
+    // in odom. Make the argument optional. This removes the need to clone dt.
+    // Or make the user feed in the pose instead of odom
+    pub async fn follow<C: PursuitControl, E, D: Differential>(
         &self,
         odom: &mut impl Localizer<E>,
-        drivetrain: &Differential,
+        drivetrain: &D,
         ctrl_algorithm: &C,
         path: geo::Path,
     ) -> Result<(), PursuitError<E>>
@@ -190,10 +193,10 @@ impl Pursuit {
     /// * `drivetrain` - The differential drivetrain
     /// * `ctrl_algorithm` - The control algorithm
     /// * `path` - The path to follow, defined as a series of waypoints.
-    pub async fn tick<C: PursuitControl, E>(
+    pub async fn tick<C: PursuitControl, E, D: Differential>(
         &self,
         odom: &mut impl Localizer<E>,
-        drivetrain: &Differential,
+        drivetrain: &D,
         ctrl_algorithm: &C,
         path: geo::Path,
     ) -> Result<bool, PursuitError<E>>

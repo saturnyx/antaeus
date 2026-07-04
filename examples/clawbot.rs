@@ -10,14 +10,14 @@ use std::{num::NonZeroU32, time::Duration};
 use antaeus::{
     motion::feedback_control::pid::drive_pid::DrivePID,
     peripherals::{
-        drivetrain::{Drivable, differential::Differential},
+        drivetrain::{Drivable, differential::StandardDifferential},
         mapper::{DigitalInput, motor::MotorMapper},
     },
     utils::units::Length,
 };
 use vexide::prelude::*;
 struct Clawbot {
-    drivetrain: Differential,
+    drivetrain: StandardDifferential,
     claw:       Motor,
     arm:        Motor,
     controller: Controller,
@@ -71,7 +71,7 @@ impl Compete for Clawbot {
 async fn main(peripherals: Peripherals) {
     // Configuring devices and handing off control to the competition API.
     Clawbot {
-        drivetrain: Differential::new(
+        drivetrain: StandardDifferential::new(
             [
                 Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
                 Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),

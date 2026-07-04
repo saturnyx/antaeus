@@ -59,7 +59,11 @@ use vexide::{
 };
 
 use super::DrivetrainError;
-use crate::{peripherals::drivetrain::Drivable, utils::error::Report};
+use crate::{
+    motion::localization::tracker::devices::{Trackable, TrackingSensorError},
+    peripherals::drivetrain::{Differential, Drivable},
+    utils::error::Report,
+};
 
 /// A left/right (“tank”) drivetrain controller.
 ///
@@ -90,7 +94,7 @@ use crate::{peripherals::drivetrain::Drivable, utils::error::Report};
 /// ```
 #[derive(Clone)]
 #[allow(dead_code)]
-pub struct Differential {
+pub struct StandardDifferential {
     /// The left motor group.
     ///
     /// Contains all motors on the left side of the drivetrain.
@@ -107,7 +111,7 @@ pub struct Differential {
     pub right: Rc<RefCell<dyn AsMut<[Motor]>>>,
 }
 
-impl Differential {
+impl StandardDifferential {
     /// Creates a new drivetrain from left/right motor groups.
     ///
     /// This constructor takes ownership of the provided motor collections and
@@ -146,6 +150,212 @@ impl Differential {
         }
     }
 
+    /// Creates a new drivetrain with shared ownership of the left/right motors.
+    ///
+    /// This constructor is useful when you need to share motor references
+    /// with other systems (e.g., PID controllers or odometry).
+    ///
+    /// # Arguments
+    ///
+    /// * `left` - A reference-counted cell containing the left motor array.
+    /// * `right` - A reference-counted cell containing the right motor array.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use antaeus::peripherals::drivetrain::Differential;
+    /// use std::{cell::RefCell, rc::Rc};
+    /// use vexide::prelude::*;
+    ///
+    /// let drivetrain = Differential::from_shared(
+    ///     Rc::new(RefCell::new([
+    ///         Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
+    ///         Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
+    ///     ])),
+    ///     Rc::new(RefCell::new([
+    ///         Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
+    ///         Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
+    ///     ])),
+    /// );
+    /// ```
+    pub fn from_shared<L: AsMut<[Motor]> + 'static, R: AsMut<[Motor]> + 'static>(
+        left: Rc<RefCell<L>>,
+        right: Rc<RefCell<R>>,
+    ) -> Self {
+        Self { left, right }
+    }
+}
+
+impl Drivable for StandardDifferential {
+    /// Controls a tank-style drivetrain using the input from a controller.
+    ///
+    /// In tank drive mode, each joystick directly controls one side of the
+    /// drivetrain. The left stick Y-axis controls the left motors, and the
+    /// right stick Y-axis controls the right motors.
+    ///
+    /// # Arguments
+    ///
+    /// * `controller` - The VEX controller to read input from.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use antaeus::peripherals::drivetrain::Differential;
+    /// use vexide::prelude::*;
+    ///
+    /// let controller = Controller::new(ControllerId::Primary);
+    /// let _ = drivetrain.tank(&controller);
+    /// ```
+    fn tank(&mut self, controller: &Controller) -> Result<(), DrivetrainError> {
+        let state = controller.state()?;
+
+        let left_power = state.left_stick.y();
+        let right_power = state.right_stick.y();
+
+        let left_voltage = left_power * 12.0;
+        let right_voltage = right_power * 12.0;
+
+        let mut left_motors = self.left.try_borrow_mut()?;
+        let mut right_motors = self.right.try_borrow_mut()?;
+
+        for motor in left_motors.as_mut() {
+            motor.set_voltage(left_voltage)?;
+        }
+
+        for motor in right_motors.as_mut() {
+            motor.set_voltage(right_voltage)?;
+        }
+
+        Ok(())
+    }
+
+    /// Drive the robot using arcade controls (single-stick forward/back + single-stick turn).
+    ///
+    /// Behavior:
+    /// * Forward/backward is read from the left stick Y axis.
+    /// * Turning is read from the right stick X axis.
+    /// * The two values are mixed into left/right voltages as:
+    ///   * left = (fwd + turn) * 12.0
+    ///   * right = (fwd - turn) * 12.0
+    ///
+    /// Notes:
+    /// * Inputs are assumed to be in the range [-1.0, 1.0] and are scaled to volts by 12.0.
+    /// * Consider applying your own deadband before calling if small-stick noise is an issue.
+    ///
+    /// # Example
+    /// ```ignore
+    /// use vexide::prelude::Controller;
+    /// use vexide::devices::controller::ControllerId;
+    /// let controller = Controller::new(ControllerId::Primary);
+    /// let _ = drivetrain.arcade(&controller);
+    /// ```
+    fn arcade(&mut self, controller: &Controller) -> Result<(), DrivetrainError> {
+        let state = controller.state()?;
+
+        let fwd = state.left_stick.y();
+        let turn = state.right_stick.x();
+
+        let left_voltage = (fwd + turn) * 12.0;
+        let right_voltage = (fwd - turn) * 12.0;
+
+        let mut left_motors = self.left.try_borrow_mut()?;
+        let mut right_motors = self.right.try_borrow_mut()?;
+
+        for motor in left_motors.as_mut() {
+            motor.set_voltage(left_voltage)?;
+        }
+
+        for motor in right_motors.as_mut() {
+            motor.set_voltage(right_voltage)?;
+        }
+
+        Ok(())
+    }
+
+    /// Drive the robot using reversed tank controls (sticks swapped and inverted).
+    ///
+    /// Behavior:
+    /// * Left motors take input from the RIGHT stick Y axis, inverted.
+    /// * Right motors take input from the LEFT stick Y axis, inverted.
+    /// * Computation:
+    ///   * left = (-right_y) * 12.0
+    ///   * right = (-left_y) * 12.0
+    /// * This is useful when the robot is driving backwards but you want the sticks
+    ///   to maintain an intuitive left/right mapping relative to the robot's new front.
+    ///
+    /// # Example
+    /// ```ignore
+    /// use vexide::prelude::Controller;
+    /// use vexide::devices::controller::ControllerId;
+    /// let controller = Controller::new(ControllerId::Primary);
+    /// let _ = drivetrain.reverse_tank(&controller);
+    /// ```
+    fn reverse_tank(&mut self, controller: &Controller) -> Result<(), DrivetrainError> {
+        let state = controller.state()?;
+
+        let left_voltage = (-state.right_stick.y()) * 12.0;
+        let right_voltage = (-state.left_stick.y()) * 12.0;
+
+        let mut left_motors = self.left.try_borrow_mut()?;
+        let mut right_motors = self.right.try_borrow_mut()?;
+
+        for motor in left_motors.as_mut() {
+            motor.set_voltage(left_voltage)?;
+        }
+
+        for motor in right_motors.as_mut() {
+            motor.set_voltage(right_voltage)?;
+        }
+
+        Ok(())
+    }
+
+    /// Drive the robot using reversed arcade controls (forward/turn both inverted).
+    ///
+    /// Behavior:
+    /// * Forward/backward is read from the left stick Y axis, but inverted (fwd = -left_y).
+    /// * Turning is read from the right stick X axis, also inverted (turn = -right_x).
+    /// * Mixed into left/right voltages as:
+    ///   * left = (fwd + turn) * 12.0
+    ///   * right = (fwd - turn) * 12.0
+    /// * This inversion preserves intuitive steering when the robot is driving backwards
+    ///   (pushing the right stick right still causes a clockwise turn relative to the driver).
+    ///
+    /// Notes:
+    /// * Inputs are assumed to be in the range [-1.0, 1.0] and are scaled to volts by 12.0.
+    ///
+    /// # Example
+    /// ```ignore
+    /// use vexide::prelude::Controller;
+    /// use vexide::devices::controller::ControllerId;
+    /// let controller = Controller::new(ControllerId::Primary);
+    /// let _ = drivetrain.reverse_arcade(&controller);
+    /// ```
+    fn reverse_arcade(&mut self, controller: &Controller) -> Result<(), DrivetrainError> {
+        let state = controller.state()?;
+
+        let fwd = -state.left_stick.y();
+        let turn = -state.right_stick.x();
+
+        let left_voltage = (fwd + turn) * 12.0;
+        let right_voltage = (fwd - turn) * 12.0;
+
+        let mut left_motors = self.left.try_borrow_mut()?;
+        let mut right_motors = self.right.try_borrow_mut()?;
+
+        for motor in left_motors.as_mut() {
+            motor.set_voltage(left_voltage)?;
+        }
+
+        for motor in right_motors.as_mut() {
+            motor.set_voltage(right_voltage)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl Differential for StandardDifferential {
     /// Sets the brake mode for all motors in the drivetrain.
     ///
     /// The brake mode determines how motors behave when no voltage is applied:
@@ -162,7 +372,7 @@ impl Differential {
     /// // Set motors to brake mode for better control
     /// let _ = drivetrain.set_brakemode(BrakeMode::Brake);
     /// ```
-    pub fn set_brakemode(&self, brakemode: BrakeMode) -> Result<(), DrivetrainError> {
+    fn set_brakemode(&self, brakemode: BrakeMode) -> Result<(), DrivetrainError> {
         let mut left = self.left.try_borrow_mut()?;
         let mut right = self.right.try_borrow_mut()?;
 
@@ -202,7 +412,7 @@ impl Differential {
     /// for e in errs { println!("warn: {e}"); }
     /// println!("Drivetrain position: {} degrees", pos.as_degrees());
     /// ```
-    pub fn position(&self) -> Report<Angle, Vec<DrivetrainError>> {
+    fn position(&self) -> Report<Angle, Vec<DrivetrainError>> {
         let mut errors = Vec::new();
         let left = self.left.try_borrow_mut();
         let right = self.right.try_borrow_mut();
@@ -259,7 +469,7 @@ impl Differential {
     /// let (pos, _errs) = drivetrain.left_position();
     /// println!("Left position: {} degrees", pos.as_degrees());
     /// ```
-    pub fn left_position(&self) -> Report<Angle, Vec<DrivetrainError>> {
+    fn left_position(&self) -> Report<Angle, Vec<DrivetrainError>> {
         let mut errors = Vec::new();
         let left = self.left.try_borrow_mut();
         let mut angle: Angle = Angle::from_degrees(0.0);
@@ -297,7 +507,7 @@ impl Differential {
     /// let (pos, _errs) = drivetrain.right_position();
     /// println!("Right position: {} degrees", pos.as_degrees());
     /// ```
-    pub fn right_position(&self) -> Report<Angle, Vec<DrivetrainError>> {
+    fn right_position(&self) -> Report<Angle, Vec<DrivetrainError>> {
         let mut errors = Vec::new();
         let right = self.right.try_borrow_mut();
         let mut angle: Angle = Angle::from_degrees(0.0);
@@ -328,11 +538,7 @@ impl Differential {
     /// Resets the integrated encoder position on all drivetrain motors.
     ///
     /// This will attempt to reset both left and right motor groups.
-    ///
-    /// Notes:
-    /// - This method currently logs/collects errors internally but returns `Ok(())`
-    ///   unconditionally.
-    pub fn reset_position(&self) -> Result<(), DrivetrainError> {
+    fn reset_position(&self) -> Result<(), DrivetrainError> {
         let mut left = self.left.try_borrow_mut()?;
         let mut right = self.right.try_borrow_mut()?;
 
@@ -348,11 +554,7 @@ impl Differential {
     }
 
     /// Sets the integrated encoder position on all drivetrain motors.
-    ///
-    /// Notes:
-    /// - This method currently logs/collects errors internally but returns `Ok(())`
-    ///   unconditionally.
-    pub fn set_position(&self, position: Angle) -> Result<(), DrivetrainError> {
+    fn set_position(&self, position: Angle) -> Result<(), DrivetrainError> {
         let mut left = self.left.try_borrow_mut()?;
         let mut right = self.right.try_borrow_mut()?;
 
@@ -370,7 +572,7 @@ impl Differential {
     /// Sets the same voltage on all drivetrain motors.
     ///
     /// `voltage` is in volts.
-    pub fn set_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
+    fn set_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
         let mut left_motors = self.left.try_borrow_mut()?;
         let mut right_motors = self.right.try_borrow_mut()?;
 
@@ -388,7 +590,7 @@ impl Differential {
     /// Sets the same voltage on all *left* drivetrain motors.
     ///
     /// `voltage` is in volts.
-    pub fn set_left_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
+    fn set_left_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
         let mut left = self.left.try_borrow_mut()?;
 
         for motor in left.as_mut() {
@@ -401,7 +603,7 @@ impl Differential {
     /// Sets the same voltage on all *right* drivetrain motors.
     ///
     /// `voltage` is in volts.
-    pub fn set_right_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
+    fn set_right_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
         let mut right = self.right.try_borrow_mut()?;
 
         for motor in right.as_mut() {
@@ -410,208 +612,41 @@ impl Differential {
 
         Ok(())
     }
-
-    /// Creates a new drivetrain with shared ownership of the left/right motors.
-    ///
-    /// This constructor is useful when you need to share motor references
-    /// with other systems (e.g., PID controllers or odometry).
-    ///
-    /// # Arguments
-    ///
-    /// * `left` - A reference-counted cell containing the left motor array.
-    /// * `right` - A reference-counted cell containing the right motor array.
-    ///
-    /// # Examples
-    ///
-    /// ```ignore
-    /// use antaeus::peripherals::drivetrain::Differential;
-    /// use std::{cell::RefCell, rc::Rc};
-    /// use vexide::prelude::*;
-    ///
-    /// let drivetrain = Differential::from_shared(
-    ///     Rc::new(RefCell::new([
-    ///         Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
-    ///         Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
-    ///     ])),
-    ///     Rc::new(RefCell::new([
-    ///         Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
-    ///         Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
-    ///     ])),
-    /// );
-    /// ```
-    pub fn from_shared<L: AsMut<[Motor]> + 'static, R: AsMut<[Motor]> + 'static>(
-        left: Rc<RefCell<L>>,
-        right: Rc<RefCell<R>>,
-    ) -> Self {
-        Self { left, right }
-    }
 }
 
-impl Drivable for Differential {
-    /// Controls a tank-style drivetrain using the input from a controller.
-    ///
-    /// In tank drive mode, each joystick directly controls one side of the
-    /// drivetrain. The left stick Y-axis controls the left motors, and the
-    /// right stick Y-axis controls the right motors.
-    ///
-    /// # Arguments
-    ///
-    /// * `controller` - The VEX controller to read input from.
-    ///
-    /// # Examples
-    ///
-    /// ```ignore
-    /// use antaeus::peripherals::drivetrain::Differential;
-    /// use vexide::prelude::*;
-    ///
-    /// let controller = Controller::new(ControllerId::Primary);
-    /// let _ = drivetrain.tank(&controller);
-    /// ```
-    fn tank(&self, controller: &Controller) -> Result<(), DrivetrainError> {
-        let state = controller.state()?;
+impl Trackable for StandardDifferential {
+    fn track_position(
+        &mut self,
+    ) -> Result<Angle, crate::motion::localization::tracker::devices::TrackingSensorError> {
+        let res = Self::position(&self);
+        if res.has_errors() {
+            let (_, e) = res.into_parts();
+            // Take ownership of the vector, then remove and return the first element
+            let source_err = e.unwrap_or_default().remove(0);
 
-        let left_power = state.left_stick.y();
-        let right_power = state.right_stick.y();
-
-        let left_voltage = left_power * 12.0;
-        let right_voltage = right_power * 12.0;
-
-        let mut left_motors = self.left.try_borrow_mut()?;
-        let mut right_motors = self.right.try_borrow_mut()?;
-
-        for motor in left_motors.as_mut() {
-            motor.set_voltage(left_voltage)?;
+            let err = TrackingSensorError::DrivetrainError { source: source_err };
+            Err(err)
+        } else {
+            Ok(res.value())
         }
-
-        for motor in right_motors.as_mut() {
-            motor.set_voltage(right_voltage)?;
-        }
-
-        Ok(())
     }
 
-    /// Drive the robot using arcade controls (single-stick forward/back + single-stick turn).
-    ///
-    /// Behavior:
-    /// * Forward/backward is read from the left stick Y axis.
-    /// * Turning is read from the right stick X axis.
-    /// * The two values are mixed into left/right voltages as:
-    ///   * left = (fwd + turn) * 12.0
-    ///   * right = (fwd - turn) * 12.0
-    ///
-    /// Notes:
-    /// * Inputs are assumed to be in the range [-1.0, 1.0] and are scaled to volts by 12.0.
-    /// * Consider applying your own deadband before calling if small-stick noise is an issue.
-    ///
-    /// # Example
-    /// ```ignore
-    /// use vexide::prelude::Controller;
-    /// use vexide::devices::controller::ControllerId;
-    /// let controller = Controller::new(ControllerId::Primary);
-    /// let _ = drivetrain.arcade(&controller);
-    /// ```
-    fn arcade(&self, controller: &Controller) -> Result<(), DrivetrainError> {
-        let state = controller.state()?;
-
-        let fwd = state.left_stick.y();
-        let turn = state.right_stick.x();
-
-        let left_voltage = (fwd + turn) * 12.0;
-        let right_voltage = (fwd - turn) * 12.0;
-
-        let mut left_motors = self.left.try_borrow_mut()?;
-        let mut right_motors = self.right.try_borrow_mut()?;
-
-        for motor in left_motors.as_mut() {
-            motor.set_voltage(left_voltage)?;
+    fn reset_track_position(
+        &mut self,
+    ) -> Result<(), crate::motion::localization::tracker::devices::TrackingSensorError> {
+        match Self::reset_position(&self) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(TrackingSensorError::DrivetrainError { source: e }),
         }
-
-        for motor in right_motors.as_mut() {
-            motor.set_voltage(right_voltage)?;
-        }
-
-        Ok(())
     }
 
-    /// Drive the robot using reversed tank controls (sticks swapped and inverted).
-    ///
-    /// Behavior:
-    /// * Left motors take input from the RIGHT stick Y axis, inverted.
-    /// * Right motors take input from the LEFT stick Y axis, inverted.
-    /// * Computation:
-    ///   * left = (-right_y) * 12.0
-    ///   * right = (-left_y) * 12.0
-    /// * This is useful when the robot is driving backwards but you want the sticks
-    ///   to maintain an intuitive left/right mapping relative to the robot's new front.
-    ///
-    /// # Example
-    /// ```ignore
-    /// use vexide::prelude::Controller;
-    /// use vexide::devices::controller::ControllerId;
-    /// let controller = Controller::new(ControllerId::Primary);
-    /// let _ = drivetrain.reverse_tank(&controller);
-    /// ```
-    fn reverse_tank(&self, controller: &Controller) -> Result<(), DrivetrainError> {
-        let state = controller.state()?;
-
-        let left_voltage = (-state.right_stick.y()) * 12.0;
-        let right_voltage = (-state.left_stick.y()) * 12.0;
-
-        let mut left_motors = self.left.try_borrow_mut()?;
-        let mut right_motors = self.right.try_borrow_mut()?;
-
-        for motor in left_motors.as_mut() {
-            motor.set_voltage(left_voltage)?;
+    fn set_track_position(
+        &mut self,
+        position: Angle,
+    ) -> Result<(), crate::motion::localization::tracker::devices::TrackingSensorError> {
+        match Self::set_position(&self, position) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(TrackingSensorError::DrivetrainError { source: e }),
         }
-
-        for motor in right_motors.as_mut() {
-            motor.set_voltage(right_voltage)?;
-        }
-
-        Ok(())
-    }
-
-    /// Drive the robot using reversed arcade controls (forward/turn both inverted).
-    ///
-    /// Behavior:
-    /// * Forward/backward is read from the left stick Y axis, but inverted (fwd = -left_y).
-    /// * Turning is read from the right stick X axis, also inverted (turn = -right_x).
-    /// * Mixed into left/right voltages as:
-    ///   * left = (fwd + turn) * 12.0
-    ///   * right = (fwd - turn) * 12.0
-    /// * This inversion preserves intuitive steering when the robot is driving backwards
-    ///   (pushing the right stick right still causes a clockwise turn relative to the driver).
-    ///
-    /// Notes:
-    /// * Inputs are assumed to be in the range [-1.0, 1.0] and are scaled to volts by 12.0.
-    ///
-    /// # Example
-    /// ```ignore
-    /// use vexide::prelude::Controller;
-    /// use vexide::devices::controller::ControllerId;
-    /// let controller = Controller::new(ControllerId::Primary);
-    /// let _ = drivetrain.reverse_arcade(&controller);
-    /// ```
-    fn reverse_arcade(&self, controller: &Controller) -> Result<(), DrivetrainError> {
-        let state = controller.state()?;
-
-        let fwd = -state.left_stick.y();
-        let turn = -state.right_stick.x();
-
-        let left_voltage = (fwd + turn) * 12.0;
-        let right_voltage = (fwd - turn) * 12.0;
-
-        let mut left_motors = self.left.try_borrow_mut()?;
-        let mut right_motors = self.right.try_borrow_mut()?;
-
-        for motor in left_motors.as_mut() {
-            motor.set_voltage(left_voltage)?;
-        }
-
-        for motor in right_motors.as_mut() {
-            motor.set_voltage(right_voltage)?;
-        }
-
-        Ok(())
     }
 }

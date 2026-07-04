@@ -6,9 +6,19 @@
 use std::cell::BorrowMutError;
 
 use snafu::Snafu;
-use vexide::{controller::ControllerError, prelude::Controller, smart::PortError};
+use vexide::{
+    controller::ControllerError,
+    math::Angle,
+    prelude::Controller,
+    smart::{PortError, motor::BrakeMode},
+};
+
+use crate::utils::error::Report;
 
 pub mod differential;
+
+#[cfg(feature = "evian-compat")]
+pub mod evian_differential;
 
 /// Any form of Drivable Drivetrain that can be controlled using a controller
 pub trait Drivable {
@@ -17,7 +27,7 @@ pub trait Drivable {
     /// In tank drive mode, each joystick directly controls one side of the
     /// drivetrain. The left stick Y-axis controls the left motors, and the
     /// right stick Y-axis controls the right motors.
-    fn tank(&self, controller: &Controller) -> Result<(), DrivetrainError>;
+    fn tank(&mut self, controller: &Controller) -> Result<(), DrivetrainError>;
     /// Drive the robot using arcade controls (single-stick forward/back + single-stick turn).
     ///
     /// Behavior:
@@ -26,7 +36,7 @@ pub trait Drivable {
     /// * The two values are mixed into left/right voltages as:
     ///   * left = (fwd + turn) * 12.0
     ///   * right = (fwd - turn) * 12.0
-    fn arcade(&self, controller: &Controller) -> Result<(), DrivetrainError>;
+    fn arcade(&mut self, controller: &Controller) -> Result<(), DrivetrainError>;
     /// Drive the robot using reversed tank controls (sticks swapped and inverted).
     ///
     /// Behavior:
@@ -37,7 +47,7 @@ pub trait Drivable {
     ///   * right = (-left_y) * 12.0
     /// * This is useful when the robot is driving backwards but you want the sticks
     ///   to maintain an intuitive left/right mapping relative to the robot's new front.
-    fn reverse_tank(&self, controller: &Controller) -> Result<(), DrivetrainError>;
+    fn reverse_tank(&mut self, controller: &Controller) -> Result<(), DrivetrainError>;
     /// Drive the robot using reversed arcade controls (forward/turn both inverted).
     ///
     /// Behavior:
@@ -52,7 +62,66 @@ pub trait Drivable {
     ///
     /// Notes:
     /// * Inputs are assumed to be in the range [-1.0, 1.0] and are scaled to volts by 12.0.
-    fn reverse_arcade(&self, controller: &Controller) -> Result<(), DrivetrainError>;
+    fn reverse_arcade(&mut self, controller: &Controller) -> Result<(), DrivetrainError>;
+}
+
+/// A Differential Drivetrain (or tank drive) is a drivetrain that has 2
+/// separate sides that move independently to moe the robot.
+pub trait Differential {
+    /// Sets the brake mode for all motors in the drivetrain.
+    ///
+    /// The brake mode determines how motors behave when no voltage is applied:
+    ///
+    /// * [`BrakeMode::Coast`]: Motors spin freely.
+    /// * [`BrakeMode::Brake`]: Motors actively resist rotation.
+    /// * [`BrakeMode::Hold`]: Motors actively hold their position.
+    fn set_brakemode(&self, brakemode: BrakeMode) -> Result<(), DrivetrainError>;
+    /// Returns the average encoder position of all motors (left + right).
+    ///
+    /// The position is read from each motor’s integrated encoder and averaged.
+    /// The result is returned as an [`Angle`].
+    ///
+    /// ## Error behavior
+    ///
+    /// - If reading any motor fails, that motor contributes `0` to the sum and an
+    ///   error is recorded/logged.
+    /// - If a motor group cannot be borrowed, the group is skipped and an error is
+    ///   recorded/logged.
+    ///
+    /// Notes:
+    /// - The current implementation divides by the number of motors successfully
+    ///   iterated. If *no* motors are available, the divisor becomes `0.0` and the
+    ///   returned angle will be non-finite. If you need a stricter guarantee,
+    ///   consider handling the `errors` vector and/or adding your own guard.
+    fn position(&self) -> Report<Angle, Vec<DrivetrainError>>;
+    /// Returns the average encoder position of all left motors.
+    ///
+    /// See [`Differential::position`] for notes on error behavior and averaging.
+    fn left_position(&self) -> Report<Angle, Vec<DrivetrainError>>;
+    /// Returns the average encoder position of all right motors.
+    ///
+    /// See [`Differential::position`] for notes on error behavior and averaging.
+    fn right_position(&self) -> Report<Angle, Vec<DrivetrainError>>;
+
+    /// Resets the integrated encoder position on all drivetrain motors.
+    ///
+    /// This will attempt to reset both left and right motor groups.
+    fn reset_position(&self) -> Result<(), DrivetrainError>;
+    /// Sets the integrated encoder position on all drivetrain motors.
+    fn set_position(&self, position: Angle) -> Result<(), DrivetrainError>;
+    /// Sets the same voltage on all drivetrain motors.
+    ///
+    /// `voltage` is in volts.
+    fn set_voltage(&self, voltage: f64) -> Result<(), DrivetrainError>;
+
+    /// Sets the same voltage on all *left* drivetrain motors.
+    ///
+    /// `voltage` is in volts.
+    fn set_left_voltage(&self, voltage: f64) -> Result<(), DrivetrainError>;
+    /// Sets the same voltage on all *right* drivetrain motors.
+    ///
+    /// `voltage` is in volts.
+    fn set_right_voltage(&self, voltage: f64) -> Result<(), DrivetrainError>;
 }
 
 /// Errors that can occur while commanding or reading from the drivetrain.

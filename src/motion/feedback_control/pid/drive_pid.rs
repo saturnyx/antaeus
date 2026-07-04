@@ -31,7 +31,7 @@ use vexide::{math::Angle, smart::imu::InertialSensor, time::user_uptime};
 use super::core_pid::CorePID;
 use crate::{
     motion::feedback_control::DriveControl,
-    peripherals::drivetrain::differential::Differential,
+    peripherals::drivetrain::Differential,
     utils::units::Length,
 };
 
@@ -48,9 +48,9 @@ pub enum AutoTickOutcome {
 ///
 /// This type owns a drivetrain handle and two [`CorePID`] instances:
 /// one for the left side and one for the right side.
-pub struct DrivePID {
+pub struct DrivePID<D: Differential> {
     /// Differential drivetrain interface used to read positions and command voltages.
-    pub drivetrain:        Differential,
+    pub drivetrain:        D,
     /// Left-side PID controller.
     pub pid_left:          CorePID,
     /// Right-side PID controller.
@@ -65,7 +65,7 @@ pub struct DrivePID {
     pub last_update:       Duration,
 }
 
-impl DrivePID {
+impl<D: Differential> DrivePID<D> {
     /// Creates a new [`DrivePID`] with symmetric PID gains for both sides.
     ///
     /// The provided `default_target` and `tolerance` are converted to inches
@@ -74,7 +74,7 @@ impl DrivePID {
     /// `motor_gear_teeth` and `wheel_gear_teeth` are `NonZeroU32` to guarantee
     /// a valid, non-zero gear ratio at construction.
     pub fn new(
-        drivetrain: Differential,
+        drivetrain: D,
         kp: f64,
         ki: f64,
         kd: f64,
@@ -117,7 +117,7 @@ impl DrivePID {
     ///
     /// Use this constructor when each side requires different gains or state.
     pub fn from_basic_pid(
-        drivetrain: Differential,
+        drivetrain: D,
         pid_left: CorePID,
         pid_right: CorePID,
         wheel_diameter: Length,
@@ -248,7 +248,7 @@ impl DrivePID {
     }
 }
 
-impl DriveControl for DrivePID {
+impl<D: Differential> DriveControl for DrivePID<D> {
     /// Drives both sides forward/backward by the same relative distance.
     ///
     /// This sets equal left/right relative targets, then runs [`DrivePID::autotick`]

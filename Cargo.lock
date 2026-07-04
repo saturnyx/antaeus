@@ -41,6 +41,7 @@ dependencies = [
  "embedded-graphics-core",
  "embedded-graphics-simulator",
  "embedded-ttf",
+ "evian",
  "getrandom",
  "humantime",
  "log",
@@ -499,6 +500,67 @@ checksum = "8be9f3dfaaffdae2972880079a491a1a8bb7cbed0b8dd7a347f668b4150a3b93"
 dependencies = [
  "event-listener",
  "pin-project-lite",
+]
+
+[[package]]
+name = "evian"
+version = "0.3.0-rc.1"
+source = "git+https://github.com/vexide/evian#bc300becbbbc8612de4a0d559fc66159040cd841"
+dependencies = [
+ "evian-control",
+ "evian-drivetrain",
+ "evian-math",
+ "evian-motion",
+ "evian-tracking",
+]
+
+[[package]]
+name = "evian-control"
+version = "0.0.1-rc.1"
+source = "git+https://github.com/vexide/evian#bc300becbbbc8612de4a0d559fc66159040cd841"
+dependencies = [
+ "evian-math",
+ "vexide",
+]
+
+[[package]]
+name = "evian-drivetrain"
+version = "0.0.1-rc.1"
+source = "git+https://github.com/vexide/evian#bc300becbbbc8612de4a0d559fc66159040cd841"
+dependencies = [
+ "evian-math",
+ "evian-tracking",
+ "vexide-devices",
+]
+
+[[package]]
+name = "evian-math"
+version = "0.0.1-rc.1"
+source = "git+https://github.com/vexide/evian#bc300becbbbc8612de4a0d559fc66159040cd841"
+dependencies = [
+ "num-traits",
+ "vexide-devices",
+]
+
+[[package]]
+name = "evian-motion"
+version = "0.0.1-rc.1"
+source = "git+https://github.com/vexide/evian#bc300becbbbc8612de4a0d559fc66159040cd841"
+dependencies = [
+ "evian-control",
+ "evian-drivetrain",
+ "evian-math",
+ "evian-tracking",
+ "vexide",
+]
+
+[[package]]
+name = "evian-tracking"
+version = "0.0.1-rc.1"
+source = "git+https://github.com/vexide/evian#bc300becbbbc8612de4a0d559fc66159040cd841"
+dependencies = [
+ "evian-math",
+ "vexide",
 ]
 
 [[package]]
