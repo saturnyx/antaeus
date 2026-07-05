@@ -33,7 +33,7 @@
 //! );
 //! ```
 
-use std::sync::Arc;
+use std::{cell::BorrowMutError, sync::Arc};
 
 use snafu::Snafu;
 use vexide::{
@@ -72,6 +72,12 @@ pub enum TrackingSensorError {
     InertialError {
         /// IMU error
         source: InertialError,
+    },
+    /// An error returned by RefCell::try_borrow_mut.
+    #[snafu(transparent)]
+    BorrowMutError {
+        /// An error returned by RefCell::try_borrow_mut.
+        source: BorrowMutError,
     },
     /// An unknown error occurred (catch-all for unexpected issues).
     Unknown {
