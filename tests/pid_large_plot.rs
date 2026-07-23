@@ -143,14 +143,14 @@ fn large_pid_step_response_plot() {
         .legend(legend);
     plot.set_layout(layout);
 
-    std::fs::create_dir_all("target/test-plots").expect("create plot dir failed");
-    let out_file = "target/test-plots/large_pid_step_response.html";
+    std::fs::create_dir_all("test-artifacts/test-plots").expect("create plot dir failed");
+    let out_file = "test-artifacts/test-plots/large_pid_step_response.html";
     plot.write_html(out_file);
 
     println!("Plot written: {out_file}");
 
     // --- Export Simulation Data to CSV ---
-    let csv_file_path = "target/test-plots/large_pid_step_response.csv";
+    let csv_file_path = "test-artifacts/test-plots/large_pid_step_response.csv";
     let file = std::fs::File::create(csv_file_path).expect("Failed to create CSV file");
     let mut wtr = csv::Writer::from_writer(file);
 

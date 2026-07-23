@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use antaeus::{
-    utils::units::{Length, Speed},
     peripherals::range_sensor::{KalmanRangeSensor, RangeSensor},
+    utils::units::{Length, Speed},
 };
 use rand::rng;
 use rand_distr::{Distribution, Normal};
@@ -186,8 +186,8 @@ async fn test_kalman_filter_visualization(_p: Peripherals) {
 
     test_data_viz.print_table();
 
-    std::fs::create_dir_all("target/test-plots").expect("create plot dir failed");
-    let out_file = "target/test-plots/kalman_filter_test.html";
+    std::fs::create_dir_all("test-artifacts/test-plots").expect("create plot dir failed");
+    let out_file = "test-artifacts/test-plots/kalman_filter_test.html";
     test_data_viz.plot_to_html(out_file);
 
     println!("Plot saved to {out_file}");
