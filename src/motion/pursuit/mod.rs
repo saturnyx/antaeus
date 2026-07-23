@@ -167,7 +167,7 @@ impl Pursuit {
                 Length::as_inches(Length::from_inches(target.x)),
                 Length::as_inches(Length::from_inches(target.y)),
             );
-            let ((powl, powr), run_curr) = ctrl_algorithm.control(
+            let ((powl, powr), _) = ctrl_algorithm.control(
                 Length::from_inches(tarx),
                 Length::from_inches(tary),
                 self.lookahead,
@@ -175,7 +175,15 @@ impl Pursuit {
 
             drivetrain.set_left_voltage(powl)?;
             drivetrain.set_right_voltage(powr)?;
-            run = run_curr;
+            // Steering is based on the moving lookahead target, but completion
+            // must be measured against the path's final waypoint. Otherwise a
+            // controller stops after reaching its first lookahead distance.
+            run = should_continue_to_final_waypoint(
+                ctrl_algorithm,
+                Pose::new(x, y, t),
+                &path,
+                self.lookahead,
+            );
             odom.tick().await?;
             sleep(LOOPRATE).await;
         }
@@ -217,15 +225,43 @@ impl Pursuit {
             Length::as_inches(Length::from_inches(target.x)),
             Length::as_inches(Length::from_inches(target.y)),
         );
-        let ((powl, powr), run_curr) = ctrl_algorithm.control(
+        let ((powl, powr), _) = ctrl_algorithm.control(
             Length::from_inches(tarx),
             Length::from_inches(tary),
             self.lookahead,
         );
         drivetrain.set_left_voltage(powl)?;
         drivetrain.set_right_voltage(powr)?;
+        let should_continue = should_continue_to_final_waypoint(
+            ctrl_algorithm,
+            Pose::new(x, y, t),
+            &path,
+            self.lookahead,
+        );
         odom.tick().await?;
 
-        Ok(run_curr)
+        Ok(should_continue)
     }
+}
+
+/// Returns whether pursuit should continue based on the distance to the final
+/// waypoint, using the control implementation's configured tolerance.
+fn should_continue_to_final_waypoint<C: PursuitControl>(
+    ctrl_algorithm: &C,
+    pose: Pose,
+    path: &geo::Path,
+    lookahead: Length,
+) -> bool {
+    let final_waypoint = path
+        .waypoints
+        .last()
+        .copied()
+        .unwrap_or_else(geo::Point::origin);
+    let (final_x, final_y) = abs_arc_point(pose, final_waypoint.x, final_waypoint.y);
+    let (_, should_continue) = ctrl_algorithm.control(
+        Length::from_inches(final_x),
+        Length::from_inches(final_y),
+        lookahead,
+    );
+    should_continue
 }

@@ -13,7 +13,7 @@ use vexide::math::Angle;
 
 use super::Localizer;
 use crate::{
-    motion::localization::tracker::devices::{Trackable, TrackingSensorError},
+    motion::localization::tracker::devices::{HeadingSensor, Trackable, TrackingSensorError},
     utils::{geo::Pose, units::Length},
 };
 
@@ -34,9 +34,9 @@ pub struct TrackerState {
 
 /// Localization controller that fuses two tracking wheels and an IMU to
 /// estimate the robot's position and orientation.
-pub struct Tracker<'v, 'h, V: Trackable, H: Trackable> {
+pub struct Tracker<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> {
     /// The tracking mechanism containing the sensors and their configurations.
-    pub tracker_mech: TrackerMech<'v, 'h, V, H>,
+    pub tracker_mech: TrackerMech<'v, 'h, V, H, I>,
     /// The current estimated pose of the robot (x, y in inches, t in radians).
     pub pose:         Pose,
     /// The internal state storing previous sensor readings for delta
@@ -44,10 +44,10 @@ pub struct Tracker<'v, 'h, V: Trackable, H: Trackable> {
     pub state:        TrackerState,
 }
 
-impl<'v, 'h, V: Trackable, H: Trackable> Tracker<'v, 'h, V, H> {
+impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Tracker<'v, 'h, V, H, I> {
     /// Creates a new `Tracker` instance with the specified mechanism and an
     /// initial pose at the origin (0, 0, 0).
-    pub fn new(tracker_mech: TrackerMech<'v, 'h, V, H>) -> Self {
+    pub fn new(tracker_mech: TrackerMech<'v, 'h, V, H, I>) -> Self {
         Self {
             tracker_mech,
             pose: Pose::origin(),
@@ -61,7 +61,7 @@ impl<'v, 'h, V: Trackable, H: Trackable> Tracker<'v, 'h, V, H> {
 
     /// Creates a new `Tracker` instance with the specified mechanism and an
     /// initial pose.
-    pub fn from_pose(tracker_mech: TrackerMech<'v, 'h, V, H>, pose: Pose) -> Self {
+    pub fn from_pose(tracker_mech: TrackerMech<'v, 'h, V, H, I>, pose: Pose) -> Self {
         Self {
             tracker_mech,
             pose,
@@ -86,7 +86,7 @@ impl<'v, 'h, V: Trackable, H: Trackable> Tracker<'v, 'h, V, H> {
         self.pose.x = x.unwrap_or_else(Length::zero);
         self.pose.y = y.unwrap_or_else(Length::zero);
 
-        let imu_t = self.tracker_mech.imu.lock().await.rotation()?;
+        let imu_t = self.tracker_mech.imu.lock().await.heading()?;
         let v = self.tracker_mech.vertical_tracker.dist()?;
         let h = self.tracker_mech.horizontal_tracker.dist()?;
 
@@ -98,9 +98,11 @@ impl<'v, 'h, V: Trackable, H: Trackable> Tracker<'v, 'h, V, H> {
     }
 }
 
-impl<'v, 'h, V: Trackable, H: Trackable> Localizer<TrackingSensorError> for Tracker<'v, 'h, V, H> {
+impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Localizer<TrackingSensorError>
+    for Tracker<'v, 'h, V, H, I>
+{
     async fn tick(&mut self) -> Result<(), TrackingSensorError> {
-        let t = self.tracker_mech.imu.lock().await.rotation()?;
+        let t = self.tracker_mech.imu.lock().await.heading()?;
         let v = self.tracker_mech.vertical_tracker.dist()?;
         let h = self.tracker_mech.horizontal_tracker.dist()?;
 

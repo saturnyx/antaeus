@@ -86,7 +86,7 @@ pub enum TrackingSensorError {
     },
 }
 
-/// Trackable Sensors
+/// A sensor that measures a tracking wheel's rotational position.
 pub trait Trackable {
     /// Returns the current rotational position of the tracking sensor.
     fn track_position(&mut self) -> Result<Angle, TrackingSensorError>;
@@ -94,6 +94,21 @@ pub trait Trackable {
     fn reset_track_position(&mut self) -> Result<(), TrackingSensorError>;
     /// Sets the tracking sensor position to a specific angle.
     fn set_track_position(&mut self, position: Angle) -> Result<(), TrackingSensorError>;
+}
+
+/// A sensor that supplies the robot's orientation for odometry.
+///
+/// Implement this trait for hardware IMUs and simulated heading sources. All
+/// implementations must use the same rotation convention as the localizer.
+pub trait HeadingSensor {
+    /// Returns the current rotation about the vertical axis.
+    fn heading(&mut self) -> Result<Angle, TrackingSensorError>;
+
+    /// Resets the reported heading to zero.
+    fn reset_heading(&mut self) -> Result<(), TrackingSensorError>;
+
+    /// Sets the reported heading.
+    fn set_heading(&mut self, heading: Angle) -> Result<(), TrackingSensorError>;
 }
 
 impl Trackable for AdiOpticalEncoder {
@@ -117,6 +132,18 @@ impl Trackable for RotationSensor {
 
     fn set_track_position(&mut self, position: Angle) -> Result<(), TrackingSensorError> {
         Ok(Self::set_position(self, position)?)
+    }
+}
+
+impl HeadingSensor for InertialSensor {
+    fn heading(&mut self) -> Result<Angle, TrackingSensorError> { Ok(Self::rotation(self)?) }
+
+    fn reset_heading(&mut self) -> Result<(), TrackingSensorError> {
+        Ok(Self::reset_rotation(self)?)
+    }
+
+    fn set_heading(&mut self, heading: Angle) -> Result<(), TrackingSensorError> {
+        Ok(Self::set_rotation(self, heading)?)
     }
 }
 
@@ -219,16 +246,16 @@ impl<'s, S: Trackable> TrackerPod<'s, S> {
 ///
 /// let mechanism = TrackerMech::new(vertical, horizontal, imu);
 /// ```
-pub struct TrackerMech<'v, 'h, V: Trackable, H: Trackable> {
+pub struct TrackerMech<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> {
     /// The vertical (forward/backward) tracking wheel.
     pub vertical_tracker:   TrackerPod<'v, V>,
     /// The horizontal (left/right) tracking wheel.
     pub horizontal_tracker: TrackerPod<'h, H>,
-    /// The inertial sensor for heading measurement.
-    pub imu:                Arc<Mutex<InertialSensor>>,
+    /// The heading sensor used for orientation measurement.
+    pub imu:                Arc<Mutex<I>>,
 }
 
-impl<'v, 'h, V: Trackable, H: Trackable> TrackerMech<'v, 'h, V, H> {
+impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> TrackerMech<'v, 'h, V, H, I> {
     /// Creates a new tracking mechanism.
     ///
     /// # Arguments
@@ -239,7 +266,7 @@ impl<'v, 'h, V: Trackable, H: Trackable> TrackerMech<'v, 'h, V, H> {
     pub fn new(
         vertical_tracker: TrackerPod<'v, V>,
         horizontal_tracker: TrackerPod<'h, H>,
-        imu: Arc<Mutex<InertialSensor>>,
+        imu: Arc<Mutex<I>>,
     ) -> Self {
         Self {
             vertical_tracker,
