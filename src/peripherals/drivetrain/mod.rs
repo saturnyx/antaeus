@@ -17,9 +17,6 @@ use crate::utils::error::Report;
 
 pub mod differential;
 
-#[cfg(feature = "evian-compat")]
-pub mod evian_differential;
-
 /// Any form of Drivable Drivetrain that can be controlled using a controller
 pub trait Drivable {
     /// Controls a tank-style drivetrain using the input from a controller.

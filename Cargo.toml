@@ -17,7 +17,6 @@ doctest = false
 [features]
 default = []
 legacy = []
-evian-compat = ["evian"]
 
 [dependencies]
 csv = "1.4.0"
@@ -32,7 +31,6 @@ tinybmp = "0.7.0"
 vex-sdk = "0.28.0"
 vexide = { version = "0.8.0", features = ["full"] }
 vexide-motorgroup = "2.2.0"
-evian = { git = "https://github.com/vexide/evian", optional = true }
 
 [dev-dependencies]
 embedded-graphics-simulator = "0.8.0"
