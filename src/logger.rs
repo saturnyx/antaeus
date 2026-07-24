@@ -24,7 +24,8 @@
 //!
 //! # Log Output
 //!
-//! Logs are written to `log.txt` in the root of the SD card. Each log entry
+//! On VexOS, logs are written to `log.txt` in the root of the SD card. On
+//! other targets, logs are written to `test-artifacts/log.txt`. Each log entry
 //! includes:
 //! - Log level (TRACE, DEBUG, INFO, WARN, ERROR)
 //! - Timestamp (time since program start)
@@ -38,8 +39,9 @@
 //! ```
 
 use std::{
-    fs::OpenOptions,
+    fs::{OpenOptions, create_dir_all},
     io::{BufWriter, Write},
+    path::PathBuf,
     sync::Mutex,
     time::Duration,
 };
@@ -50,7 +52,7 @@ use vexide::time::user_uptime;
 
 /// A dual-output logger for the Antaeus framework.
 ///
-/// Writes log messages to both the console and a file (`log.txt`).
+/// Writes log messages to both the console and a file.
 /// The file is created/truncated when the logger is initialized.
 #[derive(Debug)]
 pub struct AntLogger {
@@ -63,16 +65,33 @@ pub struct AntLogger {
 
 impl AntLogger {
     fn new() -> Self {
-        let file_writer = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open("log.txt")
-            .ok()
+        let file_writer = Self::log_path()
+            .and_then(|path| {
+                if let Some(parent) = path.parent() {
+                    if !parent.as_os_str().is_empty() {
+                        create_dir_all(parent).ok()?;
+                    }
+                }
+
+                OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .truncate(true)
+                    .open(path)
+                    .ok()
+            })
             .map(BufWriter::new);
 
         Self {
             file_writer: Mutex::new(file_writer),
+        }
+    }
+
+    fn log_path() -> Option<PathBuf> {
+        if cfg!(target_os = "vexos") {
+            Some(PathBuf::from("log.txt"))
+        } else {
+            Some(PathBuf::from("test-artifacts/log_test.txt"))
         }
     }
 }
@@ -115,7 +134,8 @@ static LOGGER: std::sync::OnceLock<AntLogger> = std::sync::OnceLock::new();
 /// Initializes the Antaeus logger.
 ///
 /// This function must be called once before any logging macros are used.
-/// It sets up the global logger to write to both the console and `log.txt`.
+/// It sets up the global logger to write to both the console and the target-
+/// specific log file path.
 ///
 /// # Arguments
 ///
@@ -160,7 +180,6 @@ mod tests {
     use log::{LevelFilter, debug, error, info, trace, warn};
 
     #[test]
-    #[ignore = "filesystem access needed (file write)"]
     fn log_full_test() {
         super::init(LevelFilter::Trace).expect("Failed to initialize logger");
 

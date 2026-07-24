@@ -1,13 +1,8 @@
 use antaeus::motion::feedback_control::pid::core_pid::CorePID;
-use plotly::{
-    Plot,
-    Scatter,
-    common::{Font, Line, Orientation, Title},
-    layout::{Axis, Layout, Legend, Shape, ShapeLayer, ShapeLine, ShapeType},
-};
+use plotly::{Plot, Scatter, common::Line};
 
 #[test]
-#[ignore = "Long-running visualization test; run explicitly"]
+//#[ignore = "Long-running visualization test; run explicitly"]
 fn large_pid_step_response_plot() {
     let mut pid = CorePID::new(6.0, 0.4, 2.5, 100.0, 60.0, 0.0);
 
@@ -52,33 +47,6 @@ fn large_pid_step_response_plot() {
     let final_error = (pid.target - x).abs();
     assert!(final_error < threshold, "Final error too large: {final_error:.3}");
 
-    // --- Generate Background Rectangles for Small Error Threshold ---
-    let mut shapes = Vec::new();
-    let mut in_range = false;
-    let mut start_time = 0.0;
-
-    for k in 0..steps {
-        let t = t_log[k];
-        let error = (target_log[k] - x_log[k]).abs();
-
-        if error < threshold {
-            if !in_range {
-                start_time = t;
-                in_range = true;
-            }
-        } else {
-            if in_range {
-                shapes.push(create_bg_rect(start_time, t));
-                in_range = false;
-            }
-        }
-    }
-
-    // Capture the final window if it remained under the threshold until the end
-    if in_range {
-        shapes.push(create_bg_rect(start_time, t_log[steps - 1]));
-    }
-
     let mut plot = Plot::new();
 
     // Max Power (Dashed Red)
@@ -117,32 +85,6 @@ fn large_pid_step_response_plot() {
             .line(Line::new().color("rgba(44, 160, 44, 1.0)")),
     );
 
-    let x_axis = Axis::new()
-        .title(
-            Title::new()
-                .text("Time (seconds)")
-                .font(Font::new().size(24)),
-        )
-        .show_grid(true)
-        .tick_font(Font::new().size(20));
-
-    let y_axis = Axis::new().show_grid(true).tick_font(Font::new().size(20));
-
-    let legend = Legend::new()
-        .orientation(Orientation::Horizontal)
-        .y(-0.5) // Positions it slightly below the bottom X-axis
-        .x(0.5) // Centers it horizontally
-        .x_anchor(plotly::common::Anchor::Center)
-        .font(Font::new().size(24));
-
-    // Create the layout, attach the background shapes, and apply to the plot
-    let layout = Layout::new()
-        .shapes(shapes)
-        .x_axis(x_axis)
-        .y_axis(y_axis)
-        .legend(legend);
-    plot.set_layout(layout);
-
     std::fs::create_dir_all("test-artifacts/test-plots").expect("create plot dir failed");
     let out_file = "test-artifacts/test-plots/large_pid_step_response.html";
     plot.write_html(out_file);
@@ -172,19 +114,4 @@ fn large_pid_step_response_plot() {
 
     wtr.flush().expect("Failed to flush CSV writer");
     println!("CSV data written to: {csv_file_path}");
-}
-
-// Helper function to generate background rectangle shapes
-fn create_bg_rect(x0: f64, x1: f64) -> Shape {
-    Shape::new()
-        .shape_type(ShapeType::Rect)
-        .x_ref("x")
-        .y_ref("paper") // Stretches across the full height of the plot
-        .x0(x0)
-        .x1(x1)
-        .y0(0.0)
-        .y1(1.0)
-        .fill_color("rgba(44, 160, 44, 0.15)") // Light transparent green
-        .line(ShapeLine::new().width(0.0)) // No border line
-        .layer(ShapeLayer::Below)
 }
