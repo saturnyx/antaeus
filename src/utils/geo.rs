@@ -116,22 +116,29 @@ impl Path {
     /// Remove a point using its index
     pub fn remove(&mut self, t: usize) { self.waypoints.remove(t); }
 
-    /// Get the path as a vector of lines
+    /// Get the path as a vector of lines.
+    ///
+    /// Returns an empty vector when the path has fewer than two waypoints.
     pub fn get_lines(&self) -> Vec<Line> {
-        let mut lines: Vec<Line> = Vec::new();
-        for i in 0..self.waypoints.len() - 1 {
-            lines.push(Line {
-                point1: Point::new(
-                    Length::from_inches(self.waypoints[i].x),
-                    Length::from_inches(self.waypoints[i].y),
-                ),
-                point2: Point::new(
-                    Length::from_inches(self.waypoints[i + 1].x),
-                    Length::from_inches(self.waypoints[i + 1].y),
-                ),
-            });
-        }
-        lines
+        self.waypoints
+            .windows(2)
+            .map(|waypoints| Line::from_pts(waypoints[0], waypoints[1]))
+            .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Path, Point};
+
+    #[test]
+    fn empty_path_has_no_lines() {
+        assert!(Path::from_vec(Vec::new()).get_lines().is_empty());
+    }
+
+    #[test]
+    fn single_waypoint_path_has_no_lines() {
+        assert!(Path::from_pt(Point::origin()).get_lines().is_empty());
     }
 }
 
