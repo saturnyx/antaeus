@@ -8,12 +8,13 @@
 </p>
 
 <p align="center">
-    <a href="https://crates.io/crates/antaeus"><img alt="Crates.io Version" src="https://img.shields.io/crates/v/antaeus"></a>
-    &nbsp;&nbsp;
-    <a href="https://github.com/vexide/antaeus/actions/workflows/build.yml"><img src="https://github.com/vexide/antaeus/actions/workflows/build.yml/badge.svg"></a>
-    <a href="https://docs.rs/antaeus"><img alt="Docs.rs" src="https://docs.rs/antaeus/badge.svg"></a>
-    <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
-    <img alt="MSRV" src="https://img.shields.io/badge/MSRV-1.70-blue">
+    <a href="https://crates.io/crates/antaeus"><img alt="Crates.io Version" src="https://img.shields.io/crates/v/antaeus?style=flat-square&logo=rust&logoColor=white&color=CE422B&labelColor=24292F"></a>
+    &nbsp;
+    <a href="https://docs.rs/antaeus"><img alt="Docs.rs" src="https://img.shields.io/docsrs/antaeus?style=flat-square&logo=docs&logoColor=white&color=2563EB&labelColor=24292F"></a>
+    &nbsp;
+    <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-7C3AED?style=flat-square&logo=opensourceinitiative&logoColor=white&labelColor=24292F"></a>
+    &nbsp;
+    <img alt="MSRV" src="https://img.shields.io/badge/MSRV-1.70-0F766E?style=flat-square&logo=rust&logoColor=white&labelColor=24292F">
 </p>
 
 # Table of Contents
