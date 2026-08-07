@@ -1,6 +1,6 @@
 # Security Policy
 
-Anateus is a Vex Robotics library. Hence, securoty is not one of the main
+Anateus is a Vex Robotics library. Hence, security is not one of the main
 concerns here. However, if you do find a vulnerability that concerns you
 greatly, here is a few stuff you need to know.
 
@@ -24,6 +24,6 @@ especially is it was designed to attack the programmer's system.
 
 ## Reporting a Vulnerability
 
-Vulnerabilities in Antaeus can directly be reported in Github. More on that
+Vulnerabilities in Antaeus can directly be reported in GitHub. More on that
 [here](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability).
 If you cannot do so, you can directly email me at saturnyx@disroot.org.
