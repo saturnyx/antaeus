@@ -8,3 +8,4 @@
 
 pub mod core_pid;
 pub mod drive_pid;
+pub mod group_pid;
