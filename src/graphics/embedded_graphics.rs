@@ -2,16 +2,19 @@
 //!
 //! [`embedded-graphics`]: https://crates.io/crates/embedded-graphics
 //!
-//! This module provides a `DrawTarget` implementation for the VEX V5 brain display,
+//! This crate provides a [`DrawTarget`] implementation for the VEX V5 brain display,
 //! allowing you to draw to the display using the `embedded-graphics` ecosystem.
 //!
 //! # Usage
 //!
-//! To begin, turn your `display` peripheral into a `DisplayDriver`:
+//! To begin, turn your `display` peripheral into a [`DisplayDriver`]:
 //!
-//! ```ignore
+//! ```
+//! #![no_std]
+//! #![no_main]
+//!
 //! use vexide::prelude::*;
-//! use antaeus::display::DisplayDriver;
+//! use vexide_embedded_graphics::DisplayDriver;
 //!
 //! #[vexide::main]
 //! async fn main(peripherals: Peripherals) {
@@ -19,10 +22,10 @@
 //! }
 //! ```
 //!
-//! `DisplayDriver` is a `DrawTarget` that the `embedded-graphics` crate is
+//! [`DisplayDriver`] is a [`DrawTarget`] that the `embedded-graphics` crate is
 //! able to draw to.
 //!
-//! ```ignore
+//! ```
 //! #![no_std]
 //! #![no_main]
 //!
@@ -33,7 +36,7 @@
 //!     text::Text,
 //! };
 //! use vexide::prelude::*;
-//! use antaeus::display::DisplayDriver;
+//! use vexide_embedded_graphics::DisplayDriver;
 //!
 //! #[vexide::main]
 //! async fn main(peripherals: Peripherals) {
@@ -50,10 +53,6 @@
 //!
 //! [`embedded-graphics` docs]: https://docs.rs/embedded-graphics/latest/embedded_graphics/examples/index.html
 
-pub mod fonts;
-
-pub mod logo;
-
 use core::convert::Infallible;
 
 use embedded_graphics_core::{pixelcolor::Rgb888, prelude::*};
@@ -64,8 +63,7 @@ use vexide::display::{Display, RenderMode, TouchEvent};
 /// Currently, this does not support touch detection like the regular [`Display`] API.
 pub struct DisplayDriver {
     display: Display,
-    buffer:
-        Box<[u32; Display::HORIZONTAL_RESOLUTION as usize * Display::VERTICAL_RESOLUTION as usize]>,
+    buffer:  [u32; Display::HORIZONTAL_RESOLUTION as usize * Display::VERTICAL_RESOLUTION as usize],
 }
 
 impl DisplayDriver {
@@ -78,10 +76,9 @@ impl DisplayDriver {
     pub fn new(display: Display) -> Self {
         Self {
             display,
-            buffer: Box::new(
-                [0; Display::HORIZONTAL_RESOLUTION as usize *
-                    Display::VERTICAL_RESOLUTION as usize],
-            ),
+            #[allow(clippy::large_stack_arrays)] // we got plenty
+            buffer: [0; Display::HORIZONTAL_RESOLUTION as usize
+                * Display::VERTICAL_RESOLUTION as usize],
         }
     }
 

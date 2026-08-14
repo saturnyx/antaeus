@@ -56,7 +56,8 @@ pub mod motion;
 
 pub mod peripherals;
 
-pub mod display;
+#[cfg(feature = "graphics")]
+pub mod graphics;
 
 pub mod utils;
 

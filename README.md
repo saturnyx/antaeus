@@ -1,6 +1,6 @@
 <br><br>
 <div align="center">
-    <img src="assets/img/logo/readme/logo-white-cropped.png" alt="Antaeus Logo" width="15%" style="margin-bottom: -50px;">
+    <img src="readme/logo-white-cropped.png" alt="Antaeus Logo" width="15%" style="margin-bottom: -50px;">
 </div>
 <h1 align="center" style="margin-top: -50px;">Ἀνταῖος</h1>
 <p align="center">
