@@ -1,7 +1,7 @@
-use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc};
 
 use antaeus::*;
-use vexide::{prelude::*, sync::Mutex};
+use vexide::prelude::*;
 
 pub struct Robot {
     pub main_con: Controller,
@@ -11,7 +11,7 @@ pub struct Robot {
 
     pub h_tracker: RotationSensor,
     pub v_tracker: RotationSensor,
-    pub imu:       Arc<Mutex<InertialSensor>>,
+    pub imu:       Rc<RefCell<InertialSensor>>,
 }
 
 impl Robot {
@@ -35,7 +35,7 @@ impl Robot {
 
             h_tracker: RotationSensor::new(peripherals.port_9, Direction::Forward),
             v_tracker: RotationSensor::new(peripherals.port_10, Direction::Forward),
-            imu:       to_mutex(InertialSensor::new(peripherals.port_12)),
+            imu:       make_cloneable(InertialSensor::new(peripherals.port_12)),
         }
     }
 }

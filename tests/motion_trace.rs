@@ -6,11 +6,11 @@
 use std::{
     fs::{self, File},
     num::NonZeroU32,
-    sync::Arc,
     time::Duration,
 };
 
 use antaeus::{
+    make_cloneable,
     motion::{
         feedback_control::pid::drive_pid::DrivePID,
         localization::{
@@ -24,7 +24,7 @@ use antaeus::{
     peripherals::drivetrain::Differential,
     utils::units::Length,
 };
-use vexide::{math::Angle, sync::Mutex};
+use vexide::math::Angle;
 
 mod dt;
 mod trace_support;
@@ -153,7 +153,7 @@ async fn logs_multi_motion_odometry_trace(_peripherals: vexide::prelude::Periphe
     let drivetrain = SimDrive::new(200.0 * std::f64::consts::TAU / 60.0);
     let mut vertical_sensor = drivetrain.clone();
     let mut horizontal_sensor = StationaryTracker;
-    let imu = Arc::new(Mutex::new(SimHeading::default()));
+    let imu = make_cloneable(SimHeading::default());
 
     let vertical_tracker = TrackerPod::new(
         &mut vertical_sensor,
@@ -212,13 +212,12 @@ async fn logs_multi_motion_odometry_trace(_peripherals: vexide::prelude::Periphe
             let right_distance_in =
                 pid.drivetrain.right_position().value().as_radians() * WHEEL_DIAMETER_IN / 2.0;
             let imu_heading_rad = (right_distance_in - left_distance_in) / TRACK_WIDTH_IN;
-            imu.lock()
-                .await
+            imu.borrow_mut()
                 .set_heading(Angle::from_radians(imu_heading_rad))
                 .expect("update simulated IMU");
 
             pid.tick();
-            odometry.tick().await.expect("update odometry");
+            odometry.tick().expect("update odometry");
 
             let pose = odometry.get_coords();
             write_sample(

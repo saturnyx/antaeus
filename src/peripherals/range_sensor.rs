@@ -251,7 +251,7 @@ impl KalmanRangeSensor {
     }
 
     /// Predict the next state using elapsed time since the last update.
-    pub async fn predict(&mut self) {
+    pub fn predict(&mut self) {
         let elapsed = user_uptime() - self.last_update;
         let dx = self.prev_vel * elapsed;
         self.est_m = self.prev_m + dx;
@@ -261,7 +261,7 @@ impl KalmanRangeSensor {
 
     /// Predict with an explicit time step (test-only helper).
     #[cfg(any(test, debug_assertions))]
-    pub async fn predict_with_dt(&mut self, dt: Duration) {
+    pub fn predict_with_dt(&mut self, dt: Duration) {
         let dx = self.prev_vel * dt;
         self.est_m = self.prev_m + dx;
         self.est_var = self.prev_var + self.process_var;
@@ -392,7 +392,7 @@ mod tests {
         debug!("=== Kalman Filter Clean Data Test ===");
 
         for (i, data_point) in test_data_clean.iter().enumerate() {
-            kalman.predict_with_dt(data_point.dt).await;
+            kalman.predict_with_dt(data_point.dt);
             let predicted_dist = kalman.predicted_measurement().as_metres();
             let predicted_var = kalman.predicted_variance();
 
@@ -466,7 +466,7 @@ mod tests {
         let mut prev_var = kalman.variance();
 
         for (i, data_point) in test_data_noisy.iter().enumerate() {
-            kalman.predict_with_dt(data_point.dt).await;
+            kalman.predict_with_dt(data_point.dt);
             kalman.set_sensor_mock(data_point.distance, data_point.velocity);
             kalman.update().await;
 

@@ -184,7 +184,7 @@ impl Pursuit {
                 &path,
                 self.lookahead,
             );
-            odom.tick().await?;
+            odom.tick()?;
             sleep(LOOPRATE).await;
         }
         Ok(())
@@ -201,7 +201,7 @@ impl Pursuit {
     /// * `drivetrain` - The differential drivetrain
     /// * `ctrl_algorithm` - The control algorithm
     /// * `path` - The path to follow, defined as a series of waypoints.
-    pub async fn tick<C: PursuitControl, E, D: Differential>(
+    pub fn tick<C: PursuitControl, E, D: Differential>(
         &self,
         odom: &mut impl Localizer<E>,
         drivetrain: &D,
@@ -238,7 +238,7 @@ impl Pursuit {
             &path,
             self.lookahead,
         );
-        odom.tick().await?;
+        odom.tick()?;
 
         Ok(should_continue)
     }

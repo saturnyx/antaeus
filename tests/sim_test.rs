@@ -1,6 +1,7 @@
-use std::{num::NonZeroU32, sync::Arc, time::Duration};
+use std::{num::NonZeroU32, time::Duration};
 
 use antaeus::{
+    make_cloneable,
     motion::{
         feedback_control::pid::drive_pid::DrivePID,
         localization::{
@@ -14,7 +15,7 @@ use antaeus::{
     peripherals::drivetrain::Differential,
     utils::units::Length,
 };
-use vexide::{math::Angle, sync::Mutex};
+use vexide::math::Angle;
 
 pub mod dt;
 use dt::SimDrive;
@@ -137,7 +138,7 @@ async fn odom_test(_peripherals: vexide::prelude::Peripherals) {
         1.0,
         Length::zero(),
     );
-    let mechanism = TrackerMech::new(vertical, horizontal, Arc::new(Mutex::new(SimHeading::new())));
+    let mechanism = TrackerMech::new(vertical, horizontal, make_cloneable(SimHeading::new()));
     let mut odom = Tracker::new(mechanism);
 
     let mut pid = DrivePID::new(
@@ -158,7 +159,7 @@ async fn odom_test(_peripherals: vexide::prelude::Peripherals) {
     for _ in 0..PID_SETTLE_STEPS {
         pid.drivetrain.tick(SIMULATION_STEP);
         pid.tick();
-        odom.tick().await.unwrap();
+        odom.tick().unwrap();
     }
 
     let pose = odom.get_coords();
@@ -177,7 +178,7 @@ async fn odom_multiple_motions_test(_peripherals: vexide::prelude::Peripherals) 
     let drivetrain = SimDrive::new(200.0 * std::f64::consts::TAU / 60.0);
     let mut vertical_sensor = drivetrain.clone();
     let mut horizontal_sensor = StationaryTracker;
-    let imu = Arc::new(Mutex::new(SimHeading::new()));
+    let imu = make_cloneable(SimHeading::new());
 
     let vertical = TrackerPod::new(
         &mut vertical_sensor,
@@ -230,10 +231,10 @@ async fn odom_multiple_motions_test(_peripherals: vexide::prelude::Peripherals) 
                     pid.drivetrain.right_position().value().as_radians() * WHEEL_DIAMETER_IN / 2.0;
                 let heading =
                     Angle::from_radians((right_distance - left_distance) / TRACK_WIDTH_IN);
-                imu.lock().await.set_heading(heading).unwrap();
+                imu.borrow_mut().set_heading(heading).unwrap();
 
                 pid.tick();
-                odom.tick().await.unwrap();
+                odom.tick().unwrap();
             }
         };
     }

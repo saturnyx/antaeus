@@ -161,7 +161,7 @@ async fn test_kalman_filter_visualization(_p: Peripherals) {
     let mut prev_var = kalman.variance();
 
     for (i, data_point) in test_data.iter().enumerate() {
-        kalman.predict_with_dt(data_point.dt).await;
+        kalman.predict_with_dt(data_point.dt);
         kalman.set_sensor_mock(data_point.distance, data_point.velocity);
         kalman.update().await;
 

@@ -7,11 +7,11 @@
 
 use std::{
     fs::{self, File},
-    sync::Arc,
     time::Duration,
 };
 
 use antaeus::{
+    make_cloneable,
     motion::{
         localization::{
             Localizer,
@@ -28,7 +28,7 @@ use antaeus::{
         units::Length,
     },
 };
-use vexide::{math::Angle, sync::Mutex};
+use vexide::math::Angle;
 
 mod dt;
 mod trace_support;
@@ -163,7 +163,7 @@ async fn logs_candidate_based_pursuit_trace(_peripherals: vexide::prelude::Perip
     let drivetrain = SimDrive::new(200.0 * std::f64::consts::TAU / 60.0);
     let mut vertical_sensor = drivetrain.clone();
     let mut horizontal_sensor = StationaryTracker;
-    let imu = Arc::new(Mutex::new(SimHeading::default()));
+    let imu = make_cloneable(SimHeading::default());
     let vertical_tracker = TrackerPod::new(
         &mut vertical_sensor,
         Length::from_inches(WHEEL_DIAMETER_IN),
@@ -196,8 +196,7 @@ async fn logs_candidate_based_pursuit_trace(_peripherals: vexide::prelude::Perip
         let left_distance_in = wheel_distance_in(drivetrain.left_position().value());
         let right_distance_in = wheel_distance_in(drivetrain.right_position().value());
         let imu_heading_rad = (right_distance_in - left_distance_in) / TRACK_WIDTH_IN;
-        imu.lock()
-            .await
+        imu.borrow_mut()
             .set_heading(Angle::from_radians(imu_heading_rad))
             .expect("update simulated IMU");
 
@@ -205,7 +204,6 @@ async fn logs_candidate_based_pursuit_trace(_peripherals: vexide::prelude::Perip
         // updates odometry from the sensor state established above.
         let should_continue = pursuit
             .tick(&mut odometry, &drivetrain, &controller, path.clone())
-            .await
             .expect("run pursuit control cycle");
 
         let pose = odometry.get_coords();

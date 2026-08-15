@@ -72,5 +72,5 @@ pub trait Localizer<E> {
     /// Returns the current estimated pose of the robot.
     fn get_coords(&self) -> Pose;
     /// Updates the internal pose estimate based on sensor readings
-    async fn tick(&mut self) -> Result<(), E>;
+    fn tick(&mut self) -> Result<(), E>;
 }

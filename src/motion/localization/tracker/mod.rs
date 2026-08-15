@@ -7,7 +7,6 @@
 //! The `devices` submodule defines the hardware wrapper (`TrackerMech`) for
 //! sensors. `Tracker` maintains the current pose and previous sensor readings
 //! to compute incremental updates in `tick`.
-
 use devices::TrackerMech;
 use vexide::math::Angle;
 
@@ -76,7 +75,7 @@ impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Tracker<'v, 'h, V, H,
     /// Resets the tracker's pose to the specified values (or origin if None)
     /// and synchronizes the previous sensor readings to prevent jumps in the
     /// next tick.
-    pub async fn reset_origin(
+    pub fn reset_origin(
         &mut self,
         t: Option<Angle>,
         x: Option<Length>,
@@ -85,8 +84,7 @@ impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Tracker<'v, 'h, V, H,
         self.pose.t = t.unwrap_or(Angle::ZERO);
         self.pose.x = x.unwrap_or_else(Length::zero);
         self.pose.y = y.unwrap_or_else(Length::zero);
-
-        let imu_t = self.tracker_mech.imu.lock().await.heading()?;
+        let imu_t = self.tracker_mech.imu.try_borrow_mut()?.heading()?;
         let v = self.tracker_mech.vertical_tracker.dist()?;
         let h = self.tracker_mech.horizontal_tracker.dist()?;
 
@@ -101,8 +99,8 @@ impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Tracker<'v, 'h, V, H,
 impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Localizer<TrackingSensorError>
     for Tracker<'v, 'h, V, H, I>
 {
-    async fn tick(&mut self) -> Result<(), TrackingSensorError> {
-        let t = self.tracker_mech.imu.lock().await.heading()?;
+    fn tick(&mut self) -> Result<(), TrackingSensorError> {
+        let t = self.tracker_mech.imu.try_borrow_mut()?.heading()?;
         let v = self.tracker_mech.vertical_tracker.dist()?;
         let h = self.tracker_mech.horizontal_tracker.dist()?;
 

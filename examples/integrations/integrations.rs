@@ -14,5 +14,5 @@ impl IsLocalizerError for SomeError {}
 impl Localizer<SomeError> for DummyOdom {
     fn get_coords(&self) -> Pose { Pose::origin() }
 
-    async fn tick(&mut self) -> Result<(), SomeError> { Ok(()) }
+    fn tick(&mut self) -> Result<(), SomeError> { Ok(()) }
 }

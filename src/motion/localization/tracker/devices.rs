@@ -33,7 +33,10 @@
 //! );
 //! ```
 
-use std::{cell::BorrowMutError, sync::Arc};
+use std::{
+    cell::{BorrowMutError, RefCell},
+    rc::Rc,
+};
 
 use snafu::Snafu;
 use vexide::{
@@ -44,7 +47,6 @@ use vexide::{
         imu::{InertialError, InertialSensor},
         rotation::RotationSensor,
     },
-    sync::Mutex,
 };
 
 use crate::{peripherals::drivetrain::DrivetrainError, utils::units::Length};
@@ -252,7 +254,7 @@ pub struct TrackerMech<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> {
     /// The horizontal (left/right) tracking wheel.
     pub horizontal_tracker: TrackerPod<'h, H>,
     /// The heading sensor used for orientation measurement.
-    pub imu:                Arc<Mutex<I>>,
+    pub imu:                Rc<RefCell<I>>,
 }
 
 impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> TrackerMech<'v, 'h, V, H, I> {
@@ -266,7 +268,7 @@ impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> TrackerMech<'v, 'h, V
     pub fn new(
         vertical_tracker: TrackerPod<'v, V>,
         horizontal_tracker: TrackerPod<'h, H>,
-        imu: Arc<Mutex<I>>,
+        imu: Rc<RefCell<I>>,
     ) -> Self {
         Self {
             vertical_tracker,
