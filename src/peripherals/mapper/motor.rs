@@ -18,7 +18,7 @@ pub trait MotorMapper {
     ///   button)
     /// - `high_power`: The voltage the motor will be set to when the input is
     ///   active
-    fn from_digital_input(
+    fn digital_input(
         &mut self,
         input: DigitalInput,
         high_power: f64,
@@ -29,15 +29,15 @@ pub trait MotorMapper {
     ///
     /// # Arguments
     /// - `input`: The analog input from another peripheral (e.g. controller
-    ///  joystick)
+    ///   joystick)
     /// - `high_power`: The voltage the motor will be set to when the input is
-    /// at its maximum value (e.g. joystick fully pushed forward)
+    ///   at its maximum value (e.g. joystick fully pushed forward)
     /// - `low_power`: The voltage the motor will be set to when the input is at
-    /// its minimum value (e.g. joystick fully pulled back)
+    ///   its minimum value (e.g. joystick fully pulled back)
     ///
     /// (The voltage will be linearly interpolated between low_power and
     /// high_power based on the input value)
-    fn from_analog_input(
+    fn analog_input(
         &mut self,
         input: AnalogInput,
         high_power: f64,
@@ -48,19 +48,18 @@ pub trait MotorMapper {
     ///
     /// # Arguments
     /// - `first_input`: The first digital input from another peripheral (e.g.
-    ///  controller button)
+    ///   controller button)
     /// - `second_input`: The second digital input from another peripheral (e.g.
-    /// controller button)
+    ///   controller button)
     /// - `first_active_power`: The voltage the motor will be set to when the
-    /// first input is active and the second input is not active
+    ///   first input is active and the second input is not active
     /// - `second_active_power`: The voltage the motor will be set to when the
-    /// second input is active and the first input is not active
+    ///   second input is active and the first input is not active
     /// - `passive_power`: The voltage the motor will be set to when neither
-    /// input is active
+    ///   input is active
     ///
     /// (If both inputs are active, the motor will be set to first_active_power)
-
-    fn from_dual_input(
+    fn dual_input(
         &mut self,
         first_input: DigitalInput,
         second_input: DigitalInput,
@@ -71,7 +70,7 @@ pub trait MotorMapper {
 }
 
 impl MotorMapper for Motor {
-    fn from_digital_input(
+    fn digital_input(
         &mut self,
         input: DigitalInput,
         high_power: f64,
@@ -85,7 +84,7 @@ impl MotorMapper for Motor {
         Ok(())
     }
 
-    fn from_analog_input(
+    fn analog_input(
         &mut self,
         input: AnalogInput,
         high_power: f64,
@@ -96,7 +95,7 @@ impl MotorMapper for Motor {
         Ok(())
     }
 
-    fn from_dual_input(
+    fn dual_input(
         &mut self,
         first_input: DigitalInput,
         second_input: DigitalInput,

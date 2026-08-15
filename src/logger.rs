@@ -67,10 +67,10 @@ impl AntLogger {
     fn new() -> Self {
         let file_writer = Self::log_path()
             .and_then(|path| {
-                if let Some(parent) = path.parent() {
-                    if !parent.as_os_str().is_empty() {
-                        create_dir_all(parent).ok()?;
-                    }
+                if let Some(parent) = path.parent() &&
+                    !parent.as_os_str().is_empty()
+                {
+                    create_dir_all(parent).ok()?;
                 }
 
                 OpenOptions::new()
@@ -112,19 +112,19 @@ impl log::Log for AntLogger {
             // Print to console
             print!("{}", log_line);
 
-            if let Ok(mut writer_guard) = self.file_writer.lock() {
-                if let Some(ref mut writer) = *writer_guard {
-                    let _ = writer.write_all(log_line.as_bytes());
-                }
+            if let Ok(mut writer_guard) = self.file_writer.lock() &&
+                let Some(ref mut writer) = *writer_guard
+            {
+                let _ = writer.write_all(log_line.as_bytes());
             }
         }
     }
 
     fn flush(&self) {
-        if let Ok(mut writer_guard) = self.file_writer.lock() {
-            if let Some(ref mut writer) = *writer_guard {
-                let _ = writer.flush();
-            }
+        if let Ok(mut writer_guard) = self.file_writer.lock() &&
+            let Some(ref mut writer) = *writer_guard
+        {
+            let _ = writer.flush();
         }
     }
 }
@@ -157,7 +157,7 @@ static LOGGER: std::sync::OnceLock<AntLogger> = std::sync::OnceLock::new();
 /// logger::init(LevelFilter::Debug)?;
 /// ```
 pub fn init(level: LevelFilter) -> Result<(), SetLoggerError> {
-    let logger = LOGGER.get_or_init(|| AntLogger::new());
+    let logger = LOGGER.get_or_init(AntLogger::new);
     log::set_logger(logger).map(|()| log::set_max_level(level))
 }
 
@@ -166,12 +166,11 @@ pub fn init(level: LevelFilter) -> Result<(), SetLoggerError> {
 /// On VexOS, this returns the actual uptime. On other platforms (for testing),
 /// returns a placeholder value.
 fn get_time() -> FormattedDuration {
-    let dur;
-    if !cfg!(target_os = "vexos") {
-        dur = Duration::from_millis(123432);
+    let dur = if !cfg!(target_os = "vexos") {
+        Duration::from_millis(123432)
     } else {
-        dur = user_uptime();
-    }
+        user_uptime()
+    };
     format_duration(dur)
 }
 

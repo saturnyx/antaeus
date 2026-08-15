@@ -20,8 +20,7 @@ pub struct BasicControl {
 impl BasicControl {
     /// Create a new instance of `Basic Control`
     /// - `track_width`: The width of the drivetrain
-    /// - `tolerance`: A leeway at which the algorithm will end. Smaller
-    /// tolerances mean more accuracy but more time spent.
+    /// - `tolerance`: A leeway at which the algorithm will end. Smaller tolerances mean more accuracy but more time spent.
     pub fn new(track_width: Length, tolerance: Length) -> Self {
         Self {
             track_width,

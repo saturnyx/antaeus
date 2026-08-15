@@ -223,7 +223,7 @@ impl<'s, S: Trackable> TrackerPod<'s, S> {
     /// The distance traveled in inches.
     pub fn dist(&mut self) -> Result<Length, TrackingSensorError> {
         let angle = self.sensor.track_position()?;
-        let gear_ratio = self.driving_gear as f64 / self.driven_gear as f64;
+        let gear_ratio = self.driving_gear / self.driven_gear;
         let distance = angle.as_radians() * gear_ratio * (self.wheel_diameter / 2.0);
         Ok(distance)
     }

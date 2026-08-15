@@ -97,7 +97,7 @@ fn large_pid_step_response_plot() {
     let mut wtr = csv::Writer::from_writer(file);
 
     // Write the header row
-    wtr.write_record(&[
+    wtr.write_record([
         "Time (s)",
         "Sensor Reading (deg)",
         "Motor Output (u)",

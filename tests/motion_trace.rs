@@ -90,6 +90,7 @@ impl Trackable for StationaryTracker {
 }
 
 /// Records one sample in a stable, viewer-friendly CSV schema.
+#[allow(clippy::too_many_arguments)]
 fn write_sample(
     writer: &mut csv::Writer<File>,
     step: usize,

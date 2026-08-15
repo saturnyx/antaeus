@@ -79,7 +79,7 @@ impl Point {
     }
 
     /// Create a new point using `x` and `y` coordinates in inches
-    pub fn rnew(x: f64, y: f64) -> Self { Point { x: x, y: y } }
+    pub fn rnew(x: f64, y: f64) -> Self { Point { x, y } }
 
     /// Create a point at the origin (0, 0)
     pub fn origin() -> Self { Point { x: 0.0, y: 0.0 } }
@@ -87,11 +87,7 @@ impl Point {
 
 impl Path {
     /// Create a path from a vector of points
-    pub fn from_vec(waypoints: Vec<Point>) -> Self {
-        Self {
-            waypoints: waypoints,
-        }
-    }
+    pub fn from_vec(waypoints: Vec<Point>) -> Self { Self { waypoints } }
 
     /// Create a path with a start point at origin (0,0)
     pub fn origin() -> Self {
@@ -158,12 +154,7 @@ impl Line {
     }
 
     /// Create a new line from 2 points
-    pub fn from_pts(point1: Point, point2: Point) -> Line {
-        Line {
-            point1: point1,
-            point2: point2,
-        }
-    }
+    pub fn from_pts(point1: Point, point2: Point) -> Line { Line { point1, point2 } }
 }
 
 impl Circle {
@@ -177,7 +168,7 @@ impl Circle {
     }
 
     /// Create a new circle using coordinates in inches
-    pub fn rnew(x: f64, y: f64, r: f64) -> Circle { Circle { x: x, y: y, r: r } }
+    pub fn rnew(x: f64, y: f64, r: f64) -> Circle { Circle { x, y, r } }
 }
 
 /// A 2D position with heading.

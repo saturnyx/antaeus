@@ -15,18 +15,18 @@ pub trait AdiOutMapper {
     ///
     /// # Arguments
     /// - `input`: The digital input from another peripheral (e.g. controller
-    ///    button)
+    ///   button)
     /// - `inverse`: If true, the output will be inverted (e.g. high becomes
-    ///    low)
-    fn from_digital_input(&mut self, input: DigitalInput, inverse: bool) -> Result<(), PortError>;
+    ///   low)
+    fn digital_input(&mut self, input: DigitalInput, inverse: bool) -> Result<(), PortError>;
     /// Maps a digital input to a device (e.g. pneumatic solenoid)
     /// (Toggles the device instead of direct mapping)
     ///
     /// # Arguments
     /// - `input`: The digital input from another peripheral (e.g. controller
-    ///    button)
+    ///   button)
     /// - `inverse`: If true, the output will be inverted (e.g. high becomes
-    ///    low)
+    ///   low)
     fn toggle_from_digital_input(
         &mut self,
         input: DigitalInput,
@@ -37,12 +37,12 @@ pub trait AdiOutMapper {
     ///
     /// # Arguments
     /// - `input`: The analog input from another peripheral (e.g. controller
-    ///    joystick)
+    ///   joystick)
     /// - `threshold`: The threshold the input has to reach in order for the
-    ///    device to be activated
+    ///   device to be activated
     /// - `inverse`: If true, the output will be inverted (e.g. high becomes
-    ///    low)
-    fn from_analog_input(
+    ///   low)
+    fn analog_input(
         &mut self,
         input: AnalogInput,
         threshold: f64,
@@ -54,11 +54,11 @@ pub trait AdiOutMapper {
     ///
     /// # Arguments
     /// - `input`: The analog input from another peripheral (e.g. controller
-    ///    joystick)
+    ///   joystick)
     /// - `threshold`: The threshold the input has to reach in order for the
-    ///    device to be activated
+    ///   device to be activated
     /// - `inverse`: If true, the output will be inverted (e.g. high becomes
-    ///    low)
+    ///   low)
     fn toggle_from_analog_input(
         &mut self,
         input: AnalogInput,
@@ -68,7 +68,7 @@ pub trait AdiOutMapper {
 }
 
 impl AdiOutMapper for AdiDigitalOut {
-    fn from_digital_input(&mut self, input: DigitalInput, inverse: bool) -> Result<(), PortError> {
+    fn digital_input(&mut self, input: DigitalInput, inverse: bool) -> Result<(), PortError> {
         let input = input.as_bool()? ^ inverse;
         if input {
             self.set_high()?;
@@ -90,7 +90,7 @@ impl AdiOutMapper for AdiDigitalOut {
         Ok(())
     }
 
-    fn from_analog_input(
+    fn analog_input(
         &mut self,
         input: AnalogInput,
         threshold: f64,

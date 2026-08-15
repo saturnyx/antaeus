@@ -293,8 +293,8 @@ impl<D: Differential> DriveControl for DrivePID<D> {
     /// wheel travel targets without resetting PID history each iteration.
     /// The command ends when heading error is within `angle_tolerance` or when
     /// `timeout` elapses.
-    async fn imu_rotate<'a>(
-        &'a mut self,
+    async fn imu_rotate(
+        &mut self,
         angle: Angle,
         timeout: Duration,
         imu: &InertialSensor,
@@ -365,8 +365,8 @@ impl<D: Differential> DriveControl for DrivePID<D> {
     /// positive moves the left side, negative moves the right side.
     /// The command ends when heading error is within `angle_tolerance` or when
     /// `timeout` elapses.
-    async fn imu_pivot<'a>(
-        &'a mut self,
+    async fn imu_pivot(
+        &mut self,
         angle: Angle,
         timeout: Duration,
         imu: &InertialSensor,

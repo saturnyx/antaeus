@@ -1,7 +1,7 @@
 //! # Group PID
 //! This PID controls all motors using a single PID instance.
 
-use std::{time::Duration, usize};
+use std::time::Duration;
 
 use vexide::{math::Angle, prelude::Motor, time::user_uptime};
 
@@ -89,7 +89,7 @@ impl<const N: usize> GroupPID<N> {
                 return AutoTickOutcome::TimedOut;
             }
         }
-        let _ = set_voltage_group(&mut self.motors, 0.0);
+        set_voltage_group(&mut self.motors, 0.0);
         AutoTickOutcome::Completed
     }
 }

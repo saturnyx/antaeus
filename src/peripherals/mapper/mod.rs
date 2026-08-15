@@ -66,9 +66,9 @@ impl AnalogInput {
     /// Converts the analog input to a value between -1.0 and 1.0
     pub fn clamped(&self) -> Result<f64, PortError> {
         match self {
-            AnalogInput::Joystick(state, axis) => match axis {
-                &JoystickAxes::X => Ok(state.x()),
-                &JoystickAxes::Y => Ok(state.y()),
+            AnalogInput::Joystick(state, axis) => match *axis {
+                JoystickAxes::X => Ok(state.x()),
+                JoystickAxes::Y => Ok(state.y()),
             },
             AnalogInput::AdiIn(adi) => Ok(adi.voltage()? / 5.0),
         }

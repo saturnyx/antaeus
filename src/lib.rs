@@ -46,6 +46,7 @@
 //! - [`peripherals`]: Controller input mapping to motors, pneumatics, and sensors.
 //! - [`fs`]: Filesystem utilities including logging.
 
+#![allow(clippy::too_many_arguments)]
 #![warn(missing_docs, rust_2018_idioms, unused, future_incompatible)]
 #![deny(clippy::unused_async)]
 

@@ -93,6 +93,7 @@ impl Trackable for StationaryTracker {
 fn wheel_distance_in(angle: Angle) -> f64 { angle.as_radians() * WHEEL_DIAMETER_IN / 2.0 }
 
 /// Writes the pose and wheel command state for a single pursuit control cycle.
+#[allow(clippy::too_many_arguments)]
 fn write_sample(
     writer: &mut csv::Writer<File>,
     step: usize,

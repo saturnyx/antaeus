@@ -10,7 +10,7 @@ pub fn opcontrol(robot: &mut Robot) {
         let _ = robot.dt.tank(&robot.main_con);
 
         let state = robot.main_con.state().unwrap_or_default();
-        let _ = robot.intake1.from_dual_input(
+        let _ = robot.intake1.dual_input(
             DigitalInput::Button(state.button_r1),
             DigitalInput::Button(state.button_r2),
             12.0,

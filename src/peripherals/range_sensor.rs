@@ -153,7 +153,7 @@ impl RangeSensor {
                 distance,
                 velocity: _,
             } => match distance {
-                Some(dist) => Report::new(dist.clone()),
+                Some(dist) => Report::new(*dist),
                 None => {
                     Report::from_parts(Length::from_centimeters(0.0), RangeSensorError::NoDistance)
                 }
@@ -189,7 +189,7 @@ impl RangeSensor {
                 distance: _,
                 velocity,
             } => match velocity {
-                Some(vel) => Report::new(vel.clone()),
+                Some(vel) => Report::new(*vel),
                 None => Report::from_parts(
                     Speed::from_meters_per_second(0.0),
                     RangeSensorError::NoVelocity,
@@ -265,7 +265,7 @@ impl KalmanRangeSensor {
         let dx = self.prev_vel * dt;
         self.est_m = self.prev_m + dx;
         self.est_var = self.prev_var + self.process_var;
-        self.last_update = self.last_update + dt;
+        self.last_update += dt;
     }
 
     /// Update the filter with the latest sensor measurement.
@@ -347,7 +347,7 @@ mod tests {
     async fn test_kalman_filter_predict_update(_p: Peripherals) {
         // Test Kalman filter predict/update cycle with perfect and noisy measurements
         // Scenario 1: Clean data - object at constant 1 m/s
-        let test_data_clean = vec![
+        let test_data_clean = [
             TestDataPoint {
                 distance: Length::from_metres(1.0),
                 velocity: Speed::from_metres_per_second(1.0),
@@ -420,7 +420,7 @@ mod tests {
         }
 
         // Scenario 2: Noisy data - object at constant 2 m/s with measurement noise
-        let test_data_noisy = vec![
+        let test_data_noisy = [
             TestDataPoint {
                 distance: Length::from_metres(2.0),
                 velocity: Speed::from_metres_per_second(2.0),

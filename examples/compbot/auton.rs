@@ -42,5 +42,7 @@ pub async fn main_auton(robot: &mut Robot) {
     let pursuit = pursuit::Pursuit {
         lookahead: Length::from_inches(10.0),
     };
-    let _ = pursuit.follow(&mut odomtrack, &robot.dt, &basic_ctrl, path.clone());
+    let _ = pursuit
+        .follow(&mut odomtrack, &robot.dt, &basic_ctrl, path.clone())
+        .await;
 }

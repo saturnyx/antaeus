@@ -1,7 +1,5 @@
 //! Internal algorithm calculations for path following.
 
-use std::f64::{EPSILON, MAX};
-
 use log::{error, info};
 
 use crate::utils::geo;
@@ -42,7 +40,7 @@ fn line_circ_intersect(line: geo::Line, cir: &geo::Circle) -> Vec<geo::Point> {
         });
     }
 
-    if (0.0..=1.0).contains(&t2) && (t2 - t1).abs() > EPSILON {
+    if (0.0..=1.0).contains(&t2) && (t2 - t1).abs() > f64::EPSILON {
         intersections.push(geo::Point {
             x: p1.x + t2 * dx,
             y: p1.y + t2 * dy,
@@ -87,7 +85,7 @@ fn prox_point_on_line(line: geo::Line, point: geo::Point) -> (geo::Point, f64) {
 
 fn prox_point_on_path(path: &geo::Path, point: geo::Point) -> (geo::Point, f64) {
     let mut prox_pt = geo::Point::origin();
-    let mut dist = MAX;
+    let mut dist = f64::MAX;
     for line in path.get_lines() {
         let (pt, d) = prox_point_on_line(line, point);
         if d < dist {
@@ -119,11 +117,11 @@ fn point_t_on_line(point: geo::Point, line: geo::Line) -> Option<f64> {
 
     let t = if dx.abs() > dy.abs() {
         (point.x - p1.x) / dx
-    } else if dy.abs() > EPSILON {
+    } else if dy.abs() > f64::EPSILON {
         (point.y - p1.y) / dy
     } else {
         let dist = ((point.x - p1.x).powi(2) + (point.y - p1.y).powi(2)).sqrt();
-        return if dist < EPSILON { Some(0.0) } else { None };
+        return if dist < f64::EPSILON { Some(0.0) } else { None };
     };
 
     let computed_x = p1.x + t * dx;
@@ -131,7 +129,7 @@ fn point_t_on_line(point: geo::Point, line: geo::Line) -> Option<f64> {
 
     let dist = ((point.x - computed_x).powi(2) + (point.y - computed_y).powi(2)).sqrt();
 
-    if dist < EPSILON && t >= -EPSILON && t <= 1.0 + EPSILON {
+    if dist < f64::EPSILON && (-f64::EPSILON..=1.0 + f64::EPSILON).contains(&t) {
         Some(t.clamp(0.0, 1.0))
     } else {
         None
@@ -150,12 +148,12 @@ fn get_t(point: geo::Point, path: &geo::Path) -> Option<f64> {
 
 fn get_target(candidates: Vec<geo::Point>, path: geo::Path) -> geo::Point {
     let mut target: geo::Point = geo::Point::origin();
-    let mut target_t = -MAX;
+    let mut target_t = -f64::MAX;
     for point in candidates {
         let t = get_t(point, &path).unwrap_or_else(|| {
             error!("Could not find `t` for point ({},{}) on path", point.x, point.y);
             info!("Ignoring point point ({},{})", point.x, point.y);
-            -MAX
+            -f64::MAX
         });
         if t > target_t {
             target = point;
@@ -208,6 +206,8 @@ fn rotate_vector(angle: f64, x: f64, y: f64) -> (f64, f64) {
 
 #[cfg(test)]
 mod tests {
+    use std::f64::consts::FRAC_1_SQRT_2;
+
     use super::geo;
     use crate::motion::pursuit::{
         algorithm::*,
@@ -238,8 +238,8 @@ mod tests {
         let intersect = line_circ_intersect(line, &cir);
         let mut right = Vec::new();
         right.push(Point {
-            x: -0.7071067811865476,
-            y: -0.7071067811865476,
+            x: -FRAC_1_SQRT_2,
+            y: -FRAC_1_SQRT_2,
         });
         right.push(Point {
             x: 0.7071067811865475,
@@ -253,11 +253,7 @@ mod tests {
         let pt2 = geo::Point { x: -1.0, y: -1.0 };
         let pt3 = geo::Point { x: 1.0, y: -1.0 };
         let pt4 = geo::Point { x: 1.0, y: 1.0 };
-        let mut vec = Vec::new();
-        vec.push(pt1);
-        vec.push(pt2);
-        vec.push(pt3);
-        vec.push(pt4);
+        let vec = vec![pt1, pt2, pt3, pt4];
         let path = geo::Path::from_vec(vec);
         let cir = geo::Circle {
             x: 0.0,
@@ -274,11 +270,7 @@ mod tests {
         let pt2 = geo::Point::rnew(-1.0, 0.0);
         let pt3 = geo::Point::rnew(1.0, 0.0);
         let pt4 = geo::Point::rnew(1.0, 1.0);
-        let mut vec = Vec::new();
-        vec.push(pt1);
-        vec.push(pt2);
-        vec.push(pt3);
-        vec.push(pt4);
+        let vec = vec![pt1, pt2, pt3, pt4];
         let path = geo::Path::from_vec(vec);
         let cir = geo::Circle::rnew(0.0, 0.0, 0.5);
         let pts = path_circ_intersect(&path, cir);
@@ -292,11 +284,7 @@ mod tests {
         let pt2 = geo::Point::rnew(2.0, 0.5);
         let pt3 = geo::Point::rnew(2.0, -0.5);
         let pt4 = geo::Point::rnew(-2.0, -0.5);
-        let mut vec = Vec::new();
-        vec.push(pt1);
-        vec.push(pt2);
-        vec.push(pt3);
-        vec.push(pt4);
+        let vec = vec![pt1, pt2, pt3, pt4];
         let path = geo::Path::from_vec(vec);
         let cir = geo::Circle::rnew(0.0, 0.0, 1.0);
         let pts = path_circ_intersect(&path, cir);
@@ -336,7 +324,7 @@ mod tests {
         let line = geo::Line::from_pts(pt1, pt2);
         let o = geo::Point::rnew(0.0, 0.0);
         let d = prox_point_on_line(line, o);
-        assert_eq!(d, (geo::Point::rnew(0.5, 0.5), 0.7071067811865476))
+        assert_eq!(d, (geo::Point::rnew(0.5, 0.5), FRAC_1_SQRT_2))
     }
 
     #[test]
@@ -377,8 +365,8 @@ mod tests {
             Point { x: 0.3, y: -0.3 },
             Point { x: -1.0, y: 0.0 },
             Point {
-                x: -0.7071067811865476,
-                y: -0.7071067811865476,
+                x: -FRAC_1_SQRT_2,
+                y: -FRAC_1_SQRT_2,
             },
             Point {
                 x: 0.7071067811865475,
@@ -438,8 +426,8 @@ mod tests {
             Point { x: 0.3, y: -0.3 },
             Point { x: -1.0, y: 0.0 },
             Point {
-                x: -0.7071067811865476,
-                y: -0.7071067811865476,
+                x: -FRAC_1_SQRT_2,
+                y: -FRAC_1_SQRT_2,
             },
             Point {
                 x: 0.7071067811865475,

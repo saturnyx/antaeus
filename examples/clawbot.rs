@@ -49,14 +49,14 @@ impl Compete for Clawbot {
         loop {
             let _ = self.drivetrain.tank(&self.controller);
             let state = self.controller.state().unwrap_or_default();
-            let _ = self.arm.from_dual_input(
+            let _ = self.arm.dual_input(
                 DigitalInput::Button(state.button_up),
                 DigitalInput::Button(state.button_down),
                 8.0,
                 -8.0,
                 0.0,
             );
-            let _ = self.claw.from_dual_input(
+            let _ = self.claw.dual_input(
                 DigitalInput::Button(state.button_left),
                 DigitalInput::Button(state.button_right),
                 8.0,

@@ -377,11 +377,11 @@ impl Differential for StandardDifferential {
         let mut right = self.right.try_borrow_mut()?;
 
         for motor in left.as_mut() {
-            let _ = motor.brake(brakemode)?;
+            motor.brake(brakemode)?;
         }
 
         for motor in right.as_mut() {
-            let _ = motor.brake(brakemode)?;
+            motor.brake(brakemode)?;
         }
 
         Ok(())
@@ -618,7 +618,7 @@ impl Trackable for StandardDifferential {
     fn track_position(
         &mut self,
     ) -> Result<Angle, crate::motion::localization::tracker::devices::TrackingSensorError> {
-        let res = Self::position(&self);
+        let res = Self::position(self);
         if res.has_errors() {
             let (_, e) = res.into_parts();
             // Take ownership of the vector, then remove and return the first element
@@ -634,7 +634,7 @@ impl Trackable for StandardDifferential {
     fn reset_track_position(
         &mut self,
     ) -> Result<(), crate::motion::localization::tracker::devices::TrackingSensorError> {
-        match Self::reset_position(&self) {
+        match Self::reset_position(self) {
             Ok(_) => Ok(()),
             Err(e) => Err(TrackingSensorError::DrivetrainError { source: e }),
         }
@@ -644,7 +644,7 @@ impl Trackable for StandardDifferential {
         &mut self,
         position: Angle,
     ) -> Result<(), crate::motion::localization::tracker::devices::TrackingSensorError> {
-        match Self::set_position(&self, position) {
+        match Self::set_position(self, position) {
             Ok(_) => Ok(()),
             Err(e) => Err(TrackingSensorError::DrivetrainError { source: e }),
         }
