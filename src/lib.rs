@@ -70,3 +70,19 @@ pub fn make_cloneable<T>(v: T) -> Rc<RefCell<T>> { Rc::new(RefCell::new(v)) }
 
 /// Turns a object into a mutex
 pub fn to_mutex<T>(v: T) -> Arc<Mutex<T>> { Arc::new(Mutex::new(v)) }
+
+/// Prelude for Wildcard Imports
+///
+/// Use this wisely and only where needed to prevent namespace pollution
+pub mod prelude {
+    pub use crate::{
+        logger::*,
+        motion::{feedback_control::*, localization::*, pursuit::*},
+        peripherals::{drivetrain::*, mapper::*, motorgroup::*, range_sensor::*},
+        utils::{
+            error::Report,
+            geo::*,
+            units::{Length, Speed},
+        },
+    };
+}
