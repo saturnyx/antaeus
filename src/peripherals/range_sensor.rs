@@ -18,25 +18,8 @@
 //! returns the current measurement, variance, and velocity estimate.
 //!
 //! # Example
-//!
-//! ```ignore
-//! use antaeus::peripherals::range_sensor::{KalmanRangeSensor, RangeSensor};
-//! use antaeus::misc::units::{Length, Speed};
-//! use vexide::smart::distance::DistanceSensor;
-//!
-//! let sensor = DistanceSensor::new(1);
-//! let range = RangeSensor::from_distance(sensor);
-//! let mut filter = KalmanRangeSensor::new(
-//!     range,
-//!     0.02,
-//!     0.1,
-//!     Length::from_metres(0.5),
-//!     Speed::from_metres_per_second(0.0),
-//! );
-//!
-//! filter.predict().await;
-//! filter.update().await;
-//! let filtered = filter.measurement();
+//! ```
+#![doc = include_str!("../../examples/range_sensor.rs")]
 //! ```
 use std::{sync::Arc, time::Duration};
 

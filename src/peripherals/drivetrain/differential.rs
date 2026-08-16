@@ -28,26 +28,9 @@
 //! This lets driver-control loops keep running even if one motor or controller
 //! read fails; errors are also logged with [`log::warn`].
 //!
-//! ## Example
-//!
-//! ```ignore
-//! use antaeus::peripherals::drivetrain::Differential;
-//! use vexide::prelude::*;
-//!
-//! let drivetrain = Differential::new(
-//!     [
-//!         Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
-//!         Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
-//!     ],
-//!     [
-//!         Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
-//!         Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
-//!     ],
-//! );
-//!
-//! // In your control loop:
-//! let controller = Controller::new(ControllerId::Primary);
-//! let _errors = drivetrain.tank(&controller);
+//! # Example
+//! ```
+#![doc = include_str!("../../../examples/basic.rs")]
 //! ```
 
 use std::{cell::RefCell, rc::Rc};
@@ -68,8 +51,8 @@ use crate::{
 /// A left/right (“tank”) drivetrain controller.
 ///
 /// `Differential` owns (or shares ownership of) two motor groups:
-/// - [`Differential::left`]
-/// - [`Differential::right`]
+/// - `Differential::left`
+/// - `Differential::right`
 ///
 /// The groups are stored as `Rc<RefCell<dyn AsMut<[Motor]>>>` so you can share
 /// them with other subsystems (PID, odometry, motion profiling) while still
@@ -83,17 +66,11 @@ use crate::{
 /// - Controller inputs are assumed to be normalized to `[-1.0, 1.0]` and are
 ///   scaled to volts by multiplying by `12.0`.
 ///
-/// ## Example
-///
-/// ```ignore
-/// let drivetrain = Differential::new(
-///     [motor_left_1, motor_left_2],
-///     [motor_right_1, motor_right_2],
-/// );
-/// let _ = drivetrain.set_brakemode(BrakeMode::Brake);
+/// # Example
+/// ```
+#[doc = include_str!("../../../examples/basic.rs")]
 /// ```
 #[derive(Clone)]
-#[allow(dead_code)]
 pub struct StandardDifferential {
     /// The left motor group.
     ///
@@ -120,26 +97,8 @@ impl StandardDifferential {
     ///
     /// # Arguments
     ///
-    /// * `left` - An array of motors for the left side of the drivetrain.
-    /// * `right` - An array of motors for the right side of the drivetrain.
-    ///
-    /// # Examples
-    ///
-    /// ```ignore
-    /// use antaeus::peripherals::drivetrain::Differential;
-    /// use vexide::prelude::*;
-    ///
-    /// let drivetrain = Differential::new(
-    ///     [
-    ///         Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
-    ///         Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
-    ///     ],
-    ///     [
-    ///         Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
-    ///         Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
-    ///     ],
-    /// );
-    /// ```
+    /// - `left` - An array of motors for the left side of the drivetrain.
+    /// - `right` - An array of motors for the right side of the drivetrain.
     pub fn new<L: AsMut<[Motor]> + 'static, R: AsMut<[Motor]> + 'static>(
         left: L,
         right: R,
@@ -157,27 +116,8 @@ impl StandardDifferential {
     ///
     /// # Arguments
     ///
-    /// * `left` - A reference-counted cell containing the left motor array.
-    /// * `right` - A reference-counted cell containing the right motor array.
-    ///
-    /// # Examples
-    ///
-    /// ```ignore
-    /// use antaeus::peripherals::drivetrain::Differential;
-    /// use std::{cell::RefCell, rc::Rc};
-    /// use vexide::prelude::*;
-    ///
-    /// let drivetrain = Differential::from_shared(
-    ///     Rc::new(RefCell::new([
-    ///         Motor::new(peripherals.port_1, Gearset::Green, Direction::Forward),
-    ///         Motor::new(peripherals.port_2, Gearset::Green, Direction::Forward),
-    ///     ])),
-    ///     Rc::new(RefCell::new([
-    ///         Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
-    ///         Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
-    ///     ])),
-    /// );
-    /// ```
+    /// - `left` - A reference-counted cell containing the left motor array.
+    /// - `right` - A reference-counted cell containing the right motor array.
     pub fn from_shared<L: AsMut<[Motor]> + 'static, R: AsMut<[Motor]> + 'static>(
         left: Rc<RefCell<L>>,
         right: Rc<RefCell<R>>,
@@ -187,25 +127,6 @@ impl StandardDifferential {
 }
 
 impl Drivable for StandardDifferential {
-    /// Controls a tank-style drivetrain using the input from a controller.
-    ///
-    /// In tank drive mode, each joystick directly controls one side of the
-    /// drivetrain. The left stick Y-axis controls the left motors, and the
-    /// right stick Y-axis controls the right motors.
-    ///
-    /// # Arguments
-    ///
-    /// * `controller` - The VEX controller to read input from.
-    ///
-    /// # Examples
-    ///
-    /// ```ignore
-    /// use antaeus::peripherals::drivetrain::Differential;
-    /// use vexide::prelude::*;
-    ///
-    /// let controller = Controller::new(ControllerId::Primary);
-    /// let _ = drivetrain.tank(&controller);
-    /// ```
     fn tank(&mut self, controller: &Controller) -> Result<(), DrivetrainError> {
         let state = controller.state()?;
 
@@ -229,26 +150,6 @@ impl Drivable for StandardDifferential {
         Ok(())
     }
 
-    /// Drive the robot using arcade controls (single-stick forward/back + single-stick turn).
-    ///
-    /// Behavior:
-    /// * Forward/backward is read from the left stick Y axis.
-    /// * Turning is read from the right stick X axis.
-    /// * The two values are mixed into left/right voltages as:
-    ///   * left = (fwd + turn) * 12.0
-    ///   * right = (fwd - turn) * 12.0
-    ///
-    /// Notes:
-    /// * Inputs are assumed to be in the range [-1.0, 1.0] and are scaled to volts by 12.0.
-    /// * Consider applying your own deadband before calling if small-stick noise is an issue.
-    ///
-    /// # Example
-    /// ```ignore
-    /// use vexide::prelude::Controller;
-    /// use vexide::devices::controller::ControllerId;
-    /// let controller = Controller::new(ControllerId::Primary);
-    /// let _ = drivetrain.arcade(&controller);
-    /// ```
     fn arcade(&mut self, controller: &Controller) -> Result<(), DrivetrainError> {
         let state = controller.state()?;
 
@@ -272,24 +173,6 @@ impl Drivable for StandardDifferential {
         Ok(())
     }
 
-    /// Drive the robot using reversed tank controls (sticks swapped and inverted).
-    ///
-    /// Behavior:
-    /// * Left motors take input from the RIGHT stick Y axis, inverted.
-    /// * Right motors take input from the LEFT stick Y axis, inverted.
-    /// * Computation:
-    ///   * left = (-right_y) * 12.0
-    ///   * right = (-left_y) * 12.0
-    /// * This is useful when the robot is driving backwards but you want the sticks
-    ///   to maintain an intuitive left/right mapping relative to the robot's new front.
-    ///
-    /// # Example
-    /// ```ignore
-    /// use vexide::prelude::Controller;
-    /// use vexide::devices::controller::ControllerId;
-    /// let controller = Controller::new(ControllerId::Primary);
-    /// let _ = drivetrain.reverse_tank(&controller);
-    /// ```
     fn reverse_tank(&mut self, controller: &Controller) -> Result<(), DrivetrainError> {
         let state = controller.state()?;
 
@@ -310,27 +193,6 @@ impl Drivable for StandardDifferential {
         Ok(())
     }
 
-    /// Drive the robot using reversed arcade controls (forward/turn both inverted).
-    ///
-    /// Behavior:
-    /// * Forward/backward is read from the left stick Y axis, but inverted (fwd = -left_y).
-    /// * Turning is read from the right stick X axis, also inverted (turn = -right_x).
-    /// * Mixed into left/right voltages as:
-    ///   * left = (fwd + turn) * 12.0
-    ///   * right = (fwd - turn) * 12.0
-    /// * This inversion preserves intuitive steering when the robot is driving backwards
-    ///   (pushing the right stick right still causes a clockwise turn relative to the driver).
-    ///
-    /// Notes:
-    /// * Inputs are assumed to be in the range [-1.0, 1.0] and are scaled to volts by 12.0.
-    ///
-    /// # Example
-    /// ```ignore
-    /// use vexide::prelude::Controller;
-    /// use vexide::devices::controller::ControllerId;
-    /// let controller = Controller::new(ControllerId::Primary);
-    /// let _ = drivetrain.reverse_arcade(&controller);
-    /// ```
     fn reverse_arcade(&mut self, controller: &Controller) -> Result<(), DrivetrainError> {
         let state = controller.state()?;
 
@@ -356,22 +218,6 @@ impl Drivable for StandardDifferential {
 }
 
 impl Differential for StandardDifferential {
-    /// Sets the brake mode for all motors in the drivetrain.
-    ///
-    /// The brake mode determines how motors behave when no voltage is applied:
-    ///
-    /// * [`BrakeMode::Coast`]: Motors spin freely.
-    /// * [`BrakeMode::Brake`]: Motors actively resist rotation.
-    /// * [`BrakeMode::Hold`]: Motors actively hold their position.
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// use vexide::smart::motor::BrakeMode;
-    ///
-    /// // Set motors to brake mode for better control
-    /// let _ = drivetrain.set_brakemode(BrakeMode::Brake);
-    /// ```
     fn set_brakemode(&self, brakemode: BrakeMode) -> Result<(), DrivetrainError> {
         let mut left = self.left.try_borrow_mut()?;
         let mut right = self.right.try_borrow_mut()?;
@@ -404,14 +250,6 @@ impl Differential for StandardDifferential {
     ///   iterated. If *no* motors are available, the divisor becomes `0.0` and the
     ///   returned angle will be non-finite. If you need a stricter guarantee,
     ///   consider handling the `errors` vector and/or adding your own guard.
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let (pos, errs) = drivetrain.position();
-    /// for e in errs { println!("warn: {e}"); }
-    /// println!("Drivetrain position: {} degrees", pos.as_degrees());
-    /// ```
     fn position(&self) -> Report<Angle, Vec<DrivetrainError>> {
         let mut errors = Vec::new();
         let left = self.left.try_borrow_mut();
@@ -461,14 +299,18 @@ impl Differential for StandardDifferential {
 
     /// Returns the average encoder position of all left motors.
     ///
-    /// See [`Differential::position`] for notes on error behavior and averaging.
+    /// ## Error behavior
     ///
-    /// # Example
+    /// - If reading any motor fails, that motor contributes `0` to the sum and an
+    ///   error is recorded/logged.
+    /// - If a motor group cannot be borrowed, the group is skipped and an error is
+    ///   recorded/logged.
     ///
-    /// ```ignore
-    /// let (pos, _errs) = drivetrain.left_position();
-    /// println!("Left position: {} degrees", pos.as_degrees());
-    /// ```
+    /// Notes:
+    /// - The current implementation divides by the number of motors successfully
+    ///   iterated. If *no* motors are available, the divisor becomes `0.0` and the
+    ///   returned angle will be non-finite. If you need a stricter guarantee,
+    ///   consider handling the `errors` vector and/or adding your own guard.
     fn left_position(&self) -> Report<Angle, Vec<DrivetrainError>> {
         let mut errors = Vec::new();
         let left = self.left.try_borrow_mut();
@@ -498,15 +340,18 @@ impl Differential for StandardDifferential {
     }
 
     /// Returns the average encoder position of all right motors.
+    /// ## Error behavior
     ///
-    /// See [`Differential::position`] for notes on error behavior and averaging.
+    /// - If reading any motor fails, that motor contributes `0` to the sum and an
+    ///   error is recorded/logged.
+    /// - If a motor group cannot be borrowed, the group is skipped and an error is
+    ///   recorded/logged.
     ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let (pos, _errs) = drivetrain.right_position();
-    /// println!("Right position: {} degrees", pos.as_degrees());
-    /// ```
+    /// Notes:
+    /// - The current implementation divides by the number of motors successfully
+    ///   iterated. If *no* motors are available, the divisor becomes `0.0` and the
+    ///   returned angle will be non-finite. If you need a stricter guarantee,
+    ///   consider handling the `errors` vector and/or adding your own guard.
     fn right_position(&self) -> Report<Angle, Vec<DrivetrainError>> {
         let mut errors = Vec::new();
         let right = self.right.try_borrow_mut();
@@ -535,9 +380,6 @@ impl Differential for StandardDifferential {
         }
     }
 
-    /// Resets the integrated encoder position on all drivetrain motors.
-    ///
-    /// This will attempt to reset both left and right motor groups.
     fn reset_position(&self) -> Result<(), DrivetrainError> {
         let mut left = self.left.try_borrow_mut()?;
         let mut right = self.right.try_borrow_mut()?;
@@ -553,7 +395,6 @@ impl Differential for StandardDifferential {
         Ok(())
     }
 
-    /// Sets the integrated encoder position on all drivetrain motors.
     fn set_position(&self, position: Angle) -> Result<(), DrivetrainError> {
         let mut left = self.left.try_borrow_mut()?;
         let mut right = self.right.try_borrow_mut()?;
@@ -569,9 +410,6 @@ impl Differential for StandardDifferential {
         Ok(())
     }
 
-    /// Sets the same voltage on all drivetrain motors.
-    ///
-    /// `voltage` is in volts.
     fn set_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
         let mut left_motors = self.left.try_borrow_mut()?;
         let mut right_motors = self.right.try_borrow_mut()?;
@@ -587,9 +425,6 @@ impl Differential for StandardDifferential {
         Ok(())
     }
 
-    /// Sets the same voltage on all *left* drivetrain motors.
-    ///
-    /// `voltage` is in volts.
     fn set_left_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
         let mut left = self.left.try_borrow_mut()?;
 
@@ -600,9 +435,6 @@ impl Differential for StandardDifferential {
         Ok(())
     }
 
-    /// Sets the same voltage on all *right* drivetrain motors.
-    ///
-    /// `voltage` is in volts.
     fn set_right_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
         let mut right = self.right.try_borrow_mut()?;
 
