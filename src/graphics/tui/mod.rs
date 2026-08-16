@@ -1,4 +1,9 @@
 //! Use Ratatui to create Terminal User Interfaces on the VEX V5 Brain's Display
+//!
+//! # Example
+//! ```
+#![doc = include_str!("../../../examples/ratatui.rs")]
+//! ```
 use mousefood::{EmbeddedBackend, EmbeddedBackendConfig, prelude::Rgb888};
 use ratatui::Terminal;
 

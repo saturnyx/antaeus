@@ -1,4 +1,4 @@
-//! [`embedded-graphics`] Driver for the VEX V5
+//! `embedded-graphics` Driver for the VEX V5
 //!
 //! [`embedded-graphics`]: https://crates.io/crates/embedded-graphics
 //!
@@ -9,26 +9,18 @@
 //!
 //! To begin, turn your `display` peripheral into a [`DisplayDriver`]:
 //!
-//! ```ignore
-//! #![no_std]
-//! #![no_main]
-//!
-//! use vexide::prelude::*;
-//! use vexide_embedded_graphics::DisplayDriver;
-//!
-//! #[vexide::main]
-//! async fn main(peripherals: Peripherals) {
-//!     let mut display = DisplayDriver::new(peripherals.display);
-//! }
-//! ```
-//!
 //! [`DisplayDriver`] is a [`DrawTarget`] that the `embedded-graphics` crate is
 //! able to draw to.
-//!
 //!
 //! Check out the [`embedded-graphics` docs] for more examples.
 //!
 //! [`embedded-graphics` docs]: https://docs.rs/embedded-graphics/latest/embedded_graphics/examples/index.html
+//!
+//!
+//! # Example
+//! ```
+#![doc = include_str!("../../examples/embedded_graphics.rs")]
+//! ```
 
 use core::convert::Infallible;
 
