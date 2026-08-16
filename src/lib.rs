@@ -31,6 +31,8 @@
 #![deny(clippy::unused_async)]
 #![warn(rustdoc::all)]
 #![feature(custom_inner_attributes)]
+// #![warn(clippy::pedantic)]
+// Will enable this sometime soon
 
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 

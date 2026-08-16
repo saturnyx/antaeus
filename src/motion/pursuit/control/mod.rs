@@ -3,6 +3,10 @@
 //! Defines the `PursuitControl` trait used by higher-level pursuit logic to
 //! convert a lookahead point into drivetrain commands, along with built-in
 //! control implementations.
+//!
+//! These Control Algorithms have their own feedback loops and lower-level
+//! hardware control algorithms.
+
 use crate::utils::units::Length;
 
 /// Direction policy for the pursuit controller.
