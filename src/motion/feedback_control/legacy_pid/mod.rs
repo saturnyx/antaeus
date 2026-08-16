@@ -1,4 +1,8 @@
-//! PID controller implementations for robot motion control.
+//! IMPORTANT NOTICE
+//! These are legacy thread-based PID control loops. There is no guarantee that
+//! these will work.
+//!
+//!  PID controller implementations for robot motion control.
 //!
 //! This module provides PID (Proportional-Integral-Derivative) controllers
 //! for precise drivetrain control during autonomous periods.

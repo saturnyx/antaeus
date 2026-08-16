@@ -1,17 +1,17 @@
-//! # Drivetrain PID Control
+//! Drivetrain PID Control
 //! A PID implementation used for controlling the drivetrain.
 //!
 //! This module provides [`DrivePID`], a dual-loop PID controller for a
 //! differential drivetrain. It maintains independent left/right PID state
 //! and converts motor angle feedback into linear wheel travel.
 //!
-//! ## Features
+//! # Features
 //! - Left and right PID loops (`CorePID`) with shared tuning or custom instances
 //! - Relative and absolute target APIs
 //! - Automatic tick loop with timeout via [`DrivePID::autotick`]
 //! - Gear-ratio + wheel-diameter based distance conversion
 //!
-//! ## Units and Conversions
+//! # Units and Conversions
 //! - Targets/tolerance are expressed as [`Length`](crate::misc::units::Length)
 //! - Internal PID values are currently computed in inches (`f64`)
 //! - Encoder/motor position is converted using:
@@ -19,10 +19,15 @@
 //!   - wheel radius
 //!   - arc-length relation `s = r * θ`
 //!
-//! ## Notes
+//! # Notes
 //! - Call `tick()` at a stable interval for best derivative behavior.
 //! - Reset integral / derivative state when changing targets.
 //! - Validate gear inputs (non-zero gear teeth) to avoid invalid ratios.
+//!
+//! # Example
+//! ```
+#![doc = include_str!("../../../../examples/drive_pid.rs")]
+//! ```
 
 use std::{num::NonZeroU32, time::Duration};
 

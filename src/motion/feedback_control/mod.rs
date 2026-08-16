@@ -1,4 +1,4 @@
-//! A module for controlling the robot's drivetrain with feedback control.
+//! A module for controlling the robot with feedback control.
 //!
 //! This module provides traits and implementations for controlling the robot's
 //! drivetrain using feedback control, such as PID controllers.

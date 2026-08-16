@@ -1,14 +1,15 @@
 //! # Group PID
 //! This PID controls all motors using a single PID instance.
-
+//!
+//! # Example
+//! ```
+#![doc = include_str!("../../../../examples/group_pid.rs")]
+//! ```
 use std::time::Duration;
 
 use vexide::{math::Angle, prelude::Motor, time::user_uptime};
 
-use crate::{
-    motion::feedback_control::pid::{core_pid::CorePID, drive_pid::AutoTickOutcome},
-    utils::units::Length,
-};
+use crate::motion::feedback_control::pid::{core_pid::CorePID, drive_pid::AutoTickOutcome};
 
 /// Group PID
 /// Used for controlling a group of motors simultaneously
@@ -28,19 +29,19 @@ impl<const N: usize> GroupPID<N> {
         kp: f64,
         ki: f64,
         kd: f64,
-        target: f64,
+        target: Angle,
         max: f64,
-        tolerance: f64,
+        tolerance: Angle,
     ) -> Self {
         Self {
-            pid: CorePID::new(kp, ki, kd, target, max, tolerance),
+            pid: CorePID::new(kp, ki, kd, target.as_radians(), max, tolerance.as_radians()),
             motors,
             last_update: Duration::ZERO,
         }
     }
 
     /// Create a `GroupPID` instance from an already existing `CorePID` instance
-    /// by adding an array of motors
+    /// by adding an array of motors. All values are taken in Radians.
     pub fn from_core_pid(motors: [Motor; N], core_pid: CorePID) -> Self {
         Self {
             pid: core_pid,
@@ -61,16 +62,16 @@ impl<const N: usize> GroupPID<N> {
     }
 
     /// Sets targets relative to the motors' current positions.
-    pub fn set_relative_target(&mut self, target: Length) {
-        self.pid.set_target(target.as_inches());
+    pub fn set_relative_target(&mut self, target: Angle) {
+        self.pid.set_target(target.as_radians());
         self.reset_integral();
         self.pid.prev_error = 0.0;
         self.last_update = user_uptime();
     }
 
     /// Sets absolute targets
-    pub fn set_target(&mut self, target: Length) {
-        self.pid.set_target(target.as_inches());
+    pub fn set_target(&mut self, target: Angle) {
+        self.pid.set_target(target.as_radians());
         self.reset_integral();
         self.pid.prev_error = 0.0;
         self.last_update = user_uptime();
