@@ -39,3 +39,8 @@ rand = "0.10.2"
 rand_distr = "0.6.0"
 getrandom = { version = "^0.4.3" }
 tempfile = "3.27.0"
+
+# Examples are usually binary, but this was a library
+[[example]]
+name = "integration"
+crate-type = ["lib"]

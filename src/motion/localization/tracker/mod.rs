@@ -4,9 +4,16 @@
 //! with an IMU heading to integrate robot pose over time. Handles small-angle
 //! straight-line motion as well as arc-based deltas during rotation.
 //!
+//! # Structure
+//!
 //! The `devices` submodule defines the hardware wrapper (`TrackerMech`) for
 //! sensors. `Tracker` maintains the current pose and previous sensor readings
 //! to compute incremental updates in `tick`.
+//!
+//! ## Example
+//! ```
+#![doc = include_str!("../../../../examples/tracker.rs")]
+//! ```
 use devices::TrackerMech;
 use vexide::math::Angle;
 

@@ -1,37 +1,13 @@
 //! Tracking devices and position types for odometry.
 //!
 //! This module provides the sensor abstractions and data types used by the
-//! odometry tracking system. It includes:
+//! tracking system. It includes:
 //!
 //! * **TrackingSensor**: An abstraction over different encoder types.
 //! * **TrackerPod**: Configuration for a tracking wheel with gear ratios.
 //! * **TrackerMech**: The complete tracking mechanism with vertical/horizontal
 //!   trackers and an IMU.
 //! * **Pose**: A 2D position with heading.
-//!
-//! # Example
-//!
-//! ```ignore
-//! use antaeus::motion::localization::tracker::devices::{TrackingSensor, TrackerPod, TrackerMech, Pose};
-//! use antaeus::misc::units::Length;
-//! use vexide::prelude::*;
-//! use std::sync::Arc;
-//! use vexide::sync::Mutex;
-//!
-//! // Create a tracking sensor from a rotation sensor
-//! let sensor = TrackingSensor::new_rotation_sensor(
-//!     RotationSensor::new(peripherals.port_5, Direction::Forward)
-//! );
-//!
-//! // Create a tracker pod with wheel diameter, gear ratio, and offset
-//! let tracker = TrackerPod::new(
-//!     sensor,
-//!     Length::from_inches(2.75),
-//!     1.0,
-//!     1.0,
-//!     Length::zero(),
-//! );
-//! ```
 
 use std::{
     cell::{BorrowMutError, RefCell},
@@ -154,27 +130,6 @@ impl HeadingSensor for InertialSensor {
 /// A tracking wheel is an unpowered wheel with an encoder used to measure
 /// how far the robot has traveled. This struct combines the sensor with
 /// physical wheel properties and gear ratios.
-///
-/// # Example
-///
-/// ```ignore
-/// use antaeus::motion::localization::tracker::devices::{TrackingSensor, TrackerPod};
-/// use antaeus::misc::units::Length;
-/// use vexide::prelude::*;
-///
-/// let sensor = TrackingSensor::new_rotation_sensor(
-///     RotationSensor::new(peripherals.port_5, Direction::Forward)
-/// );
-///
-/// // 2.75" wheel, 1:1 gear ratio, no offset
-/// let tracker = TrackerPod::new(
-///     sensor,
-///     Length::from_inches(2.75),
-///     1.0,
-///     1.0,
-///     Length::zero(),
-/// );
-/// ```
 pub struct TrackerPod<'s, S: Trackable> {
     /// The sensor measuring wheel rotation.
     pub sensor:         &'s mut S,
@@ -217,10 +172,7 @@ impl<'s, S: Trackable> TrackerPod<'s, S> {
     /// Calculates the distance traveled by the tracking wheel.
     ///
     /// Takes into account the wheel diameter, gear ratio, and offset.
-    ///
-    /// # Returns
-    ///
-    /// The distance traveled in inches.
+    /// Returns the distance traveled in inches.
     pub fn dist(&mut self) -> Result<Length, TrackingSensorError> {
         let angle = self.sensor.track_position()?;
         let gear_ratio = self.driving_gear / self.driven_gear;
@@ -233,21 +185,6 @@ impl<'s, S: Trackable> TrackerPod<'s, S> {
 ///
 /// Groups together the vertical tracker, horizontal tracker, and IMU
 /// needed for position estimation.
-///
-/// # Example
-///
-/// ```ignore
-/// use antaeus::motion::localization::tracker::devices::{TrackingSensor, TrackerPod, TrackerMech};
-/// use vexide::prelude::*;
-/// use std::sync::Arc;
-/// use vexide::sync::Mutex;
-///
-/// let vertical = TrackerPod::new(/* ... */);
-/// let horizontal = TrackerPod::new(/* ... */);
-/// let imu = Arc::new(Mutex::new(InertialSensor::new(peripherals.port_10)));
-///
-/// let mechanism = TrackerMech::new(vertical, horizontal, imu);
-/// ```
 pub struct TrackerMech<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> {
     /// The vertical (forward/backward) tracking wheel.
     pub vertical_tracker:   TrackerPod<'v, V>,

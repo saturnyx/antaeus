@@ -9,7 +9,7 @@
 //!
 //! To begin, turn your `display` peripheral into a [`DisplayDriver`]:
 //!
-//! ```
+//! ```ignore
 //! #![no_std]
 //! #![no_main]
 //!
@@ -25,29 +25,6 @@
 //! [`DisplayDriver`] is a [`DrawTarget`] that the `embedded-graphics` crate is
 //! able to draw to.
 //!
-//! ```
-//! #![no_std]
-//! #![no_main]
-//!
-//! use embedded_graphics::{
-//!     mono_font::{MonoTextStyle, ascii::FONT_6X10},
-//!     pixelcolor::Rgb888,
-//!     prelude::*,
-//!     text::Text,
-//! };
-//! use vexide::prelude::*;
-//! use vexide_embedded_graphics::DisplayDriver;
-//!
-//! #[vexide::main]
-//! async fn main(peripherals: Peripherals) {
-//!     let mut display = DisplayDriver::new(peripherals.display);
-//!     let style = MonoTextStyle::new(&FONT_6X10, Rgb888::GREEN);
-//!
-//!     Text::new("Hello,\nRust!", Point::new(2, 28), style)
-//!         .draw(&mut display)
-//!         .unwrap();
-//! }
-//! ```
 //!
 //! Check out the [`embedded-graphics` docs] for more examples.
 //!

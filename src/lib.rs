@@ -22,7 +22,7 @@
 //! - [`utils`]: Error-handling, units, geometry, etc.
 //!
 //! ## Example
-//! ```rust
+//! ```
 #![doc = include_str!("../examples/basic.rs")]
 //! ```
 
@@ -30,6 +30,7 @@
 #![warn(missing_docs, rust_2018_idioms, unused, future_incompatible)]
 #![deny(clippy::unused_async)]
 #![warn(rustdoc::all)]
+#![feature(custom_inner_attributes)]
 
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
