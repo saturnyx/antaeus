@@ -17,7 +17,7 @@ async fn main(peripherals: Peripherals) {
     );
 
     filter.predict();
-    filter.update().await;
+    filter.tick();
     let filtered = filter.measurement();
     println!("{:?}", filtered)
 }
