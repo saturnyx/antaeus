@@ -4,14 +4,15 @@
 //! ```
 #![doc = include_str!("../../../examples/ratatui.rs")]
 //! ```
+// src/graphics/tui.rs — untouched, works for both backends unmodified
 use mousefood::{EmbeddedBackend, EmbeddedBackendConfig, prelude::Rgb888};
 use ratatui::Terminal;
 
 use super::embedded_graphics::DisplayDriver;
 
-/// VEX V5 Terminal Driver
+/// Terminal Display Backend Trait
 pub trait TerminalDisplay<'a> {
-    /// Create a new `Terminal` from a `DisplayDriver`
+    /// Create a backend using a `DisplayDriver`
     fn from_driver(driver: &'a mut DisplayDriver) -> Self;
 }
 
@@ -19,7 +20,6 @@ impl<'a> TerminalDisplay<'a> for Terminal<EmbeddedBackend<'a, DisplayDriver, Rgb
     fn from_driver(driver: &'a mut DisplayDriver) -> Self {
         let config = EmbeddedBackendConfig::default();
         let backend = EmbeddedBackend::new(driver, config);
-
         Terminal::new(backend).unwrap()
     }
 }

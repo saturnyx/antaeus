@@ -31,6 +31,9 @@ vex-sdk = "0.28.0"
 vexide = { version = "0.8.0", features = ["full"] }
 vexide-motorgroup = "2.2.0"
 
+[target.'cfg(not(target_os = "vexos"))'.dependencies]
+embedded-graphics-simulator = "0.8.0"
+
 [dev-dependencies]
 embedded-graphics-simulator = "0.8.0"
 vexide = { version = "0.8.0", features = ["full", "vex-sdk-mock"] }
