@@ -1,7 +1,7 @@
 // Group PID Drivetrain Example
 use std::time::Duration;
 
-use antaeus::prelude::group::GroupPID;
+use antaeus::prelude::group::GroupFeedbackControl;
 use vexide::{math::Angle, prelude::*};
 
 #[vexide::main]
@@ -15,7 +15,7 @@ async fn main(peripherals: Peripherals) {
     ];
 
     // Declare a PID instance
-    let mut pid = GroupPID::new(
+    let mut pid = GroupFeedbackControl::pid(
         motors,                    // Motors declared above
         0.5, // Kp (This is a default value, remember to tune this for your own drivetrain)
         0.0, // Ki (This is a default value, remember to tune this for your own drivetrain)
@@ -26,5 +26,5 @@ async fn main(peripherals: Peripherals) {
     );
     // IMPORTANT: Autotick must be called for PID to run. But you can also do this manually by
     // calling `pid.tick()` in a loop.
-    pid.autotick(Duration::from_secs(12)).await;
+    let _ = pid.autotick(Duration::from_secs(12)).await;
 }
