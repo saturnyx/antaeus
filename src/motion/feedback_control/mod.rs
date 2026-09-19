@@ -10,9 +10,6 @@ use crate::utils::units::Length;
 
 pub mod pid;
 
-#[cfg(feature = "legacy")]
-pub mod legacy_pid;
-
 /// A trait for controlling the robot's drivetrain with feedback control.
 pub trait DriveControl {
     /// Commands the robot to travel a certain distance in a straight line
