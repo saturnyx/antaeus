@@ -20,9 +20,12 @@ use crate::utils::geo::Pose;
 pub mod tracker;
 
 /// Trait for localization controllers that estimate robot pose over time.
-pub trait Localizer<E> {
+pub trait Localizer {
+    /// Error type for Localizer
+    type Error: std::error::Error + Send + Sync + 'static;
+
     /// Returns the current estimated pose of the robot.
     fn get_coords(&self) -> Pose;
     /// Updates the internal pose estimate based on sensor readings
-    fn tick(&mut self) -> Result<(), E>;
+    fn tick(&mut self) -> Result<(), Self::Error>;
 }

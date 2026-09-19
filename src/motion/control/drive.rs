@@ -38,12 +38,13 @@ use vexide::{
 };
 
 use crate::{
-    motion::{
-        control::DriveControl,
+    motion::control::DriveControl,
+    peripherals::drivetrain::Differential,
+    prelude::{
+        AutoTickOutcome,
+        DrivetrainError,
         primitive::{Feedback, pid::Pid},
     },
-    peripherals::drivetrain::Differential,
-    prelude::{AutoTickOutcome, DrivetrainError},
     utils::units::Length,
 };
 

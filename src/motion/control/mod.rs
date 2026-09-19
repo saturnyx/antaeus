@@ -10,6 +10,7 @@ use crate::utils::units::Length;
 
 pub mod drive;
 pub mod group;
+pub mod primitive;
 
 /// A trait for controlling the robot's drivetrain with feedback control.
 pub trait DriveControl {

@@ -20,9 +20,9 @@ use antaeus::{
                 devices::{HeadingSensor, Trackable, TrackerMech, TrackerPod, TrackingSensorError},
             },
         },
-        primitive::pid::Pid,
     },
     peripherals::drivetrain::Differential,
+    prelude::primitive::pid::Pid,
     utils::units::Length,
 };
 use vexide::math::Angle;
