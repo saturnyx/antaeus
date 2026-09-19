@@ -48,17 +48,10 @@ impl Pid {
         }
     }
 
-    /// Reset the integral term
+    /// Reset only the integral term
     ///
     /// This has to be done every time the target changes
     pub fn reset_integral(&mut self) { self.integral = 0.0 }
-
-    /// Sets the target
-    ///
-    /// Important: this function does not update the integral term
-    /// It is recommended to reset the integral term along with the prev_error
-    /// and last_update term.
-    pub fn set_target(&mut self, target: f64) { self.target = target; }
 }
 
 impl Feedback for Pid {
