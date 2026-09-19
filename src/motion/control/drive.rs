@@ -1,19 +1,18 @@
-//! Drivetrain PID Control
-//! A PID implementation used for controlling the drivetrain.
+//! Drivetrain Feedback Control
+//! A Feedback Control implementation used for controlling the drivetrain.
 //!
-//! This module provides [`DrivePID`], a dual-loop PID controller for a
-//! differential drivetrain. It maintains independent left/right PID state
+//! This module provides [`DriveFeedbackControl`], a dual-loop feedback controller for a
+//! differential drivetrain. It maintains independent left/right states
 //! and converts motor angle feedback into linear wheel travel.
 //!
 //! # Features
-//! - Left and right PID loops (`CorePID`) with shared tuning or custom instances
+//! - Left and right feedback loops with shared tuning or custom instances
 //! - Relative and absolute target APIs
-//! - Automatic tick loop with timeout via [`DrivePID::autotick`]
+//! - Automatic tick loop with timeout via [`DriveFeedbackControl::autotick`]
 //! - Gear-ratio + wheel-diameter based distance conversion
 //!
 //! # Units and Conversions
 //! - Targets/tolerance are expressed as [`Length`](crate::misc::units::Length)
-//! - Internal PID values are currently computed in inches (`f64`)
 //! - Encoder/motor position is converted using:
 //!   - motor-to-wheel ratio
 //!   - wheel radius
@@ -47,7 +46,7 @@ use crate::{
     utils::units::Length,
 };
 
-/// Outcome of [`DrivePID::autotick`].
+/// Outcome of [`DriveFeedbackControl::autotick`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AutoTickOutcome {
     /// The controller reached both targets within tolerance before `timeout`.
@@ -56,16 +55,16 @@ pub enum AutoTickOutcome {
     TimedOut,
 }
 
-/// Dual-loop PID controller for a differential drivetrain.
+/// Dual-loop feedback controller for a differential drivetrain.
 ///
-/// This type owns a drivetrain handle and two [`CorePID`] instances:
+/// This type owns a drivetrain handle and two [`Feedback`] instances:
 /// one for the left side and one for the right side.
 pub struct DriveFeedbackControl<D: Differential, F: Feedback> {
     /// Differential drivetrain interface used to read positions and command voltages.
     pub drivetrain:        D,
-    /// Left-side PID controller.
+    /// Left-side feedback controller.
     pub feedback_left:     F,
-    /// Right-side PID controller.
+    /// Right-side feedback controller.
     pub feedback_right:    F,
     /// Physical wheel diameter used for angle-to-distance conversion.
     pub wheel_diameter:    Length,
@@ -73,12 +72,12 @@ pub struct DriveFeedbackControl<D: Differential, F: Feedback> {
     pub motor_wheel_ratio: f64,
     /// Track width
     pub track_width:       Length,
-    /// Timestamp of the previous PID update.
+    /// Timestamp of the previous update.
     pub last_update:       Duration,
 }
 
 impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
-    /// Creates a [`DrivePID`] from preconfigured left and right [`Feedback`] instances.
+    /// Creates a [`DriveFeedbackControl`] from preconfigured left and right [`Feedback`] instances.
     ///
     /// Use this constructor when each side requires different gains or state.
     pub fn new(
@@ -103,13 +102,13 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
         }
     }
 
-    /// Advances both PID loops by one control step and applies output voltage.
+    /// Advances both feedback loops by one control step and applies output voltage.
     ///
     /// This method:
     /// - computes `dt` from [`user_uptime`]
     /// - reads left/right motor angles
     /// - converts angle to linear distance
-    /// - evaluates each PID loop
+    /// - evaluates each feedback loop
     /// - writes side-specific drivetrain voltages
     pub fn tick(&mut self) -> Result<(), F::Error> {
         let now = user_uptime();
@@ -134,7 +133,7 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
     /// Sets targets relative to the drivetrain's current positions.
     ///
     /// `left` and `right` are interpreted as deltas from the current wheel travel.
-    /// PID integral and derivative history are reset to avoid carry-over between goals.
+    /// Feedback control is reset to avoid carry-over between goals.
     pub fn set_relative_target(&mut self, left: Length, right: Length) -> Result<(), F::Error> {
         self.feedback_left.set_target(
             left.as_inches() +
@@ -162,7 +161,7 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
     /// Sets absolute left/right distance targets.
     ///
     /// Targets are stored internally in inches.
-    /// PID integral and derivative history are reset to avoid carry-over between goals.
+    /// Feedback control is reset to avoid carry-over between goals.
     pub fn set_target(&mut self, left: Length, right: Length) -> Result<(), F::Error> {
         self.feedback_left.set_target(left.as_inches())?;
         self.feedback_right.set_target(right.as_inches())?;
@@ -171,14 +170,14 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
         Ok(())
     }
 
-    /// Resets only the integral terms for both PID loops.
+    /// Feedback control is reset
     pub fn reset(&mut self) -> Result<(), F::Error> {
         self.feedback_left.reset()?;
         self.feedback_right.reset()?;
         Ok(())
     }
 
-    /// Repeatedly calls [`DrivePID::tick`] until both loops are inactive or timeout.
+    /// Repeatedly calls [`DriveFeedbackControl::tick`] until both loops are inactive or timeout.
     ///
     /// The loop sleeps for 10ms between iterations. Returns:
     /// - [`AutoTickOutcome::Completed`] when both sides settle within tolerance
@@ -245,30 +244,12 @@ impl<F: Feedback> std::fmt::Debug for DriveControlError<F> {
     }
 }
 
-// impl<F: Feedback> std::fmt::Display for DriveControlError<F> {
-//     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         match self {
-//             Self::Feedback { source } => source.fmt(formatter),
-//             Self::InertialError { source } => source.fmt(formatter),
-//         }
-//     }
-// }
-
-// impl<F: Feedback> std::error::Error for DriveControlError<F> {
-//     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-//         match self {
-//             Self::Feedback { source } => Some(source),
-//             Self::InertialError { source } => Some(source),
-//         }
-//     }
-// }
-
 impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
     type Error = DriveControlError<F>;
 
     /// Drives both sides forward/backward by the same relative distance.
     ///
-    /// This sets equal left/right relative targets, then runs [`DrivePID::autotick`]
+    /// This sets equal left/right relative targets, then runs [`DriveFeedbackControl::autotick`]
     /// until completion or `timeout`.
     async fn travel(
         &mut self,
@@ -325,7 +306,7 @@ impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
     /// IMU-assisted in-place rotation to an angular offset from the current heading.
     ///
     /// This method continuously recomputes the remaining heading error and updates
-    /// wheel travel targets without resetting PID history each iteration.
+    /// wheel travel targets without resetting feedback history each iteration.
     /// The command ends when heading error is within `angle_tolerance` or when
     /// `timeout` elapses.
     async fn imu_rotate(
@@ -381,7 +362,7 @@ impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
             )
             .as_inches();
 
-            // Update targets WITHOUT resetting PID history each cycle.
+            // Update targets WITHOUT resetting feedback history each cycle.
             self.feedback_left
                 .set_target(left_now + len.as_inches())
                 .map_err(|source| DriveControlError::Feedback { source })?;
@@ -469,7 +450,7 @@ impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
             )
             .as_inches();
 
-            // Update targets WITHOUT resetting PID history each cycle.
+            // Update targets WITHOUT resetting feedback history each cycle.
             // Keep one side fixed at its current position and move the other.
             if move_left {
                 self.feedback_left

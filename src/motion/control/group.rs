@@ -1,5 +1,5 @@
-//! # Group PID
-//! This PID controls all motors using a single PID instance.
+//! # Group Feedback Control
+//! This feedcontroller controls all motors using a single feedback loop.
 //!
 //! # Example
 //! ```
@@ -12,10 +12,10 @@ use vexide::{math::Angle, prelude::Motor, time::user_uptime};
 use super::AutoTickOutcome;
 use crate::motion::primitive::{Feedback, pid::Pid};
 
-/// Group PID
+/// Group Feedback Controller
 /// Used for controlling a group of motors simultaneously
 pub struct GroupFeedbackControl<const N: usize, F: Feedback> {
-    /// Single `CorePID` instance controls all motors
+    /// Single feedback loop controls all motors
     pub feedback:    F,
     /// An array of Motors that will be controlled
     pub motors:      [Motor; N],
@@ -24,7 +24,7 @@ pub struct GroupFeedbackControl<const N: usize, F: Feedback> {
 }
 
 impl<const N: usize, F: Feedback> GroupFeedbackControl<N, F> {
-    /// Create a `GroupPID` instance from an already existing `CorePID` instance
+    /// Create a `GroupFeedbackControl` instance from an already existing feedback instance
     /// by adding an array of motors. All values are taken in Radians.
     pub fn new(motors: [Motor; N], feedback: F) -> Self {
         Self {
@@ -34,7 +34,7 @@ impl<const N: usize, F: Feedback> GroupFeedbackControl<N, F> {
         }
     }
 
-    /// Updates the GroupPID instance by one tick. It is recommended to call this function once
+    /// Updates the [`GroupFeedbackControl`] instance by one tick. It is recommended to call this function once
     /// every loop cycle.
     pub fn tick(&mut self) -> Result<(), F::Error> {
         let now = user_uptime();
@@ -65,7 +65,7 @@ impl<const N: usize, F: Feedback> GroupFeedbackControl<N, F> {
     /// Resets only the integral terms
     pub fn reset(&mut self) -> Result<(), F::Error> { self.feedback.reset() }
 
-    /// Repeatedly calls `GroupPID::tick` until both loops are inactive or timeout.
+    /// Repeatedly calls [`GroupFeedbackControl::tick`] until both loops are inactive or timeout.
     pub async fn autotick(&mut self, timeout: Duration) -> Result<AutoTickOutcome, F::Error> {
         let start = user_uptime();
         while self
