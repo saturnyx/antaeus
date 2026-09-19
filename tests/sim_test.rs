@@ -106,11 +106,11 @@ fn pid_test() {
         Length::from_inches(DISTANCE_TOLERANCE_IN),
     );
 
-    pid.set_relative_target(Length::from_inches(10.0), Length::from_inches(10.0));
+    let _ = pid.set_relative_target(Length::from_inches(10.0), Length::from_inches(10.0));
     for _ in 0..PID_SETTLE_STEPS {
         // Physics advances using the commanded voltage from the preceding PID tick.
         pid.drivetrain.tick(SIMULATION_STEP);
-        pid.tick();
+        let _ = pid.tick();
     }
 
     let distance = pid.drivetrain.position().value().as_radians() * WHEEL_DIAMETER_IN / 2.0;
@@ -154,11 +154,11 @@ async fn odom_test(_peripherals: vexide::prelude::Peripherals) {
         Length::zero(),
         Length::from_inches(0.1),
     );
-    pid.set_relative_target(Length::from_inches(10.0), Length::from_inches(10.0));
+    let _ = pid.set_relative_target(Length::from_inches(10.0), Length::from_inches(10.0));
 
     for _ in 0..PID_SETTLE_STEPS {
         pid.drivetrain.tick(SIMULATION_STEP);
-        pid.tick();
+        let _ = pid.tick();
         odom.tick().unwrap();
     }
 
@@ -215,7 +215,7 @@ async fn odom_multiple_motions_test(_peripherals: vexide::prelude::Peripherals) 
     // after physics advances, then supplied to odometry before its tick.
     macro_rules! run_motion {
         ($left_delta_in:expr, $right_delta_in:expr) => {
-            pid.set_relative_target(
+            let _ = pid.set_relative_target(
                 Length::from_inches($left_delta_in),
                 Length::from_inches($right_delta_in),
             );
@@ -233,7 +233,7 @@ async fn odom_multiple_motions_test(_peripherals: vexide::prelude::Peripherals) 
                     Angle::from_radians((right_distance - left_distance) / TRACK_WIDTH_IN);
                 imu.borrow_mut().set_heading(heading).unwrap();
 
-                pid.tick();
+                let _ = pid.tick();
                 odom.tick().unwrap();
             }
         };

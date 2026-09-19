@@ -199,7 +199,7 @@ async fn logs_multi_motion_odometry_trace(_peripherals: vexide::prelude::Periphe
 
     let mut step = 0;
     for (segment, left_delta_in, right_delta_in) in motions {
-        pid.set_relative_target(
+        let _ = pid.set_relative_target(
             Length::from_inches(left_delta_in),
             Length::from_inches(right_delta_in),
         );
@@ -218,7 +218,7 @@ async fn logs_multi_motion_odometry_trace(_peripherals: vexide::prelude::Periphe
                 .set_heading(Angle::from_radians(imu_heading_rad))
                 .expect("update simulated IMU");
 
-            pid.tick();
+            let _ = pid.tick();
             odometry.tick().expect("update odometry");
 
             let pose = odometry.get_coords();

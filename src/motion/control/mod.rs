@@ -21,19 +21,19 @@ pub trait DriveControl {
         &mut self,
         target: Length,
         timeout: Duration,
-    ) -> impl Future<Output = Result<(), Self::Error>> + '_;
+    ) -> impl Future<Output = Result<AutoTickOutcome, Self::Error>> + '_;
     /// Commands the robot to rotate a certain angle on the same spot
     fn rotate(
         &mut self,
         angle: Angle,
         timeout: Duration,
-    ) -> impl Future<Output = Result<(), Self::Error>> + '_;
+    ) -> impl Future<Output = Result<AutoTickOutcome, Self::Error>> + '_;
     /// Commands the robot to pivot on one of its sides
     fn pivot(
         &mut self,
         angle: Angle,
         timeout: Duration,
-    ) -> impl Future<Output = Result<(), Self::Error>> + '_;
+    ) -> impl Future<Output = Result<AutoTickOutcome, Self::Error>> + '_;
 
     /// Commands the robot to travel a certain distance in a straight line using
     /// an IMU for heading correction
@@ -43,7 +43,7 @@ pub trait DriveControl {
         timeout: Duration,
         imu: &'a InertialSensor,
         angle_tolerance: Angle,
-    ) -> impl Future<Output = Result<(), Self::Error>> + 'a;
+    ) -> impl Future<Output = Result<AutoTickOutcome, Self::Error>> + 'a;
 
     /// Commands the robot to rotate a certain angle on the same spot using an
     /// IMU for heading correction
@@ -53,10 +53,10 @@ pub trait DriveControl {
         timeout: Duration,
         imu: &'a InertialSensor,
         angle_tolerance: Angle,
-    ) -> impl Future<Output = Result<(), Self::Error>> + 'a;
+    ) -> impl Future<Output = Result<AutoTickOutcome, Self::Error>> + 'a;
 }
 
-/// Outcome of [`DrivePID::autotick`].
+/// Outcome of Autotick Functions
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AutoTickOutcome {
     /// The controller reached both targets within tolerance before `timeout`.
