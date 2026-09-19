@@ -1,7 +1,7 @@
 // Group PID Drivetrain Example
 use std::time::Duration;
 
-use antaeus::prelude::pid::group_pid::GroupPID;
+use antaeus::prelude::group::GroupPID;
 use vexide::{math::Angle, prelude::*};
 
 #[vexide::main]

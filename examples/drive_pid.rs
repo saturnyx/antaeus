@@ -3,7 +3,7 @@ use std::{num::NonZeroU32, time::Duration};
 
 use antaeus::{
     peripherals::drivetrain::differential::StandardDifferential,
-    prelude::{Length, pid::drive_pid::DrivePID},
+    prelude::{Length, drive::DriveFeedbackControl},
 };
 use vexide::prelude::*;
 
@@ -24,7 +24,7 @@ async fn main(peripherals: Peripherals) {
     );
 
     // Next, declare your PID controller with the desired parameters
-    let mut pid = DrivePID::new(
+    let mut pid = DriveFeedbackControl::pid(
         drivetrain,                  // The above drivetrain
         0.5,  // Kp (This is a default value, remember to tune this for your own drivetrain)
         0.0,  // Ki (This is a default value, remember to tune this for your own drivetrain)
@@ -39,5 +39,5 @@ async fn main(peripherals: Peripherals) {
     );
     // IMPORTANT: Autotick must be called for PID to run. But you can also do this manually by
     // calling `pid.tick()` in a loop.
-    pid.autotick(Duration::from_secs(12)).await;
+    let _ = pid.autotick(Duration::from_secs(12)).await;
 }

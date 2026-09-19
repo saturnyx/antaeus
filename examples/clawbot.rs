@@ -8,7 +8,7 @@
 use std::{num::NonZeroU32, time::Duration};
 
 use antaeus::{
-    motion::control::pid::drive_pid::DrivePID,
+    motion::control::drive::DriveFeedbackControl,
     peripherals::{
         drivetrain::{Drivable, differential::StandardDifferential},
         mapper::{DigitalInput, motor::MotorMapper},
@@ -25,7 +25,7 @@ struct Clawbot {
 
 impl Compete for Clawbot {
     async fn autonomous(&mut self) {
-        let mut pid = DrivePID::new(
+        let mut pid = DriveFeedbackControl::pid(
             self.drivetrain.clone(),
             0.5,
             0.0,
@@ -40,9 +40,9 @@ impl Compete for Clawbot {
         );
 
         pid.set_relative_target(Length::from_inches(10.0), Length::from_inches(10.0));
-        pid.autotick(Duration::from_secs(5)).await;
-        pid.set_relative_target(Length::from_inches(-10.0), Length::from_inches(10.0));
-        pid.autotick(Duration::from_secs(5)).await;
+        let _ = pid.autotick(Duration::from_secs(5)).await;
+        let _ = pid.set_relative_target(Length::from_inches(-10.0), Length::from_inches(10.0));
+        let _ = pid.autotick(Duration::from_secs(5)).await;
     }
 
     async fn driver(&mut self) {

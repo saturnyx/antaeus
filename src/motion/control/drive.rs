@@ -26,12 +26,17 @@
 //!
 //! # Example
 //! ```
-#![doc = include_str!("../../../../examples/drive_pid.rs")]
+#![doc = include_str!("../../../examples/drive_pid.rs")]
 //! ```
 
 use std::{num::NonZeroU32, time::Duration};
 
-use vexide::{math::Angle, smart::imu::InertialSensor, time::user_uptime};
+use snafu::Snafu;
+use vexide::{
+    math::Angle,
+    smart::imu::{InertialError, InertialSensor},
+    time::user_uptime,
+};
 
 use crate::{
     motion::{
@@ -55,13 +60,13 @@ pub enum AutoTickOutcome {
 ///
 /// This type owns a drivetrain handle and two [`CorePID`] instances:
 /// one for the left side and one for the right side.
-pub struct DrivePID<D: Differential> {
+pub struct DriveFeedbackControl<D: Differential, F: Feedback> {
     /// Differential drivetrain interface used to read positions and command voltages.
     pub drivetrain:        D,
     /// Left-side PID controller.
-    pub pid_left:          Pid,
+    pub feedback_left:     F,
     /// Right-side PID controller.
-    pub pid_right:         Pid,
+    pub feedback_right:    F,
     /// Physical wheel diameter used for angle-to-distance conversion.
     pub wheel_diameter:    Length,
     /// Motor rotations per wheel rotation.
@@ -72,47 +77,14 @@ pub struct DrivePID<D: Differential> {
     pub last_update:       Duration,
 }
 
-impl<D: Differential> DrivePID<D> {
-    /// Creates a new [`DrivePID`] with symmetric PID gains for both sides.
-    ///
-    /// The provided `default_target` and `tolerance` are converted to inches
-    /// for internal PID calculations.
-    ///
-    /// `motor_gear_teeth` and `wheel_gear_teeth` are `NonZeroU32` to guarantee
-    /// a valid, non-zero gear ratio at construction.
-    pub fn new(
-        drivetrain: D,
-        kp: f64,
-        ki: f64,
-        kd: f64,
-        max: f64,
-        wheel_diameter: Length,
-        motor_gear_teeth: NonZeroU32,
-        wheel_gear_teeth: NonZeroU32,
-        track_width: Length,
-        default_target: Length,
-        tolerance: Length,
-    ) -> Self {
-        let motor_wheel_ratio = gears_to_motor_wheel_ratio(motor_gear_teeth, wheel_gear_teeth);
-
-        Self {
-            drivetrain,
-            pid_left: Pid::new(kp, ki, kd, default_target.as_inches(), max, tolerance.as_inches()),
-            pid_right: Pid::new(kp, ki, kd, default_target.as_inches(), max, tolerance.as_inches()),
-            wheel_diameter,
-            track_width,
-            motor_wheel_ratio,
-            last_update: user_uptime(),
-        }
-    }
-
-    /// Creates a [`DrivePID`] from preconfigured left and right [`CorePID`] instances.
+impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
+    /// Creates a [`DrivePID`] from preconfigured left and right [`Feedback`] instances.
     ///
     /// Use this constructor when each side requires different gains or state.
-    pub fn from_basic_pid(
+    pub fn new(
         drivetrain: D,
-        pid_left: Pid,
-        pid_right: Pid,
+        pid_left: F,
+        pid_right: F,
         wheel_diameter: Length,
         motor_gear_teeth: NonZeroU32,
         wheel_gear_teeth: NonZeroU32,
@@ -122,8 +94,8 @@ impl<D: Differential> DrivePID<D> {
 
         Self {
             drivetrain,
-            pid_left,
-            pid_right,
+            feedback_left: pid_left,
+            feedback_right: pid_right,
             wheel_diameter,
             motor_wheel_ratio,
             track_width,
@@ -139,37 +111,32 @@ impl<D: Differential> DrivePID<D> {
     /// - converts angle to linear distance
     /// - evaluates each PID loop
     /// - writes side-specific drivetrain voltages
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self) -> Result<(), F::Error> {
         let now = user_uptime();
         let dt = (now - self.last_update).as_secs_f64();
         let left_reading = self.drivetrain.left_position().value();
         let right_reading = self.drivetrain.right_position();
-        let left_power = self
-            .pid_left
-            .tick(
-                arc_length(left_reading, self.wheel_diameter, self.motor_wheel_ratio).as_inches(),
-                dt,
-            )
-            .unwrap(); // Its Infallible
-        let right_power = self
-            .pid_right
-            .tick(
-                arc_length(right_reading.value(), self.wheel_diameter, self.motor_wheel_ratio)
-                    .as_inches(),
-                dt,
-            )
-            .unwrap(); // Its Infallible
+        let left_power = self.feedback_left.tick(
+            arc_length(left_reading, self.wheel_diameter, self.motor_wheel_ratio).as_inches(),
+            dt,
+        )?;
+        let right_power = self.feedback_right.tick(
+            arc_length(right_reading.value(), self.wheel_diameter, self.motor_wheel_ratio)
+                .as_inches(),
+            dt,
+        )?;
         let _ = self.drivetrain.set_left_voltage(left_power); // TODO: Implement Errors
         let _ = self.drivetrain.set_right_voltage(right_power); // TODO: Implement Errors
         self.last_update = now;
+        Ok(())
     }
 
     /// Sets targets relative to the drivetrain's current positions.
     ///
     /// `left` and `right` are interpreted as deltas from the current wheel travel.
     /// PID integral and derivative history are reset to avoid carry-over between goals.
-    pub fn set_relative_target(&mut self, left: Length, right: Length) {
-        self.pid_left.set_target(
+    pub fn set_relative_target(&mut self, left: Length, right: Length) -> Result<(), F::Error> {
+        self.feedback_left.set_target(
             left.as_inches() +
                 arc_length(
                     self.drivetrain.left_position().value(),
@@ -177,8 +144,8 @@ impl<D: Differential> DrivePID<D> {
                     self.motor_wheel_ratio,
                 )
                 .as_inches(),
-        );
-        self.pid_right.set_target(
+        )?;
+        self.feedback_right.set_target(
             right.as_inches() +
                 arc_length(
                     self.drivetrain.right_position().value(),
@@ -186,30 +153,29 @@ impl<D: Differential> DrivePID<D> {
                     self.motor_wheel_ratio,
                 )
                 .as_inches(),
-        );
-        self.reset_integral();
-        self.pid_left.prev_error = 0.0;
-        self.pid_right.prev_error = 0.0;
+        )?;
+        self.reset()?;
         self.last_update = user_uptime();
+        Ok(())
     }
 
     /// Sets absolute left/right distance targets.
     ///
     /// Targets are stored internally in inches.
     /// PID integral and derivative history are reset to avoid carry-over between goals.
-    pub fn set_target(&mut self, left: Length, right: Length) {
-        self.pid_left.set_target(left.as_inches());
-        self.pid_right.set_target(right.as_inches());
-        self.reset_integral();
-        self.pid_left.prev_error = 0.0;
-        self.pid_right.prev_error = 0.0;
+    pub fn set_target(&mut self, left: Length, right: Length) -> Result<(), F::Error> {
+        self.feedback_left.set_target(left.as_inches())?;
+        self.feedback_right.set_target(right.as_inches())?;
+        self.reset()?;
         self.last_update = user_uptime();
+        Ok(())
     }
 
     /// Resets only the integral terms for both PID loops.
-    pub fn reset_integral(&mut self) {
-        self.pid_left.reset_integral();
-        self.pid_right.reset_integral();
+    pub fn reset(&mut self) -> Result<(), F::Error> {
+        self.feedback_left.reset()?;
+        self.feedback_right.reset()?;
+        Ok(())
     }
 
     /// Repeatedly calls [`DrivePID::tick`] until both loops are inactive or timeout.
@@ -219,16 +185,16 @@ impl<D: Differential> DrivePID<D> {
     /// - [`AutoTickOutcome::TimedOut`] when `timeout` elapses first
     ///
     /// On completion, drivetrain voltage is set to zero.
-    pub async fn autotick(&mut self, timeout: Duration) -> AutoTickOutcome {
+    pub async fn autotick(&mut self, timeout: Duration) -> Result<AutoTickOutcome, F::Error> {
         let start = user_uptime();
-        while self.pid_left.is_active(
+        while self.feedback_left.is_active(
             arc_length(
                 self.drivetrain.left_position().value(),
                 self.wheel_diameter,
                 self.motor_wheel_ratio,
             )
             .as_inches(),
-        ) || self.pid_right.is_active(
+        ) || self.feedback_right.is_active(
             arc_length(
                 self.drivetrain.right_position().value(),
                 self.wheel_diameter,
@@ -236,36 +202,102 @@ impl<D: Differential> DrivePID<D> {
             )
             .as_inches(),
         ) {
-            self.tick();
+            self.tick()?;
             vexide::time::sleep(std::time::Duration::from_millis(10)).await;
             if (user_uptime() - start) > timeout {
-                return AutoTickOutcome::TimedOut;
+                return Ok(AutoTickOutcome::TimedOut);
             }
         }
         let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
-        AutoTickOutcome::Completed
+        Ok(AutoTickOutcome::Completed)
     }
 }
 
-impl<D: Differential> DriveControl for DrivePID<D> {
+/// Drive Control Error type
+#[derive(Snafu, Clone, Copy)]
+pub enum DriveControlError<F: Feedback> {
+    /// An error returned by the feedback controller.
+    Feedback {
+        /// Source of error
+        source: F::Error,
+    },
+
+    /// Inertial sensor error
+    #[snafu(transparent)]
+    InertialError {
+        /// Source of error
+        source: InertialError,
+    },
+}
+
+impl<F: Feedback> std::fmt::Debug for DriveControlError<F> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Feedback { source } => formatter
+                .debug_struct("DriveControlError")
+                .field("source", source)
+                .finish(),
+            Self::InertialError { source } => formatter
+                .debug_struct("DriveControlError")
+                .field("source", source)
+                .finish(),
+        }
+    }
+}
+
+// impl<F: Feedback> std::fmt::Display for DriveControlError<F> {
+//     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         match self {
+//             Self::Feedback { source } => source.fmt(formatter),
+//             Self::InertialError { source } => source.fmt(formatter),
+//         }
+//     }
+// }
+
+// impl<F: Feedback> std::error::Error for DriveControlError<F> {
+//     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+//         match self {
+//             Self::Feedback { source } => Some(source),
+//             Self::InertialError { source } => Some(source),
+//         }
+//     }
+// }
+
+impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
+    type Error = DriveControlError<F>;
+
     /// Drives both sides forward/backward by the same relative distance.
     ///
     /// This sets equal left/right relative targets, then runs [`DrivePID::autotick`]
     /// until completion or `timeout`.
-    async fn travel(&mut self, target: Length, timeout: Duration) {
-        self.set_relative_target(target, target);
-        self.autotick(timeout).await;
-        // TODO: Add snafu error handling
+    async fn travel(
+        &mut self,
+        target: Length,
+        timeout: Duration,
+    ) -> Result<(), DriveControlError<F>> {
+        self.set_relative_target(target, target)
+            .map_err(|source| DriveControlError::Feedback { source })?;
+        self.autotick(timeout)
+            .await
+            .map_err(|source| DriveControlError::Feedback { source })?;
+        Ok(())
     }
 
     /// Rotates the drivetrain in place by commanding opposite wheel travel.
     ///
     /// Positive and negative `angle` values rotate in opposite directions.
-    async fn rotate(&mut self, angle: Angle, timeout: Duration) {
+    async fn rotate(
+        &mut self,
+        angle: Angle,
+        timeout: Duration,
+    ) -> Result<(), DriveControlError<F>> {
         let len = track_rad_rotate(angle, self.track_width);
-        self.set_relative_target(len, -len);
-        self.autotick(timeout).await;
-        // TODO: Add snafu error handling
+        self.set_relative_target(len, -len)
+            .map_err(|source| DriveControlError::Feedback { source })?;
+        self.autotick(timeout)
+            .await
+            .map_err(|source| DriveControlError::Feedback { source })?;
+        Ok(())
     }
 
     /// Pivots the drivetrain about one side.
@@ -273,17 +305,21 @@ impl<D: Differential> DriveControl for DrivePID<D> {
     /// For positive `angle`, the left side moves while the right side is held.
     /// For negative `angle`, the right side moves while the left side is held.
     /// A zero angle returns immediately.
-    async fn pivot(&mut self, angle: Angle, timeout: Duration) {
+    async fn pivot(&mut self, angle: Angle, timeout: Duration) -> Result<(), DriveControlError<F>> {
         let len = track_rad_pivot(angle, self.track_width);
         if angle.as_degrees() > 0.0 {
-            self.set_relative_target(len, Length::zero());
+            self.set_relative_target(len, Length::zero())
+                .map_err(|source| DriveControlError::Feedback { source })?;
         } else if angle.as_degrees() < 0.0 {
-            self.set_relative_target(Length::zero(), len);
+            self.set_relative_target(Length::zero(), len)
+                .map_err(|source| DriveControlError::Feedback { source })?;
         } else {
-            return;
+            return Ok(());
         }
-        self.autotick(timeout).await;
-        // TODO: Add snafu error handling
+        self.autotick(timeout)
+            .await
+            .map_err(|source| DriveControlError::Feedback { source })?;
+        Ok(())
     }
 
     /// IMU-assisted in-place rotation to an angular offset from the current heading.
@@ -298,24 +334,20 @@ impl<D: Differential> DriveControl for DrivePID<D> {
         timeout: Duration,
         imu: &InertialSensor,
         angle_tolerance: Angle,
-    ) {
-        let start_heading = match imu.rotation() {
-            Ok(a) => a,
-            Err(_) => return, // TODO: Add snafu error handling
-        };
+    ) -> Result<(), Self::Error> {
+        let start_heading = imu.rotation()?;
         let target_heading = start_heading + angle;
         let start_time = user_uptime();
 
         // Reset controller state once at the beginning (not every loop).
-        self.reset_integral();
-        self.pid_left.prev_error = 0.0;
-        self.pid_right.prev_error = 0.0;
+        self.reset()
+            .map_err(|source| DriveControlError::Feedback { source })?;
         self.last_update = user_uptime();
 
         loop {
             if (user_uptime() - start_time) > timeout {
                 let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
-                return; // TODO: Add snafu error handling
+                return Ok(()); // TODO: Add snafu error handling
             }
 
             let current_heading = match imu.rotation() {
@@ -329,7 +361,7 @@ impl<D: Differential> DriveControl for DrivePID<D> {
             let heading_error = target_heading - current_heading;
             if heading_error.as_degrees().abs() <= angle_tolerance.as_degrees() {
                 let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
-                return; // TODO: Add snafu error handling
+                return Ok(()); // TODO: Add snafu error handling
             }
 
             // Convert remaining heading error to side travel.
@@ -350,10 +382,15 @@ impl<D: Differential> DriveControl for DrivePID<D> {
             .as_inches();
 
             // Update targets WITHOUT resetting PID history each cycle.
-            self.pid_left.set_target(left_now + len.as_inches());
-            self.pid_right.set_target(right_now - len.as_inches());
+            self.feedback_left
+                .set_target(left_now + len.as_inches())
+                .map_err(|source| DriveControlError::Feedback { source })?;
+            self.feedback_right
+                .set_target(right_now - len.as_inches())
+                .map_err(|source| DriveControlError::Feedback { source })?;
 
-            self.tick();
+            self.tick()
+                .map_err(|source| DriveControlError::Feedback { source })?;
             vexide::time::sleep(std::time::Duration::from_millis(10)).await;
         }
     }
@@ -370,10 +407,10 @@ impl<D: Differential> DriveControl for DrivePID<D> {
         timeout: Duration,
         imu: &InertialSensor,
         angle_tolerance: Angle,
-    ) {
+    ) -> Result<(), Self::Error> {
         let start_heading = match imu.rotation() {
             Ok(a) => a,
-            Err(_) => return, // TODO: Add snafu error handling
+            Err(_) => return Ok(()), // TODO: Add snafu error handling
         };
         let target_heading = start_heading + angle;
         let start_time = user_uptime();
@@ -387,19 +424,18 @@ impl<D: Differential> DriveControl for DrivePID<D> {
             false
         } else {
             let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
-            return; // TODO: Add snafu error handling
+            return Ok(()); // TODO: Add snafu error handling
         };
 
         // Reset controller state once at the beginning.
-        self.reset_integral();
-        self.pid_left.prev_error = 0.0;
-        self.pid_right.prev_error = 0.0;
+        self.reset()
+            .map_err(|source| DriveControlError::Feedback { source })?;
         self.last_update = user_uptime();
 
         loop {
             if (user_uptime() - start_time) > timeout {
                 let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
-                return; // TODO: Add snafu error handling
+                return Ok(()); // TODO: Add snafu error handling
             }
 
             let current_heading = match imu.rotation() {
@@ -413,7 +449,7 @@ impl<D: Differential> DriveControl for DrivePID<D> {
             let heading_error = target_heading - current_heading;
             if heading_error.as_degrees().abs() <= angle_tolerance.as_degrees() {
                 let _ = self.drivetrain.set_voltage(0.0); // TODO: Implement Errors
-                return; // TODO: Add snafu error handling
+                return Ok(()); // TODO: Add snafu error handling
             }
 
             // Convert remaining heading error to travel needed for a pivot.
@@ -436,15 +472,67 @@ impl<D: Differential> DriveControl for DrivePID<D> {
             // Update targets WITHOUT resetting PID history each cycle.
             // Keep one side fixed at its current position and move the other.
             if move_left {
-                self.pid_left.set_target(left_now + len.as_inches());
-                self.pid_right.set_target(right_now);
+                self.feedback_left
+                    .set_target(left_now + len.as_inches())
+                    .map_err(|source| DriveControlError::Feedback { source })?;
+                self.feedback_right
+                    .set_target(right_now)
+                    .map_err(|source| DriveControlError::Feedback { source })?;
             } else {
-                self.pid_left.set_target(left_now);
-                self.pid_right.set_target(right_now + len.as_inches());
+                self.feedback_left
+                    .set_target(left_now)
+                    .map_err(|source| DriveControlError::Feedback { source })?;
+                self.feedback_right
+                    .set_target(right_now + len.as_inches())
+                    .map_err(|source| DriveControlError::Feedback { source })?;
             }
 
-            self.tick();
+            self.tick()
+                .map_err(|source| DriveControlError::Feedback { source })?;
             vexide::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    }
+}
+
+impl<D: Differential> DriveFeedbackControl<D, Pid> {
+    /// A QoL function which directly creates PID instances within the DriveFeedbackControl
+    pub fn pid(
+        drivetrain: D,
+        kp: f64,
+        ki: f64,
+        kd: f64,
+        max: f64,
+        wheel_diameter: Length,
+        motor_gear_teeth: NonZeroU32,
+        wheel_gear_teeth: NonZeroU32,
+        track_width: Length,
+        default_target: Length,
+        tolerance: Length,
+    ) -> Self {
+        let motor_wheel_ratio = gears_to_motor_wheel_ratio(motor_gear_teeth, wheel_gear_teeth);
+
+        Self {
+            drivetrain,
+            feedback_left: Pid::new(
+                kp,
+                ki,
+                kd,
+                default_target.as_inches(),
+                max,
+                tolerance.as_inches(),
+            ),
+            feedback_right: Pid::new(
+                kp,
+                ki,
+                kd,
+                default_target.as_inches(),
+                max,
+                tolerance.as_inches(),
+            ),
+            wheel_diameter,
+            track_width,
+            motor_wheel_ratio,
+            last_update: user_uptime(),
         }
     }
 }

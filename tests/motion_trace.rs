@@ -12,7 +12,7 @@ use std::{
 use antaeus::{
     make_cloneable,
     motion::{
-        control::pid::drive_pid::DrivePID,
+        control::drive::DriveFeedbackControl,
         localization::{
             Localizer,
             tracker::{
@@ -20,6 +20,7 @@ use antaeus::{
                 devices::{HeadingSensor, Trackable, TrackerMech, TrackerPod, TrackingSensorError},
             },
         },
+        primitive::pid::Pid,
     },
     peripherals::drivetrain::Differential,
     utils::units::Length,
@@ -95,7 +96,7 @@ fn write_sample(
     writer: &mut csv::Writer<File>,
     step: usize,
     segment: &str,
-    pid: &DrivePID<SimDrive>,
+    pid: &DriveFeedbackControl<SimDrive, Pid>,
     pose_x_in: f64,
     pose_y_in: f64,
     pose_heading_rad: f64,
@@ -111,8 +112,8 @@ fn write_sample(
             step,
             step as f64 * STEP_SECONDS,
             segment,
-            pid.pid_left.target,
-            pid.pid_right.target,
+            pid.feedback_left.target,
+            pid.feedback_right.target,
             left_distance_in,
             right_distance_in,
             imu_heading_rad,
@@ -173,7 +174,7 @@ async fn logs_multi_motion_odometry_trace(_peripherals: vexide::prelude::Periphe
     let mut odometry =
         Tracker::new(TrackerMech::new(vertical_tracker, horizontal_tracker, imu.clone()));
 
-    let mut pid = DrivePID::new(
+    let mut pid = DriveFeedbackControl::pid(
         drivetrain,
         0.5,
         0.0,
