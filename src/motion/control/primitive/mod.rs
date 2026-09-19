@@ -1,5 +1,6 @@
 //! Primitive Algorithms such as Feedback control
 
+pub mod bang;
 pub mod pid;
 
 /// Primitive Feedpack Control Trait
