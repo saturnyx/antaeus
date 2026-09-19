@@ -14,18 +14,78 @@ use crate::motion::primitive::{Feedback, pid::Pid};
 
 /// Group PID
 /// Used for controlling a group of motors simultaneously
-pub struct GroupPID<const N: usize> {
+pub struct GroupFeedbackControl<const N: usize, F: Feedback> {
     /// Single `CorePID` instance controls all motors
-    pub pid:         Pid,
+    pub feedback:    F,
     /// An array of Motors that will be controlled
     pub motors:      [Motor; N],
     /// Update interval used for differentiation
     pub last_update: Duration,
 }
 
-impl<const N: usize> GroupPID<N> {
+impl<const N: usize, F: Feedback> GroupFeedbackControl<N, F> {
+    /// Create a `GroupPID` instance from an already existing `CorePID` instance
+    /// by adding an array of motors. All values are taken in Radians.
+    pub fn new(motors: [Motor; N], feedback: F) -> Self {
+        Self {
+            feedback,
+            motors,
+            last_update: Duration::ZERO,
+        }
+    }
+
+    /// Updates the GroupPID instance by one tick. It is recommended to call this function once
+    /// every loop cycle.
+    pub fn tick(&mut self) -> Result<(), F::Error> {
+        let now = user_uptime();
+        let dt = (now - self.last_update).as_secs_f64();
+        let reading = get_mean_pos(&self.motors);
+        let power = self.feedback.tick(reading.as_radians(), dt)?;
+        set_voltage_group(&mut self.motors, power);
+        self.last_update = now;
+        Ok(())
+    }
+
+    /// Sets targets relative to the motors' current positions.
+    pub fn set_relative_target(&mut self, target: Angle) -> Result<(), F::Error> {
+        self.feedback.set_target(target.as_radians())?;
+        self.reset()?;
+        self.last_update = user_uptime();
+        Ok(())
+    }
+
+    /// Sets absolute targets
+    pub fn set_target(&mut self, target: Angle) -> Result<(), F::Error> {
+        self.feedback.set_target(target.as_radians())?;
+        self.reset()?;
+        self.last_update = user_uptime();
+        Ok(())
+    }
+
+    /// Resets only the integral terms
+    pub fn reset(&mut self) -> Result<(), F::Error> { self.feedback.reset() }
+
+    /// Repeatedly calls `GroupPID::tick` until both loops are inactive or timeout.
+    pub async fn autotick(&mut self, timeout: Duration) -> Result<AutoTickOutcome, F::Error> {
+        let start = user_uptime();
+        while self
+            .feedback
+            .is_active(get_mean_pos(&self.motors).as_radians())
+        {
+            self.tick()?;
+            vexide::time::sleep(std::time::Duration::from_millis(10)).await;
+            if (user_uptime() - start) > timeout {
+                return Ok(AutoTickOutcome::TimedOut);
+            }
+        }
+        set_voltage_group(&mut self.motors, 0.0);
+        Ok(AutoTickOutcome::Completed)
+    }
+}
+
+impl<const N: usize> GroupFeedbackControl<N, Pid> {
     /// Create a new instance using an array of motors and PID constants
-    pub fn new(
+    pub fn pid(
         motors: [Motor; N],
         kp: f64,
         ki: f64,
@@ -35,64 +95,10 @@ impl<const N: usize> GroupPID<N> {
         tolerance: Angle,
     ) -> Self {
         Self {
-            pid: Pid::new(kp, ki, kd, target.as_radians(), max, tolerance.as_radians()),
+            feedback: Pid::new(kp, ki, kd, target.as_radians(), max, tolerance.as_radians()),
             motors,
             last_update: Duration::ZERO,
         }
-    }
-
-    /// Create a `GroupPID` instance from an already existing `CorePID` instance
-    /// by adding an array of motors. All values are taken in Radians.
-    pub fn from_core_pid(motors: [Motor; N], core_pid: Pid) -> Self {
-        Self {
-            pid: core_pid,
-            motors,
-            last_update: Duration::ZERO,
-        }
-    }
-
-    /// Updates the GroupPID instance by one tick. It is recommended to call this function once
-    /// every loop cycle.
-    pub fn tick(&mut self) {
-        let now = user_uptime();
-        let dt = (now - self.last_update).as_secs_f64();
-        let reading = get_mean_pos(&self.motors);
-        let power = self.pid.tick(reading.as_radians(), dt).unwrap(); // Its Infallible
-        set_voltage_group(&mut self.motors, power);
-        self.last_update = now;
-    }
-
-    /// Sets targets relative to the motors' current positions.
-    pub fn set_relative_target(&mut self, target: Angle) {
-        self.pid.set_target(target.as_radians());
-        self.reset_integral();
-        self.pid.prev_error = 0.0;
-        self.last_update = user_uptime();
-    }
-
-    /// Sets absolute targets
-    pub fn set_target(&mut self, target: Angle) {
-        self.pid.set_target(target.as_radians());
-        self.reset_integral();
-        self.pid.prev_error = 0.0;
-        self.last_update = user_uptime();
-    }
-
-    /// Resets only the integral terms
-    pub fn reset_integral(&mut self) { self.pid.reset_integral(); }
-
-    /// Repeatedly calls `GroupPID::tick` until both loops are inactive or timeout.
-    pub async fn autotick(&mut self, timeout: Duration) -> AutoTickOutcome {
-        let start = user_uptime();
-        while self.pid.is_active(get_mean_pos(&self.motors).as_radians()) {
-            self.tick();
-            vexide::time::sleep(std::time::Duration::from_millis(10)).await;
-            if (user_uptime() - start) > timeout {
-                return AutoTickOutcome::TimedOut;
-            }
-        }
-        set_voltage_group(&mut self.motors, 0.0);
-        AutoTickOutcome::Completed
     }
 }
 

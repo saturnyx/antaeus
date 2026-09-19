@@ -83,8 +83,8 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
     /// Use this constructor when each side requires different gains or state.
     pub fn new(
         drivetrain: D,
-        pid_left: F,
-        pid_right: F,
+        feedback_left: F,
+        feedback: F,
         wheel_diameter: Length,
         motor_gear_teeth: NonZeroU32,
         wheel_gear_teeth: NonZeroU32,
@@ -94,8 +94,8 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
 
         Self {
             drivetrain,
-            feedback_left: pid_left,
-            feedback_right: pid_right,
+            feedback_left,
+            feedback_right: feedback,
             wheel_diameter,
             motor_wheel_ratio,
             track_width,
