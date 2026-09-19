@@ -10,7 +10,7 @@ use std::time::Duration;
 use vexide::{math::Angle, prelude::Motor, time::user_uptime};
 
 use super::AutoTickOutcome;
-use crate::motion::primitive::{Feedback, pid::Pid};
+use crate::prelude::primitive::{Feedback, pid::Pid};
 
 /// Group Feedback Controller
 /// Used for controlling a group of motors simultaneously

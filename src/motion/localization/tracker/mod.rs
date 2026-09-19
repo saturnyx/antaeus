@@ -103,9 +103,9 @@ impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Tracker<'v, 'h, V, H,
     }
 }
 
-impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Localizer<TrackingSensorError>
-    for Tracker<'v, 'h, V, H, I>
-{
+impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Localizer for Tracker<'v, 'h, V, H, I> {
+    type Error = TrackingSensorError;
+
     fn tick(&mut self) -> Result<(), TrackingSensorError> {
         let t = self.tracker_mech.imu.try_borrow_mut()?.heading()?;
         let v = self.tracker_mech.vertical_tracker.dist()?;

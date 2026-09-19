@@ -4,7 +4,7 @@
 
 use std::convert::Infallible;
 
-use crate::motion::primitive::Feedback;
+use crate::prelude::primitive::Feedback;
 
 /// The Core PID instance
 #[derive(Debug, Clone)]

@@ -1,4 +1,4 @@
-use antaeus::motion::primitive::{Feedback, pid::Pid};
+use antaeus::prelude::primitive::{Feedback, pid::Pid};
 use plotly::{Plot, Scatter, common::Line};
 
 #[test]

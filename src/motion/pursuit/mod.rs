@@ -37,7 +37,7 @@ use vexide::time::sleep;
 
 use crate::{
     motion::{
-        localization::{Localizer, tracker::devices::TrackingSensorError},
+        localization::Localizer,
         pursuit::algorithm::abs_arc_point,
     },
     peripherals::drivetrain::{Differential, DrivetrainError},
@@ -47,20 +47,13 @@ use crate::{
     },
 };
 
-/// A marker trait to isolate tracking sensor error types
-pub trait IsLocalizerError: std::error::Error + 'static {}
-
-impl IsLocalizerError for TrackingSensorError {}
-
 /// An error that occured when the CBP Algorithm was running.
-#[derive(Debug, Snafu)]
-pub enum PursuitError<E = TrackingSensorError>
-where E: IsLocalizerError {
+#[derive(Snafu)]
+pub enum PursuitError<L: Localizer> {
     /// An error occurred while accessing a tracking sensor.
-    #[snafu(transparent)]
     LocalizerError {
         /// The underlying generic error from the tracking hardware.
-        source: E,
+        source: L::Error,
     },
 
     /// Failed to borrow the motor group mutably (e.g. already borrowed
@@ -70,12 +63,21 @@ where E: IsLocalizerError {
         /// Errors that can occur while commanding or reading from the drivetrain.
         source: DrivetrainError,
     },
+}
 
-    /// An unknown error occurred (catch-all for unexpected issues).
-    Unknown {
-        /// A string describing the unknown error.
-        string: String,
-    },
+impl<L: Localizer> std::fmt::Debug for PursuitError<L> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::LocalizerError { source } => formatter
+                .debug_struct("DriveControlError")
+                .field("source", source)
+                .finish(),
+            Self::DrivetrainError { source } => formatter
+                .debug_struct("DriveControlError")
+                .field("source", source)
+                .finish(),
+        }
+    }
 }
 
 /// Candidate-Based Pursuit path follower.
@@ -110,16 +112,13 @@ impl Pursuit {
     /// - `drivetrain` - The differential drivetrain
     /// - `ctrl_algorithm` - The control algorithm
     /// - `path` - The path to follow, defined as a series of waypoints.
-    pub async fn follow<C: PursuitControl, E, D: Differential>(
+    pub async fn follow<C: PursuitControl, L: Localizer, D: Differential>(
         &self,
-        odom: &mut impl Localizer<E>,
+        odom: &mut L,
         drivetrain: &D,
         ctrl_algorithm: &C,
         path: geo::Path,
-    ) -> Result<(), PursuitError<E>>
-    where
-        E: IsLocalizerError,
-    {
+    ) -> Result<(), PursuitError<L>> {
         let mut run = true;
         while run {
             let odometry_values = odom.get_coords();
@@ -152,7 +151,9 @@ impl Pursuit {
                 &path,
                 self.lookahead,
             );
-            odom.tick()?;
+            odom
+                .tick()
+                .map_err(|source| PursuitError::LocalizerError { source })?;
             sleep(LOOPRATE).await;
         }
         Ok(())
@@ -170,16 +171,13 @@ impl Pursuit {
     /// - `ctrl_algorithm` - The algorithm that controls PID loops and lower
     ///   level hardware
     /// - `path` - The path to follow, defined as a series of waypoints.
-    pub fn tick<C: PursuitControl, E, D: Differential>(
+    pub fn tick<C: PursuitControl, L: Localizer, D: Differential>(
         &self,
-        odom: &mut impl Localizer<E>,
+        odom: &mut L,
         drivetrain: &D,
         ctrl_algorithm: &C,
         path: geo::Path,
-    ) -> Result<bool, PursuitError<E>>
-    where
-        E: IsLocalizerError,
-    {
+    ) -> Result<bool, PursuitError<L>> {
         let odometry_values = odom.get_coords();
         let (x, y, t) = (odometry_values.x, odometry_values.y, odometry_values.t);
         let cir = geo::Circle {
@@ -206,7 +204,9 @@ impl Pursuit {
             &path,
             self.lookahead,
         );
-        odom.tick()?;
+        odom
+            .tick()
+            .map_err(|source| PursuitError::LocalizerError { source })?;
 
         Ok(should_continue)
     }
