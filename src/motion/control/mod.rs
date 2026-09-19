@@ -39,3 +39,12 @@ pub trait DriveControl {
         angle_tolerance: Angle,
     ) -> impl Future<Output = ()> + 'a;
 }
+
+/// Outcome of [`DrivePID::autotick`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AutoTickOutcome {
+    /// The controller reached both targets within tolerance before `timeout`.
+    Completed,
+    /// The controller did not settle before `timeout` elapsed.
+    TimedOut,
+}

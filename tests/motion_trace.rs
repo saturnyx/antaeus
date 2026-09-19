@@ -12,7 +12,7 @@ use std::{
 use antaeus::{
     make_cloneable,
     motion::{
-        feedback_control::pid::drive_pid::DrivePID,
+        control::pid::drive_pid::DrivePID,
         localization::{
             Localizer,
             tracker::{

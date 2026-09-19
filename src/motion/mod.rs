@@ -21,4 +21,6 @@ pub mod localization;
 
 pub mod pursuit;
 
-pub mod feedback_control;
+pub mod control;
+
+pub mod primitive;

@@ -61,7 +61,7 @@ pub fn to_mutex<T>(v: T) -> Arc<Mutex<T>> { Arc::new(Mutex::new(v)) }
 pub mod prelude {
     pub use crate::{
         logger::*,
-        motion::{feedback_control::*, localization::*, pursuit::*},
+        motion::{control::*, localization::*, pursuit::*},
         peripherals::{drivetrain::*, mapper::*, motorgroup::*, range_sensor::*},
         utils::{
             error::Report,
