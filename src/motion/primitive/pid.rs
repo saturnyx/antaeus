@@ -59,14 +59,6 @@ impl Pid {
     /// It is recommended to reset the integral term along with the prev_error
     /// and last_update term.
     pub fn set_target(&mut self, target: f64) { self.target = target; }
-
-    /// Returns whether the PID is active
-    /// - `true`: The PID is active and the error is greater than the tolerance
-    /// - `false`: The PID is inactive and the error is smaller than the tolerance
-    pub fn is_active(&self, reading: f64) -> bool {
-        let error = self.target - reading;
-        error.abs() > self.tolerance
-    }
 }
 
 impl Feedback for Pid {
@@ -96,6 +88,17 @@ impl Feedback for Pid {
         } else {
             Ok(0.0)
         }
+    }
+
+    fn reset(&mut self) -> Result<(), Self::Error> {
+        self.prev_error = 0.0;
+        self.integral = 0.0;
+        Ok(())
+    }
+
+    fn is_active(&self, reading: f64) -> bool {
+        let error = self.target - reading;
+        error.abs() > self.tolerance
     }
 }
 

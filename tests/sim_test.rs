@@ -3,7 +3,7 @@ use std::{num::NonZeroU32, time::Duration};
 use antaeus::{
     make_cloneable,
     motion::{
-        control::pid::drive_pid::DrivePID,
+        control::drive::DriveFeedbackControl,
         localization::{
             Localizer,
             tracker::{
@@ -92,7 +92,7 @@ impl Trackable for StationaryTracker {
 #[test]
 fn pid_test() {
     let drivetrain = SimDrive::new(200.0 * std::f64::consts::TAU / 60.0);
-    let mut pid = DrivePID::new(
+    let mut pid = DriveFeedbackControl::pid(
         drivetrain,
         0.5,
         0.0,
@@ -141,7 +141,7 @@ async fn odom_test(_peripherals: vexide::prelude::Peripherals) {
     let mechanism = TrackerMech::new(vertical, horizontal, make_cloneable(SimHeading::new()));
     let mut odom = Tracker::new(mechanism);
 
-    let mut pid = DrivePID::new(
+    let mut pid = DriveFeedbackControl::pid(
         drivetrain,
         0.5,
         0.0,
@@ -197,7 +197,7 @@ async fn odom_multiple_motions_test(_peripherals: vexide::prelude::Peripherals) 
     let mechanism = TrackerMech::new(vertical, horizontal, imu.clone());
     let mut odom = Tracker::new(mechanism);
 
-    let mut pid = DrivePID::new(
+    let mut pid = DriveFeedbackControl::pid(
         drivetrain,
         0.5,
         0.0,

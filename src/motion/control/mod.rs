@@ -8,16 +8,32 @@ use vexide::{math::Angle, prelude::InertialSensor};
 
 use crate::utils::units::Length;
 
-pub mod pid;
+pub mod drive;
+pub mod group;
 
 /// A trait for controlling the robot's drivetrain with feedback control.
 pub trait DriveControl {
+    /// Error type for DriveControl
+    type Error;
+
     /// Commands the robot to travel a certain distance in a straight line
-    fn travel(&mut self, target: Length, timeout: Duration) -> impl Future<Output = ()> + '_;
+    fn travel(
+        &mut self,
+        target: Length,
+        timeout: Duration,
+    ) -> impl Future<Output = Result<(), Self::Error>> + '_;
     /// Commands the robot to rotate a certain angle on the same spot
-    fn rotate(&mut self, angle: Angle, timeout: Duration) -> impl Future<Output = ()> + '_;
+    fn rotate(
+        &mut self,
+        angle: Angle,
+        timeout: Duration,
+    ) -> impl Future<Output = Result<(), Self::Error>> + '_;
     /// Commands the robot to pivot on one of its sides
-    fn pivot(&mut self, angle: Angle, timeout: Duration) -> impl Future<Output = ()> + '_;
+    fn pivot(
+        &mut self,
+        angle: Angle,
+        timeout: Duration,
+    ) -> impl Future<Output = Result<(), Self::Error>> + '_;
 
     /// Commands the robot to travel a certain distance in a straight line using
     /// an IMU for heading correction
@@ -27,7 +43,7 @@ pub trait DriveControl {
         timeout: Duration,
         imu: &'a InertialSensor,
         angle_tolerance: Angle,
-    ) -> impl Future<Output = ()> + 'a;
+    ) -> impl Future<Output = Result<(), Self::Error>> + 'a;
 
     /// Commands the robot to rotate a certain angle on the same spot using an
     /// IMU for heading correction
@@ -37,7 +53,7 @@ pub trait DriveControl {
         timeout: Duration,
         imu: &'a InertialSensor,
         angle_tolerance: Angle,
-    ) -> impl Future<Output = ()> + 'a;
+    ) -> impl Future<Output = Result<(), Self::Error>> + 'a;
 }
 
 /// Outcome of [`DrivePID::autotick`].

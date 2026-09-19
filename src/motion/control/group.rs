@@ -3,13 +3,13 @@
 //!
 //! # Example
 //! ```
-#![doc = include_str!("../../../../examples/group_pid.rs")]
+#![doc = include_str!("../../../examples/group_pid.rs")]
 //! ```
 use std::time::Duration;
 
 use vexide::{math::Angle, prelude::Motor, time::user_uptime};
 
-use super::super::AutoTickOutcome;
+use super::AutoTickOutcome;
 use crate::motion::primitive::{Feedback, pid::Pid};
 
 /// Group PID
