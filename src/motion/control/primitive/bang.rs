@@ -62,3 +62,33 @@ impl Feedback for BangBang {
         error.abs() > self.tolerance
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn bb() -> BangBang { BangBang::new(10.0, 50.0, 2.0) }
+
+    #[test]
+    fn initial_output_is_zero() {
+        let mut b = bb();
+        assert_eq!(b.tick(50.0, 0.0).unwrap(), 0.0);
+    }
+
+    #[test]
+    fn switches_and_holds_inside_band() {
+        let mut b = bb();
+        assert_eq!(b.tick(47.0, 0.0).unwrap(), 10.0); // latch +max
+        assert_eq!(b.tick(49.0, 0.0).unwrap(), 10.0); // still +max inside band
+        assert_eq!(b.tick(53.0, 0.0).unwrap(), -10.0); // flip to -max
+        assert_eq!(b.tick(51.0, 0.0).unwrap(), -10.0); // still -max inside band
+    }
+
+    #[test]
+    fn reset_clears_state() {
+        let mut b = bb();
+        b.tick(47.0, 0.0).unwrap();
+        b.reset().unwrap();
+        assert_eq!(b.tick(50.0, 0.0).unwrap(), 0.0);
+    }
+}
