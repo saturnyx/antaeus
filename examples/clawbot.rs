@@ -39,7 +39,7 @@ impl Compete for Clawbot {
             Length::from_inches(0.5),
         );
 
-        pid.set_relative_target(Length::from_inches(10.0), Length::from_inches(10.0));
+        let _ = pid.set_relative_target(Length::from_inches(10.0), Length::from_inches(10.0));
         let _ = pid.autotick(Duration::from_secs(5)).await;
         let _ = pid.set_relative_target(Length::from_inches(-10.0), Length::from_inches(10.0));
         let _ = pid.autotick(Duration::from_secs(5)).await;
