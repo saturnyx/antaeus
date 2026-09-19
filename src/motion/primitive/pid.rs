@@ -2,9 +2,13 @@
 //! This is the core PID library. All PID instances will rely on this. It is
 //! state machine based.
 
+use std::convert::Infallible;
+
+use crate::motion::primitive::Feedback;
+
 /// The Core PID instance
 #[derive(Debug, Clone)]
-pub struct CorePID {
+pub struct Pid {
     /// target the PID should reach
     pub target:     f64,
     /// Proportional term of PID
@@ -23,7 +27,7 @@ pub struct CorePID {
     pub tolerance:  f64,
 }
 
-impl CorePID {
+impl Pid {
     /// Create a new core PID instance using:
     /// - Kp
     /// - Ki
@@ -41,28 +45,6 @@ impl CorePID {
             tolerance,
             prev_error: 0.0,
             integral: 0.0,
-        }
-    }
-
-    /// Update the core PID by one tick
-    pub fn tick(&mut self, reading: f64, mut dt: f64) -> f64 {
-        dt = dt.max(1e-6);
-        let error = self.target - reading;
-        self.integral += error * dt;
-        if self.ki != 0.0 {
-            let integral_limit = self.max / self.ki.abs();
-            self.integral = self.integral.clamp(-integral_limit, integral_limit);
-        }
-        let p = self.kp * error;
-        let i = self.ki * self.integral;
-        let d = self.kd * (error - self.prev_error) / dt;
-        let output = (p + i + d).clamp(-self.max, self.max);
-        self.prev_error = error;
-
-        if error.abs() > self.tolerance {
-            output
-        } else {
-            0.0
         }
     }
 
@@ -86,9 +68,40 @@ impl CorePID {
         error.abs() > self.tolerance
     }
 }
+
+impl Feedback for Pid {
+    type Error = Infallible;
+
+    fn set_target(&mut self, target: f64) -> Result<(), Self::Error> {
+        self.target = target;
+        Ok(())
+    }
+
+    fn tick(&mut self, reading: f64, time: f64) -> Result<f64, Self::Error> {
+        let dt = time.max(1e-6);
+        let error = self.target - reading;
+        self.integral += error * dt;
+        if self.ki != 0.0 {
+            let integral_limit = self.max / self.ki.abs();
+            self.integral = self.integral.clamp(-integral_limit, integral_limit);
+        }
+        let p = self.kp * error;
+        let i = self.ki * self.integral;
+        let d = self.kd * (error - self.prev_error) / dt;
+        let output = (p + i + d).clamp(-self.max, self.max);
+        self.prev_error = error;
+
+        if error.abs() > self.tolerance {
+            Ok(output)
+        } else {
+            Ok(0.0)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::CorePID;
+    use super::{Feedback, Pid};
 
     fn approx_eq(a: f64, b: f64, eps: f64) {
         assert!(
@@ -103,7 +116,7 @@ mod tests {
 
     #[test]
     fn new_initializes_fields() {
-        let pid = CorePID::new(1.2, 0.3, 0.4, 10.0, 100.0, 0.5);
+        let pid = Pid::new(1.2, 0.3, 0.4, 10.0, 100.0, 0.5);
 
         approx_eq(pid.kp, 1.2, 1e-12);
         approx_eq(pid.ki, 0.3, 1e-12);
@@ -119,8 +132,8 @@ mod tests {
     fn tick_proportional_only() {
         // error = target - reading = 10 - 7 = 3
         // output = kp * error = 2 * 3 = 6
-        let mut pid = CorePID::new(2.0, 0.0, 0.0, 10.0, 100.0, 0.0);
-        let out = pid.tick(7.0, 0.1);
+        let mut pid = Pid::new(2.0, 0.0, 0.0, 10.0, 100.0, 0.0);
+        let out = pid.tick(7.0, 0.1).unwrap();
 
         approx_eq(out, 6.0, 1e-12);
         approx_eq(pid.prev_error, 3.0, 1e-12);
@@ -128,9 +141,9 @@ mod tests {
 
     #[test]
     fn tick_output_is_zero_inside_tolerance() {
-        let mut pid = CorePID::new(10.0, 0.0, 0.0, 10.0, 100.0, 0.5);
+        let mut pid = Pid::new(10.0, 0.0, 0.0, 10.0, 100.0, 0.5);
         // error = 0.3 => inside tolerance => output forced to 0
-        let out = pid.tick(9.7, 0.1);
+        let out = pid.tick(9.7, 0.1).unwrap();
 
         approx_eq(out, 0.0, 1e-12);
         assert!(!pid.is_active(9.7));
@@ -139,8 +152,8 @@ mod tests {
     #[test]
     fn tick_output_is_clamped_by_max() {
         // raw P output = 100 * 10 = 1000, but max is 5
-        let mut pid = CorePID::new(100.0, 0.0, 0.0, 10.0, 5.0, 0.0);
-        let out = pid.tick(0.0, 0.1);
+        let mut pid = Pid::new(100.0, 0.0, 0.0, 10.0, 5.0, 0.0);
+        let out = pid.tick(0.0, 0.1).unwrap();
 
         approx_eq(out, 5.0, 1e-12);
     }
@@ -149,8 +162,8 @@ mod tests {
     fn integral_is_clamped_to_prevent_windup() {
         // integral limit = max / |ki| = 10 / 2 = 5
         // without clamp, integral would become 10 * 10 = 100
-        let mut pid = CorePID::new(0.0, 2.0, 0.0, 10.0, 10.0, 0.0);
-        let out = pid.tick(0.0, 10.0);
+        let mut pid = Pid::new(0.0, 2.0, 0.0, 10.0, 10.0, 0.0);
+        let out = pid.tick(0.0, 10.0).unwrap();
 
         approx_eq(pid.integral, 5.0, 1e-12);
         // i term = ki * integral = 2 * 5 = 10; clamped output remains 10
@@ -160,15 +173,15 @@ mod tests {
     #[test]
     fn derivative_uses_dt_with_lower_bound() {
         // dt is clamped to 1e-6; derivative can become huge but output still clamped by max
-        let mut pid = CorePID::new(0.0, 0.0, 1.0, 10.0, 7.0, 0.0);
-        let out = pid.tick(0.0, 0.0);
+        let mut pid = Pid::new(0.0, 0.0, 1.0, 10.0, 7.0, 0.0);
+        let out = pid.tick(0.0, 0.0).unwrap();
 
         approx_eq(out, 7.0, 1e-12);
     }
 
     #[test]
     fn reset_integral_and_set_target_work() {
-        let mut pid = CorePID::new(0.0, 1.0, 0.0, 10.0, 100.0, 0.0);
+        let mut pid = Pid::new(0.0, 1.0, 0.0, 10.0, 100.0, 0.0);
         let _ = pid.tick(0.0, 1.0); // builds integral to 10
 
         assert!(pid.integral > 0.0);
@@ -182,7 +195,7 @@ mod tests {
 
     #[test]
     fn is_active_reflects_error_vs_tolerance() {
-        let pid = CorePID::new(1.0, 0.0, 0.0, 10.0, 100.0, 0.25);
+        let pid = Pid::new(1.0, 0.0, 0.0, 10.0, 100.0, 0.25);
 
         assert!(pid.is_active(9.0)); // error = 1.0 > 0.25
         assert!(!pid.is_active(9.9)); // error = 0.1 <= 0.25

@@ -9,13 +9,14 @@ use std::time::Duration;
 
 use vexide::{math::Angle, prelude::Motor, time::user_uptime};
 
-use crate::motion::feedback_control::pid::{core_pid::CorePID, drive_pid::AutoTickOutcome};
+use super::super::AutoTickOutcome;
+use crate::motion::primitive::{Feedback, pid::Pid};
 
 /// Group PID
 /// Used for controlling a group of motors simultaneously
 pub struct GroupPID<const N: usize> {
     /// Single `CorePID` instance controls all motors
-    pub pid:         CorePID,
+    pub pid:         Pid,
     /// An array of Motors that will be controlled
     pub motors:      [Motor; N],
     /// Update interval used for differentiation
@@ -34,7 +35,7 @@ impl<const N: usize> GroupPID<N> {
         tolerance: Angle,
     ) -> Self {
         Self {
-            pid: CorePID::new(kp, ki, kd, target.as_radians(), max, tolerance.as_radians()),
+            pid: Pid::new(kp, ki, kd, target.as_radians(), max, tolerance.as_radians()),
             motors,
             last_update: Duration::ZERO,
         }
@@ -42,7 +43,7 @@ impl<const N: usize> GroupPID<N> {
 
     /// Create a `GroupPID` instance from an already existing `CorePID` instance
     /// by adding an array of motors. All values are taken in Radians.
-    pub fn from_core_pid(motors: [Motor; N], core_pid: CorePID) -> Self {
+    pub fn from_core_pid(motors: [Motor; N], core_pid: Pid) -> Self {
         Self {
             pid: core_pid,
             motors,
@@ -56,7 +57,7 @@ impl<const N: usize> GroupPID<N> {
         let now = user_uptime();
         let dt = (now - self.last_update).as_secs_f64();
         let reading = get_mean_pos(&self.motors);
-        let power = self.pid.tick(reading.as_radians(), dt);
+        let power = self.pid.tick(reading.as_radians(), dt).unwrap(); // Its Infallible
         set_voltage_group(&mut self.motors, power);
         self.last_update = now;
     }

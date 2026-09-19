@@ -33,9 +33,11 @@ use std::{num::NonZeroU32, time::Duration};
 
 use vexide::{math::Angle, smart::imu::InertialSensor, time::user_uptime};
 
-use super::core_pid::CorePID;
 use crate::{
-    motion::feedback_control::DriveControl,
+    motion::{
+        control::DriveControl,
+        primitive::{Feedback, pid::Pid},
+    },
     peripherals::drivetrain::Differential,
     utils::units::Length,
 };
@@ -57,9 +59,9 @@ pub struct DrivePID<D: Differential> {
     /// Differential drivetrain interface used to read positions and command voltages.
     pub drivetrain:        D,
     /// Left-side PID controller.
-    pub pid_left:          CorePID,
+    pub pid_left:          Pid,
     /// Right-side PID controller.
-    pub pid_right:         CorePID,
+    pub pid_right:         Pid,
     /// Physical wheel diameter used for angle-to-distance conversion.
     pub wheel_diameter:    Length,
     /// Motor rotations per wheel rotation.
@@ -95,22 +97,8 @@ impl<D: Differential> DrivePID<D> {
 
         Self {
             drivetrain,
-            pid_left: CorePID::new(
-                kp,
-                ki,
-                kd,
-                default_target.as_inches(),
-                max,
-                tolerance.as_inches(),
-            ),
-            pid_right: CorePID::new(
-                kp,
-                ki,
-                kd,
-                default_target.as_inches(),
-                max,
-                tolerance.as_inches(),
-            ),
+            pid_left: Pid::new(kp, ki, kd, default_target.as_inches(), max, tolerance.as_inches()),
+            pid_right: Pid::new(kp, ki, kd, default_target.as_inches(), max, tolerance.as_inches()),
             wheel_diameter,
             track_width,
             motor_wheel_ratio,
@@ -123,8 +111,8 @@ impl<D: Differential> DrivePID<D> {
     /// Use this constructor when each side requires different gains or state.
     pub fn from_basic_pid(
         drivetrain: D,
-        pid_left: CorePID,
-        pid_right: CorePID,
+        pid_left: Pid,
+        pid_right: Pid,
         wheel_diameter: Length,
         motor_gear_teeth: NonZeroU32,
         wheel_gear_teeth: NonZeroU32,
@@ -156,15 +144,21 @@ impl<D: Differential> DrivePID<D> {
         let dt = (now - self.last_update).as_secs_f64();
         let left_reading = self.drivetrain.left_position().value();
         let right_reading = self.drivetrain.right_position();
-        let left_power = self.pid_left.tick(
-            arc_length(left_reading, self.wheel_diameter, self.motor_wheel_ratio).as_inches(),
-            dt,
-        );
-        let right_power = self.pid_right.tick(
-            arc_length(right_reading.value(), self.wheel_diameter, self.motor_wheel_ratio)
-                .as_inches(),
-            dt,
-        );
+        let left_power = self
+            .pid_left
+            .tick(
+                arc_length(left_reading, self.wheel_diameter, self.motor_wheel_ratio).as_inches(),
+                dt,
+            )
+            .unwrap(); // Its Infallible
+        let right_power = self
+            .pid_right
+            .tick(
+                arc_length(right_reading.value(), self.wheel_diameter, self.motor_wheel_ratio)
+                    .as_inches(),
+                dt,
+            )
+            .unwrap(); // Its Infallible
         let _ = self.drivetrain.set_left_voltage(left_power); // TODO: Implement Errors
         let _ = self.drivetrain.set_right_voltage(right_power); // TODO: Implement Errors
         self.last_update = now;

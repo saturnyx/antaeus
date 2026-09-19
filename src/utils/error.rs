@@ -59,3 +59,14 @@ impl<T, E> Report<T, E> {
         }
     }
 }
+
+impl<A: std::fmt::Debug, E: std::error::Error> std::fmt::Display for Report<A, Vec<E>> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Report::Ok(_) => write!(f, "Ok"),
+            Report::Warn { error, .. } => write!(f, "Warn: {:?}", error),
+        }
+    }
+}
+
+impl<A: std::fmt::Debug, E: std::error::Error> std::error::Error for Report<A, Vec<E>> {}

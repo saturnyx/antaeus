@@ -1,10 +1,10 @@
-use antaeus::motion::feedback_control::pid::core_pid::CorePID;
+use antaeus::motion::primitive::{Feedback, pid::Pid};
 use plotly::{Plot, Scatter, common::Line};
 
 #[test]
 //#[ignore = "Long-running visualization test; run explicitly"]
 fn large_pid_step_response_plot() {
-    let mut pid = CorePID::new(6.0, 0.4, 2.5, 100.0, 60.0, 0.0);
+    let mut pid = Pid::new(6.0, 0.4, 2.5, 100.0, 60.0, 0.0);
 
     // RECOMMENDED PID VALUES
     // Kp: 6.0
@@ -31,7 +31,7 @@ fn large_pid_step_response_plot() {
 
     for k in 0..steps {
         let t = k as f64 * dt;
-        let u = pid.tick(x, dt);
+        let u = pid.tick(x, dt).unwrap();
 
         let a = (u - damping * v + disturbance) / mass;
         v += a * dt;
