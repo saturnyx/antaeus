@@ -1,15 +1,15 @@
 # Security Policy
 
-Anateus is a Vex Robotics library. Hence, security is not one of the main
+Antaeus is a Vex Robotics library. Hence, security is not one of the main
 concerns here. However, if you do find a vulnerability that concerns you
-greatly, here is a few stuff you need to know.
+greatly, here is a little stuff you need to know.
 
 ## Supported Versions
 The last minor version (according to semantic versioning) of Antaeus will being
 supported with security updates. Like mentioned above, security is not a large
-concern as antaeus only mainly runs in embedded systems.
+concern as Antaeus only mainly runs in embedded systems.
 
-## What is considered a Vulnerability
+## What Is Considered a Vulnerability
 > A software vulnerability is a security flaw, weakness, or bug in an
 > application’s code, design, or configuration that can be exploited by
 > malicious actors to compromise the confidentiality, integrity, or availability
@@ -17,7 +17,7 @@ concern as antaeus only mainly runs in embedded systems.
 The most likely vulnerability antaeus might face is malicious dependencies. If
 such a dependency is deemed to be malicious, it will immediately be taken down,
 especially is it was designed to attack the programmer's system.
-### These are not vulnerabilities:
+### These Are Not Vulnerabilities:
 - Threading related bugs (e.g. deadlocks)
 - The library panicking or having any similar critical error
 - Any similar bug in the library that does not affect your own computer

@@ -52,7 +52,7 @@ pub mod logger;
 /// Makes an object cloneable by wrapping it in `Rc` and `RefCell`
 pub fn make_cloneable<T>(v: T) -> Rc<RefCell<T>> { Rc::new(RefCell::new(v)) }
 
-/// Turns a object into a mutex (only use for actual threads, not async)
+/// Turns an object into a mutex (only use for actual threads, not async)
 pub fn to_mutex<T>(v: T) -> Arc<Mutex<T>> { Arc::new(Mutex::new(v)) }
 
 /// Prelude for Wildcard Imports

@@ -67,6 +67,16 @@ impl SimDrive {
 }
 
 impl Differential for SimDrive {
+    fn set_brakemode(&self, brakemode: BrakeMode) -> Result<(), DrivetrainError> {
+        self.brake_mode.set(brakemode);
+        Ok(())
+    }
+
+    fn position(&self) -> Report<Angle, Vec<DrivetrainError>> {
+        let avg = (self.left_angle_rad() + self.right_angle_rad()) / 2.0;
+        Report::Ok(Angle::from_radians(avg))
+    }
+
     fn left_position(&self) -> Report<Angle, Vec<DrivetrainError>> {
         Report::Ok(Angle::from_radians(self.left_angle_rad()))
     }
@@ -75,29 +85,9 @@ impl Differential for SimDrive {
         Report::Ok(Angle::from_radians(self.right_angle_rad()))
     }
 
-    fn position(&self) -> Report<Angle, Vec<DrivetrainError>> {
-        let avg = (self.left_angle_rad() + self.right_angle_rad()) / 2.0;
-        Report::Ok(Angle::from_radians(avg))
-    }
-
     fn reset_position(&self) -> Result<(), DrivetrainError> {
         self.left_offset.set(self.left_raw.get());
         self.right_offset.set(self.right_raw.get());
-        Ok(())
-    }
-
-    fn set_brakemode(&self, brakemode: BrakeMode) -> Result<(), DrivetrainError> {
-        self.brake_mode.set(brakemode);
-        Ok(())
-    }
-
-    fn set_left_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
-        self.left_voltage.set(voltage.clamp(-12.0, 12.0));
-        Ok(())
-    }
-
-    fn set_right_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
-        self.right_voltage.set(voltage.clamp(-12.0, 12.0));
         Ok(())
     }
 
@@ -115,5 +105,15 @@ impl Differential for SimDrive {
     fn set_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
         self.set_left_voltage(voltage)?;
         self.set_right_voltage(voltage)
+    }
+
+    fn set_left_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
+        self.left_voltage.set(voltage.clamp(-12.0, 12.0));
+        Ok(())
+    }
+
+    fn set_right_voltage(&self, voltage: f64) -> Result<(), DrivetrainError> {
+        self.right_voltage.set(voltage.clamp(-12.0, 12.0));
+        Ok(())
     }
 }

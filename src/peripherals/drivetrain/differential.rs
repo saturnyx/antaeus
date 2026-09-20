@@ -449,7 +449,7 @@ impl Differential for StandardDifferential {
 impl Trackable for StandardDifferential {
     fn track_position(
         &mut self,
-    ) -> Result<Angle, crate::motion::localization::tracker::devices::TrackingSensorError> {
+    ) -> Result<Angle, TrackingSensorError> {
         let res = Self::position(self);
         if res.has_errors() {
             let (_, e) = res.into_parts();
@@ -465,7 +465,7 @@ impl Trackable for StandardDifferential {
 
     fn reset_track_position(
         &mut self,
-    ) -> Result<(), crate::motion::localization::tracker::devices::TrackingSensorError> {
+    ) -> Result<(), TrackingSensorError> {
         match Self::reset_position(self) {
             Ok(_) => Ok(()),
             Err(e) => Err(TrackingSensorError::DrivetrainError { source: e }),
@@ -475,7 +475,7 @@ impl Trackable for StandardDifferential {
     fn set_track_position(
         &mut self,
         position: Angle,
-    ) -> Result<(), crate::motion::localization::tracker::devices::TrackingSensorError> {
+    ) -> Result<(), TrackingSensorError> {
         match Self::set_position(self, position) {
             Ok(_) => Ok(()),
             Err(e) => Err(TrackingSensorError::DrivetrainError { source: e }),

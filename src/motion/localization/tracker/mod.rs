@@ -106,6 +106,8 @@ impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Tracker<'v, 'h, V, H,
 impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Localizer for Tracker<'v, 'h, V, H, I> {
     type Error = TrackingSensorError;
 
+    fn get_coords(&self) -> Pose { self.pose }
+
     fn tick(&mut self) -> Result<(), TrackingSensorError> {
         let t = self.tracker_mech.imu.try_borrow_mut()?.heading()?;
         let v = self.tracker_mech.vertical_tracker.dist()?;
@@ -138,8 +140,6 @@ impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> Localizer for Tracker
 
         Ok(())
     }
-
-    fn get_coords(&self) -> Pose { self.pose }
 }
 
 fn is_small_angle(delta_t: Angle) -> bool { delta_t.as_radians().abs() < ANGLE_EPS_RAD }

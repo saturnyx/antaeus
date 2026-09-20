@@ -33,7 +33,7 @@ pub trait AdiOutMapper {
         inverse: bool,
     ) -> Result<(), PortError>;
 
-    /// Maps a analog input to a ADI device (e.g. pneumatic solenoid)
+    /// Maps an analog input to a ADI device (e.g. pneumatic solenoid)
     ///
     /// # Arguments
     /// - `input`: The analog input from another peripheral (e.g. controller
@@ -49,7 +49,7 @@ pub trait AdiOutMapper {
         inverse: bool,
     ) -> Result<(), PortError>;
 
-    /// Maps a analog input to a ADI device (e.g. pneumatic solenoid)
+    /// Maps an analog input to a ADI device (e.g. pneumatic solenoid)
     /// (Toggles the device instead of direct mapping)
     ///
     /// # Arguments

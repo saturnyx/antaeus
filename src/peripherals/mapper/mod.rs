@@ -51,7 +51,7 @@ pub enum JoystickAxes {
     Y,
 }
 
-/// A analog input that can be used to control a device (e.g. motor, pneumatic
+/// An analog input that can be used to control a device (e.g. motor, pneumatic
 /// solenoid). Analog means that your device only can give a range between 2
 /// values (e.g. 1.0 to -1.0).
 #[derive(Debug, PartialEq, Eq)]

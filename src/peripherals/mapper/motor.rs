@@ -25,7 +25,7 @@ pub trait MotorMapper {
         low_power: f64,
     ) -> Result<(), PortError>;
 
-    /// Maps a analog input to a motor's voltage
+    /// Maps an analog input to a motor's voltage
     ///
     /// # Arguments
     /// - `input`: The analog input from another peripheral (e.g. controller

@@ -42,7 +42,7 @@ pub trait Drivable {
     /// - Computation:
     ///   - left = (-right_y) * 12.0
     ///   - right = (-left_y) * 12.0
-    /// - This is useful when the robot is driving backwards but you want the sticks
+    /// - This is useful when the robot is driving backwards, but you want the sticks
     ///   to maintain an intuitive left/right mapping relative to the robot's new front.
     fn reverse_tank(&mut self, controller: &Controller) -> Result<(), DrivetrainError>;
     /// Drive the robot using reversed arcade controls (forward/turn both inverted).
@@ -109,14 +109,14 @@ pub enum DrivetrainError {
     /// number, hardware failure, etc.).
     #[snafu(transparent)]
     PortError {
-        /// The underlying error from the when trying to access a motor port.
+        /// The underlying error from when trying to access a motor port.
         source: PortError,
     },
     /// An error occurred while reading the controller state (e.g. disconnected
     /// controller, communication error, etc.).
     #[snafu(transparent)]
     ControllerError {
-        /// The underlying error from the when trying to read the controller
+        /// The underlying error from when trying to read the controller
         /// state.
         source: ControllerError,
     },

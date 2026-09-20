@@ -40,8 +40,6 @@ vexide = { version = "0.8.0", features = ["full", "vex-sdk-mock"] }
 plotly = "0.14.1"
 rand = "0.10.2"
 rand_distr = "0.6.0"
-getrandom = { version = "^0.4.3" }
-tempfile = "3.27.0"
 
 # Examples are usually binary, but this was a library
 [[example]]

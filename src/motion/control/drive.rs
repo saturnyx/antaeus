@@ -86,7 +86,7 @@ pub enum DriveControlError<F: Feedback> {
     },
 
     #[snafu(transparent)]
-    /// A Error from the Drivetrain
+    /// An Error from the Drivetrain
     DrivetrainError {
         /// Source of error
         source: DrivetrainError,
@@ -263,7 +263,7 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
             .as_inches(),
         ) {
             self.tick()?;
-            vexide::time::sleep(std::time::Duration::from_millis(10)).await;
+            vexide::time::sleep(Duration::from_millis(10)).await;
             if (user_uptime() - start) > timeout {
                 return Ok(AutoTickOutcome::TimedOut);
             }
@@ -353,7 +353,7 @@ impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
             let current_heading = match imu.rotation() {
                 Ok(a) => a,
                 Err(_) => {
-                    vexide::time::sleep(std::time::Duration::from_millis(10)).await;
+                    vexide::time::sleep(Duration::from_millis(10)).await;
                     continue;
                 }
             };
@@ -390,7 +390,7 @@ impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
                 .map_err(|source| DriveControlError::Feedback { source })?;
 
             self.tick()?;
-            vexide::time::sleep(std::time::Duration::from_millis(10)).await;
+            vexide::time::sleep(Duration::from_millis(10)).await;
         }
     }
 
@@ -436,7 +436,7 @@ impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
             let current_heading = match imu.rotation() {
                 Ok(a) => a,
                 Err(_) => {
-                    vexide::time::sleep(std::time::Duration::from_millis(10)).await;
+                    vexide::time::sleep(Duration::from_millis(10)).await;
                     continue;
                 }
             };
@@ -483,7 +483,7 @@ impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
             }
 
             self.tick()?;
-            vexide::time::sleep(std::time::Duration::from_millis(10)).await;
+            vexide::time::sleep(Duration::from_millis(10)).await;
         }
     }
 }

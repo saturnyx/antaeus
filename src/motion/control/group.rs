@@ -1,5 +1,5 @@
 //! # Group Feedback Control
-//! This feedcontroller controls all motors using a single feedback loop.
+//! This feedback controller controls all motors using a single feedback loop.
 //!
 //! # Example
 //! ```
@@ -73,7 +73,7 @@ impl<const N: usize, F: Feedback> GroupFeedbackControl<N, F> {
             .is_active(get_mean_pos(&self.motors).as_radians())
         {
             self.tick()?;
-            vexide::time::sleep(std::time::Duration::from_millis(10)).await;
+            vexide::time::sleep(Duration::from_millis(10)).await;
             if (user_uptime() - start) > timeout {
                 return Ok(AutoTickOutcome::TimedOut);
             }

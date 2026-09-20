@@ -27,14 +27,14 @@ use vexide::{
 
 use crate::{peripherals::drivetrain::DrivetrainError, utils::units::Length};
 
-/// Errors that can occur while commanding or reading from the a tracking sensor.
+/// Errors that can occur while commanding or reading from a tracking sensor.
 #[derive(Debug, Snafu)]
 pub enum TrackingSensorError {
     /// An error occurred while accessing a motor port (e.g. invalid port
     /// number, hardware failure, etc.).
     #[snafu(transparent)]
     PortError {
-        /// The underlying error from the when trying to access a motor port.
+        /// The underlying error from when trying to access a motor port.
         source: PortError,
     },
     /// Failed to borrow the motor group mutably (e.g. already borrowed

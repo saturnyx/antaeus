@@ -12,7 +12,7 @@ pub struct BangBang {
     pub max:         f64,
     /// Target setpoint
     pub target:      f64,
-    /// Hysteresis band width
+    /// Hysteresis bandwidth
     pub tolerance:   f64,
     /// Last output (held inside the band)
     pub last_output: f64,
@@ -36,11 +36,6 @@ impl BangBang {
 impl Feedback for BangBang {
     type Error = Infallible;
 
-    fn set_target(&mut self, target: f64) -> Result<(), Self::Error> {
-        self.target = target;
-        Ok(())
-    }
-
     fn tick(&mut self, reading: f64, _: f64) -> Result<f64, Self::Error> {
         let error = self.target - reading;
         if error > self.tolerance {
@@ -50,6 +45,11 @@ impl Feedback for BangBang {
         }
         // Inside the band: hold last_output (hysteresis)
         Ok(self.last_output)
+    }
+
+    fn set_target(&mut self, target: f64) -> Result<(), Self::Error> {
+        self.target = target;
+        Ok(())
     }
 
     fn reset(&mut self) -> Result<(), Self::Error> {

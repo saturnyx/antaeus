@@ -134,8 +134,7 @@ static LOGGER: std::sync::OnceLock<AntLogger> = std::sync::OnceLock::new();
 /// Initializes the Antaeus logger.
 ///
 /// This function must be called once before any logging macros are used.
-/// It sets up the global logger to write to both the console and the target-
-/// specific log file path.
+/// It sets up the global logger to write to both the console and the target-specific log file path.
 ///
 /// # Arguments
 ///

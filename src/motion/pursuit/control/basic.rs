@@ -138,7 +138,7 @@ mod tests {
         assert_almost_eq(right, -12.0);
     }
     #[test]
-    fn tolernace_check() {
+    fn tolerance_check() {
         let basic_control = BasicControl {
             track_width: Length::from_inches(12.0),
             tolerance:   Length::from_inches(5.1),

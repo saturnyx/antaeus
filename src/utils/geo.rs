@@ -143,12 +143,12 @@ impl Line {
     pub fn new(x1: Length, y1: Length, x2: Length, y2: Length) -> Line {
         Line {
             point1: Point {
-                x: (x1.as_inches()),
-                y: (y1.as_inches()),
+                x: x1.as_inches(),
+                y: y1.as_inches(),
             },
             point2: Point {
-                x: (x2.as_inches()),
-                y: (y2.as_inches()),
+                x: x2.as_inches(),
+                y: y2.as_inches(),
             },
         }
     }

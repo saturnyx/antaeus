@@ -11,7 +11,7 @@
 //! # Algorithm Overview
 //!
 //! 1. Draw a circle centered on the robot with radius = lookahead distance.
-//! 2. Find all "candidate" points: path waypoints inside ignorethe circle,
+//! 2. Find all "candidate" points: path waypoints inside ignore the circle,
 //!    intersections of the circle with path segments, and the closest
 //!    point on the path to the robot.
 //! 3. Select the candidate furthest along the path as the target.
@@ -143,7 +143,7 @@ impl Pursuit {
             drivetrain.set_left_voltage(powl)?;
             drivetrain.set_right_voltage(powr)?;
             // Steering is based on the moving lookahead target, but completion
-            // must be measured against the path's final waypoint. Otherwise a
+            // must be measured against the path's final waypoint. Otherwise, a
             // controller stops after reaching its first lookahead distance.
             run = should_continue_to_final_waypoint(
                 ctrl_algorithm,

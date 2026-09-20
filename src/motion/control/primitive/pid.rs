@@ -57,11 +57,6 @@ impl Pid {
 impl Feedback for Pid {
     type Error = Infallible;
 
-    fn set_target(&mut self, target: f64) -> Result<(), Self::Error> {
-        self.target = target;
-        Ok(())
-    }
-
     fn tick(&mut self, reading: f64, time: f64) -> Result<f64, Self::Error> {
         let dt = time.max(1e-6);
         let error = self.target - reading;
@@ -81,6 +76,11 @@ impl Feedback for Pid {
         } else {
             Ok(0.0)
         }
+    }
+
+    fn set_target(&mut self, target: f64) -> Result<(), Self::Error> {
+        self.target = target;
+        Ok(())
     }
 
     fn reset(&mut self) -> Result<(), Self::Error> {
@@ -185,7 +185,7 @@ mod tests {
         pid.reset_integral();
         approx_eq(pid.integral, 0.0, 1e-12);
 
-        pid.set_target(42.0);
+        let _ = pid.set_target(42.0);
         approx_eq(pid.target, 42.0, 1e-12);
     }
 
