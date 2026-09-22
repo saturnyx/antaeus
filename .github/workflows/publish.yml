@@ -14,8 +14,6 @@ permissions:
 jobs:
   crates_io_publish:
     name: Publish (crates.io)
-    needs:
-      - audit
 
     runs-on: ubuntu-latest
     timeout-minutes: 25
