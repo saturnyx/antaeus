@@ -16,7 +16,13 @@ doctest = false
 
 [features]
 default = ["graphics"]
-graphics = ["dep:mousefood", "dep:ratatui", "dep:embedded-graphics-core"]
+graphics = [
+    "dep:mousefood",
+    "dep:ratatui",
+    "dep:embedded-graphics-core",
+    "dep:smart-leds-trait",
+    "dep:sdl2"
+]
 
 [dependencies]
 embedded-graphics-core = { version = "0.4.1", optional = true }
@@ -29,6 +35,8 @@ snafu = "0.9.2"
 vex-sdk = "0.28.0"
 vexide = { version = "0.8.0", features = ["full"] }
 vexide-motorgroup = "2.2.0"
+smart-leds-trait = { version = "0.3.2", optional = true }
+sdl2 = { version = "0.38.0", optional = true }
 
 [target.'cfg(not(target_os = "vexos"))'.dependencies]
 embedded-graphics-simulator = "0.8.0"

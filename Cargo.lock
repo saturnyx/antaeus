@@ -43,6 +43,8 @@ dependencies = [
  "rand",
  "rand_distr",
  "ratatui",
+ "sdl2",
+ "smart-leds-trait",
  "snafu 0.9.2",
  "vex-sdk",
  "vexide",
