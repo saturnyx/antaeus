@@ -28,8 +28,3 @@ pub mod mapper;
 // REMAPPED LIBRARIES ---------------------------------------------------------+
 
 pub use vexide_motorgroup as motorgroup;
-
-// LEGACY ---------------------------------------------------------------------+
-
-#[cfg(feature = "legacy")]
-pub mod controller;
