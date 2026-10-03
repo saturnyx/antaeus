@@ -138,7 +138,7 @@ static LOGGER: std::sync::OnceLock<AntLogger> = std::sync::OnceLock::new();
 ///
 /// # Arguments
 ///
-/// * `level` - The minimum log level to record. Messages below this level
+/// - `level` - The minimum log level to record. Messages below this level
 ///   will be ignored. Use [`LevelFilter::Trace`] for maximum verbosity or
 ///   [`LevelFilter::Error`] for critical messages only.
 ///

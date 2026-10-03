@@ -172,8 +172,8 @@ fn get_target(candidates: Vec<geo::Point>, path: geo::Path) -> geo::Point {
 ///
 /// # Arguments
 ///
-/// * `path` - The path being followed.
-/// * `cir` - A circle centered on the robot with radius = lookahead distance.
+/// - `path` - The path being followed.
+/// - `cir` - A circle centered on the robot with radius = lookahead distance.
 ///
 /// # Returns
 ///

@@ -5,10 +5,10 @@
 //!
 //! # Types
 //!
-//! * `Point`: A 2D point with x and y coordinates.
-//! * `Line`: A line segment between two points.
-//! * `Path`: A sequence of waypoints forming a path.
-//! * `Circle`: A circle defined by center and radius.
+//! - `Point`: A 2D point with x and y coordinates.
+//! - `Line`: A line segment between two points.
+//! - `Path`: A sequence of waypoints forming a path.
+//! - `Circle`: A circle defined by center and radius.
 
 use std::vec;
 
@@ -208,9 +208,9 @@ impl Pose {
     ///
     /// # Arguments
     ///
-    /// * `x` - The x-coordinate in inches.
-    /// * `y` - The y-coordinate in inches.
-    /// * `t` - The heading angle.
+    /// - `x` - The x-coordinate in inches.
+    /// - `y` - The y-coordinate in inches.
+    /// - `t` - The heading angle.
     pub fn new(x: Length, y: Length, t: Angle) -> Self { Self { x, y, t } }
 
     /// Creates a Pose at the origin (0, 0) with heading 0.

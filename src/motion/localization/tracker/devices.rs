@@ -3,11 +3,11 @@
 //! This module provides the sensor abstractions and data types used by the
 //! tracking system. It includes:
 //!
-//! * **TrackingSensor**: An abstraction over different encoder types.
-//! * **TrackerPod**: Configuration for a tracking wheel with gear ratios.
-//! * **TrackerMech**: The complete tracking mechanism with vertical/horizontal
+//! - **TrackingSensor**: An abstraction over different encoder types.
+//! - **TrackerPod**: Configuration for a tracking wheel with gear ratios.
+//! - **TrackerMech**: The complete tracking mechanism with vertical/horizontal
 //!   trackers and an IMU.
-//! * **Pose**: A 2D position with heading.
+//! - **Pose**: A 2D position with heading.
 
 use std::{
     cell::{BorrowMutError, RefCell},
@@ -148,11 +148,11 @@ impl<'s, S: Trackable> TrackerPod<'s, S> {
     ///
     /// # Arguments
     ///
-    /// * `sensor` - The tracking sensor to use.
-    /// * `wheel_diameter` - The diameter of the tracking wheel in inches.
-    /// * `driven_gear` - The number of teeth on the driven (wheel-side) gear.
-    /// * `driving_gear` - The number of teeth on the driving (encoder-side) gear.
-    /// * `offset` - The perpendicular distance from the tracking center in inches.
+    /// - `sensor` - The tracking sensor to use.
+    /// - `wheel_diameter` - The diameter of the tracking wheel in inches.
+    /// - `driven_gear` - The number of teeth on the driven (wheel-side) gear.
+    /// - `driving_gear` - The number of teeth on the driving (encoder-side) gear.
+    /// - `offset` - The perpendicular distance from the tracking center in inches.
     pub fn new(
         sensor: &'s mut S,
         wheel_diameter: Length,
@@ -199,9 +199,9 @@ impl<'v, 'h, V: Trackable, H: Trackable, I: HeadingSensor> TrackerMech<'v, 'h, V
     ///
     /// # Arguments
     ///
-    /// * `vertical_tracker` - The vertical (forward/backward) tracking wheel.
-    /// * `horizontal_tracker` - The horizontal (left/right) tracking wheel.
-    /// * `imu` - The inertial sensor wrapped in a thread-safe Mutex.
+    /// - `vertical_tracker` - The vertical (forward/backward) tracking wheel.
+    /// - `horizontal_tracker` - The horizontal (left/right) tracking wheel.
+    /// - `imu` - The inertial sensor wrapped in a thread-safe Mutex.
     pub fn new(
         vertical_tracker: TrackerPod<'v, V>,
         horizontal_tracker: TrackerPod<'h, H>,

@@ -5,10 +5,10 @@
 //!
 //! # Structure
 //!
-//! * **Localization**: Position tracking / Odometry / Dead Reckoning
-//! * **PID Control**: Proportional-Integral-Derivative controllers for accurate
+//! - **Localization**: Position tracking / Odometry / Dead Reckoning
+//! - **PID Control**: Proportional-Integral-Derivative controllers for accurate
 //!   linear and rotational movement.
-//! * **Path Following**: The Candidate-Based Pursuit algorithm for smooth path
+//! - **Path Following**: The Candidate-Based Pursuit algorithm for smooth path
 //!   tracking.
 //!
 //! # Architecture

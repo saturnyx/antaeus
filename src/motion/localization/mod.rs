@@ -2,7 +2,7 @@
 //!
 //! # Structure
 //!
-//! * **Tracker**: The main localization controller that estimates robot pose
+//! - **Tracker**: The main localization controller that estimates robot pose
 //!   using tracking wheels.
 //!
 //! # Extensions

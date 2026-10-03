@@ -191,11 +191,11 @@ impl KalmanRangeSensor {
     ///
     /// # Arguments
     ///
-    /// * `sensor` - The range sensor to sample.
-    /// * `process_var` - Process noise variance.
-    /// * `measurement_var` - Measurement noise variance.
-    /// * `initial_distance` - Initial distance estimate.
-    /// * `initial_velocity` - Initial velocity estimate.
+    /// - `sensor` - The range sensor to sample.
+    /// - `process_var` - Process noise variance.
+    /// - `measurement_var` - Measurement noise variance.
+    /// - `initial_distance` - Initial distance estimate.
+    /// - `initial_velocity` - Initial velocity estimate.
     pub fn new(
         sensor: RangeSensor,
         process_var: f64,
