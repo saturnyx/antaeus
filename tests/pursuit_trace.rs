@@ -20,7 +20,7 @@ use antaeus::{
                 devices::{HeadingSensor, Trackable, TrackerMech, TrackerPod, TrackingSensorError},
             },
         },
-        pursuit::{Pursuit, control::basic::BasicControl},
+        pursuit::{Pursuit, control::basic::BasicSteer},
     },
     peripherals::drivetrain::Differential,
     utils::{
@@ -183,8 +183,8 @@ async fn logs_candidate_based_pursuit_trace(_peripherals: vexide::prelude::Perip
         Tracker::new(TrackerMech::new(vertical_tracker, horizontal_tracker, imu.clone()));
 
     let pursuit = Pursuit::new(Length::from_inches(4.0));
-    let controller =
-        BasicControl::new(Length::from_inches(TRACK_WIDTH_IN), Length::from_inches(0.75));
+    let mut steering =
+        BasicSteer::new(Length::from_inches(TRACK_WIDTH_IN), Length::from_inches(0.75));
 
     let mut completed = false;
     for step in 0..MAX_STEPS {
@@ -204,7 +204,7 @@ async fn logs_candidate_based_pursuit_trace(_peripherals: vexide::prelude::Perip
         // Pursuit selects a lookahead target, commands wheel voltages, and
         // updates odometry from the sensor state established above.
         let should_continue = pursuit
-            .tick(&mut odometry, &drivetrain, &controller, path.clone())
+            .tick(&mut odometry, &drivetrain, &mut steering, path.clone())
             .expect("run pursuit control cycle");
 
         let pose = odometry.get_coords();

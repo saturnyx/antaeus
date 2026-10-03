@@ -31,15 +31,12 @@ const LOOPRATE: Duration = Duration::from_millis(10);
 
 use std::time::Duration;
 
-use control::PursuitControl;
+use control::ArcSteer;
 use snafu::Snafu;
 use vexide::time::sleep;
 
 use crate::{
-    motion::{
-        localization::Localizer,
-        pursuit::algorithm::abs_arc_point,
-    },
+    motion::{localization::Localizer, pursuit::algorithm::abs_arc_point},
     peripherals::drivetrain::{Differential, DrivetrainError},
     utils::{
         geo::{self, Pose},
@@ -49,7 +46,7 @@ use crate::{
 
 /// An error that occured when the CBP Algorithm was running.
 #[derive(Snafu)]
-pub enum PursuitError<L: Localizer> {
+pub enum PursuitError<L: Localizer, A: ArcSteer> {
     /// An error occurred while accessing a tracking sensor.
     LocalizerError {
         /// The underlying generic error from the tracking hardware.
@@ -63,9 +60,15 @@ pub enum PursuitError<L: Localizer> {
         /// Errors that can occur while commanding or reading from the drivetrain.
         source: DrivetrainError,
     },
+
+    /// Error from ArcSteer Algorithm
+    ArcSteerError {
+        /// Errors that can occur while commanding or reading from the drivetrain.
+        source: A::Error,
+    },
 }
 
-impl<L: Localizer> std::fmt::Debug for PursuitError<L> {
+impl<L: Localizer, A: ArcSteer> std::fmt::Debug for PursuitError<L, A> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::LocalizerError { source } => formatter
@@ -74,6 +77,10 @@ impl<L: Localizer> std::fmt::Debug for PursuitError<L> {
                 .finish(),
             Self::DrivetrainError { source } => formatter
                 .debug_struct("DriveControlError")
+                .field("source", source)
+                .finish(),
+            Self::ArcSteerError { source } => formatter
+                .debug_struct("ArcSteerError")
                 .field("source", source)
                 .finish(),
         }
@@ -112,13 +119,13 @@ impl Pursuit {
     /// - `drivetrain` - The differential drivetrain
     /// - `ctrl_algorithm` - The control algorithm
     /// - `path` - The path to follow, defined as a series of waypoints.
-    pub async fn follow<C: PursuitControl, L: Localizer, D: Differential>(
+    pub async fn follow<A: ArcSteer, L: Localizer, D: Differential>(
         &self,
         odom: &mut L,
         drivetrain: &D,
-        ctrl_algorithm: &C,
+        arc_steer: &mut A,
         path: geo::Path,
-    ) -> Result<(), PursuitError<L>> {
+    ) -> Result<(), PursuitError<L, A>> {
         let mut run = true;
         while run {
             let odometry_values = odom.get_coords();
@@ -134,11 +141,14 @@ impl Pursuit {
                 Length::as_inches(Length::from_inches(target.x)),
                 Length::as_inches(Length::from_inches(target.y)),
             );
-            let ((powl, powr), _) = ctrl_algorithm.control(
-                Length::from_inches(tarx),
-                Length::from_inches(tary),
-                self.lookahead,
-            );
+            let ((powl, powr), _) = arc_steer
+                .steer(
+                    Length::from_inches(tarx),
+                    Length::from_inches(tary),
+                    self.lookahead,
+                    drivetrain,
+                )
+                .map_err(|source| PursuitError::ArcSteerError { source })?;
 
             drivetrain.set_left_voltage(powl)?;
             drivetrain.set_right_voltage(powr)?;
@@ -146,13 +156,14 @@ impl Pursuit {
             // must be measured against the path's final waypoint. Otherwise, a
             // controller stops after reaching its first lookahead distance.
             run = should_continue_to_final_waypoint(
-                ctrl_algorithm,
+                arc_steer,
                 Pose::new(x, y, t),
                 &path,
                 self.lookahead,
-            );
-            odom
-                .tick()
+                drivetrain,
+            )
+            .map_err(|source| PursuitError::ArcSteerError { source })?;
+            odom.tick()
                 .map_err(|source| PursuitError::LocalizerError { source })?;
             sleep(LOOPRATE).await;
         }
@@ -168,16 +179,16 @@ impl Pursuit {
     ///
     /// - `odom` - The odometry movement controller
     /// - `drivetrain` - The differential drivetrain
-    /// - `ctrl_algorithm` - The algorithm that controls PID loops and lower
+    /// - `steer` - The steering algorithm that controls PID loops and lower
     ///   level hardware
     /// - `path` - The path to follow, defined as a series of waypoints.
-    pub fn tick<C: PursuitControl, L: Localizer, D: Differential>(
+    pub fn tick<A: ArcSteer, L: Localizer, D: Differential>(
         &self,
         odom: &mut L,
         drivetrain: &D,
-        ctrl_algorithm: &C,
+        steer: &mut A,
         path: geo::Path,
-    ) -> Result<bool, PursuitError<L>> {
+    ) -> Result<bool, PursuitError<L, A>> {
         let odometry_values = odom.get_coords();
         let (x, y, t) = (odometry_values.x, odometry_values.y, odometry_values.t);
         let cir = geo::Circle {
@@ -191,21 +202,25 @@ impl Pursuit {
             Length::as_inches(Length::from_inches(target.x)),
             Length::as_inches(Length::from_inches(target.y)),
         );
-        let ((powl, powr), _) = ctrl_algorithm.control(
-            Length::from_inches(tarx),
-            Length::from_inches(tary),
-            self.lookahead,
-        );
+        let ((powl, powr), _) = steer
+            .steer(
+                Length::from_inches(tarx),
+                Length::from_inches(tary),
+                self.lookahead,
+                drivetrain,
+            )
+            .map_err(|source| PursuitError::ArcSteerError { source })?;
         drivetrain.set_left_voltage(powl)?;
         drivetrain.set_right_voltage(powr)?;
         let should_continue = should_continue_to_final_waypoint(
-            ctrl_algorithm,
+            steer,
             Pose::new(x, y, t),
             &path,
             self.lookahead,
-        );
-        odom
-            .tick()
+            drivetrain,
+        )
+        .map_err(|source| PursuitError::ArcSteerError { source })?;
+        odom.tick()
             .map_err(|source| PursuitError::LocalizerError { source })?;
 
         Ok(should_continue)
@@ -214,22 +229,24 @@ impl Pursuit {
 
 /// Returns whether pursuit should continue based on the distance to the final
 /// waypoint, using the control implementation's configured tolerance.
-fn should_continue_to_final_waypoint<C: PursuitControl>(
-    ctrl_algorithm: &C,
+fn should_continue_to_final_waypoint<A: ArcSteer, D: Differential>(
+    steer: &mut A,
     pose: Pose,
     path: &geo::Path,
     lookahead: Length,
-) -> bool {
+    drivetrain: &D,
+) -> Result<bool, A::Error> {
     let final_waypoint = path
         .waypoints
         .last()
         .copied()
         .unwrap_or_else(geo::Point::origin);
     let (final_x, final_y) = abs_arc_point(pose, final_waypoint.x, final_waypoint.y);
-    let (_, should_continue) = ctrl_algorithm.control(
+    let (_, should_continue) = steer.steer(
         Length::from_inches(final_x),
         Length::from_inches(final_y),
         lookahead,
-    );
-    should_continue
+        drivetrain,
+    )?;
+    Ok(should_continue)
 }

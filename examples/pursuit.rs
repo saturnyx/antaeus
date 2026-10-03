@@ -7,7 +7,7 @@ use antaeus::{
     prelude::{
         Path,
         Point,
-        control::basic::BasicControl,
+        control::basic::BasicSteer,
         tracker::{
             Tracker,
             devices::{TrackerMech, TrackerPod},
@@ -49,7 +49,7 @@ impl Compete for Robot {
 
         let mut odomtrack = Tracker::new(trackers);
 
-        let basic_ctrl = BasicControl {
+        let mut steering = BasicSteer {
             track_width: Length::from_inches(13.9),
             tolerance:   Length::from_inches(0.5),
         };
@@ -64,7 +64,7 @@ impl Compete for Robot {
         path.add(Point::origin());
 
         let _ = pursuit
-            .follow(&mut odomtrack, &self.dt, &basic_ctrl, path.clone())
+            .follow(&mut odomtrack, &self.dt, &mut steering, path.clone())
             .await;
     }
 

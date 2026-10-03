@@ -5,7 +5,7 @@ use antaeus::{
     peripherals::drivetrain::differential::StandardDifferential,
     prelude::{
         Localizer,
-        control::basic::BasicControl,
+        control::basic::BasicSteer,
         tracker::{
             Tracker,
             devices::{TrackerMech, TrackerPod},
@@ -27,7 +27,7 @@ pub struct Robot {
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
-        let _basic_ctrl = BasicControl {
+        let _basic_ctrl = BasicSteer {
             track_width: Length::from_inches(13.9),
             tolerance:   Length::from_inches(0.5),
         };

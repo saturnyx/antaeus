@@ -124,6 +124,16 @@ impl StandardDifferential {
     ) -> Self {
         Self { left, right }
     }
+
+    /// Returns an empty drivetrain
+    ///
+    /// Do not use this for actual programs. This is mainly used for unit testing.
+    pub fn empty() -> Self {
+        Self {
+            left:  Rc::new(RefCell::new([])),
+            right: Rc::new(RefCell::new([])),
+        }
+    }
 }
 
 impl Drivable for StandardDifferential {
@@ -447,9 +457,7 @@ impl Differential for StandardDifferential {
 }
 
 impl Trackable for StandardDifferential {
-    fn track_position(
-        &mut self,
-    ) -> Result<Angle, TrackingSensorError> {
+    fn track_position(&mut self) -> Result<Angle, TrackingSensorError> {
         let res = Self::position(self);
         if res.has_errors() {
             let (_, e) = res.into_parts();
@@ -463,19 +471,14 @@ impl Trackable for StandardDifferential {
         }
     }
 
-    fn reset_track_position(
-        &mut self,
-    ) -> Result<(), TrackingSensorError> {
+    fn reset_track_position(&mut self) -> Result<(), TrackingSensorError> {
         match Self::reset_position(self) {
             Ok(_) => Ok(()),
             Err(e) => Err(TrackingSensorError::DrivetrainError { source: e }),
         }
     }
 
-    fn set_track_position(
-        &mut self,
-        position: Angle,
-    ) -> Result<(), TrackingSensorError> {
+    fn set_track_position(&mut self, position: Angle) -> Result<(), TrackingSensorError> {
         match Self::set_position(self, position) {
             Ok(_) => Ok(()),
             Err(e) => Err(TrackingSensorError::DrivetrainError { source: e }),

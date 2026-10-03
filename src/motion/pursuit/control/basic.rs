@@ -1,15 +1,17 @@
-//! Basic pursuit control.
+//! Basic Steering Algorithm
 //!
 //! Provides a simple curvature-based controller that converts a lookahead
 //! point (expressed in the robot frame) into left/right wheel voltages for a
 //! differential drive.
 
-use crate::{motion::pursuit::control::PursuitControl, utils::units::Length};
+use std::convert::Infallible;
 
-/// A Basic Control Algorithm that generates wheel velocities depending on a
+use crate::{motion::pursuit::control::ArcSteer, prelude::Differential, utils::units::Length};
+
+/// A Basic Steering Algorithm that generates wheel velocities depending on a
 /// point relative to the robot.
 #[derive(Debug, Clone, PartialEq, Default)]
-pub struct BasicControl {
+pub struct BasicSteer {
     /// The width of the drivetrain
     pub track_width: Length,
     /// A leeway at which the algorithm will end. Smaller tolerances mean more
@@ -17,8 +19,8 @@ pub struct BasicControl {
     pub tolerance:   Length,
 }
 
-impl BasicControl {
-    /// Create a new instance of `Basic Control`
+impl BasicSteer {
+    /// Create a new instance of [`BasicSteer`]
     /// - `track_width`: The width of the drivetrain
     /// - `tolerance`: A leeway at which the algorithm will end. Smaller tolerances mean more accuracy but more time spent.
     pub fn new(track_width: Length, tolerance: Length) -> Self {
@@ -29,8 +31,16 @@ impl BasicControl {
     }
 }
 
-impl PursuitControl for BasicControl {
-    fn control(&self, x: Length, y: Length, lookahead: Length) -> ((f64, f64), bool) {
+impl ArcSteer for BasicSteer {
+    type Error = Infallible;
+
+    fn steer<D: Differential>(
+        &mut self,
+        x: Length,
+        y: Length,
+        lookahead: Length,
+        _: &D,
+    ) -> Result<((f64, f64), bool), Infallible> {
         // Your frame:
         // +x = right, +y = forward
         let x_in = x.as_inches();
@@ -67,87 +77,103 @@ impl PursuitControl for BasicControl {
 
         let max_voltage = 12.0;
         let dir = y_in.signum();
-        (
+        Ok((
             (dir * left * max_voltage, dir * right * max_voltage),
             dist > self.tolerance.as_inches(),
-        )
+        ))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        motion::pursuit::control::{PursuitControl, basic::BasicControl},
+        motion::pursuit::control::{ArcSteer, basic::BasicSteer},
+        prelude::differential::StandardDifferential,
         utils::units::{Length, assert_almost_eq},
     };
 
     #[test]
     fn basic_normal() {
-        let basic_control = BasicControl {
+        let mut basic_control = BasicSteer {
             track_width: Length::from_inches(12.0),
             tolerance:   Length::from_inches(0.1),
         };
-        let ((left, right), _) = basic_control.control(
-            Length::from_inches(15.0),
-            Length::from_inches(15.0),
-            Length::from_inches(8.0),
-        );
+        let ((left, right), _) = basic_control
+            .steer(
+                Length::from_inches(15.0),
+                Length::from_inches(15.0),
+                Length::from_inches(8.0),
+                &StandardDifferential::empty(),
+            )
+            .unwrap();
         assert_almost_eq(left, 12.0);
         assert_almost_eq(right, 5.14285);
     }
     #[test]
     fn basic_negative_x() {
-        let basic_control = BasicControl {
+        let mut basic_control = BasicSteer {
             track_width: Length::from_inches(12.0),
             tolerance:   Length::from_inches(0.1),
         };
-        let ((left, right), _) = basic_control.control(
-            Length::from_inches(-15.0),
-            Length::from_inches(15.0),
-            Length::from_inches(8.0),
-        );
+        let ((left, right), _) = basic_control
+            .steer(
+                Length::from_inches(-15.0),
+                Length::from_inches(15.0),
+                Length::from_inches(8.0),
+                &StandardDifferential::empty(),
+            )
+            .unwrap();
         assert_almost_eq(left, 5.14285);
         assert_almost_eq(right, 12.0);
     }
     #[test]
     fn basic_negative_y() {
-        let basic_control = BasicControl {
+        let mut basic_control = BasicSteer {
             track_width: Length::from_inches(12.0),
             tolerance:   Length::from_inches(0.1),
         };
-        let ((left, right), _) = basic_control.control(
-            Length::from_inches(15.0),
-            Length::from_inches(-15.0),
-            Length::from_inches(8.0),
-        );
+        let ((left, right), _) = basic_control
+            .steer(
+                Length::from_inches(15.0),
+                Length::from_inches(-15.0),
+                Length::from_inches(8.0),
+                &StandardDifferential::empty(),
+            )
+            .unwrap();
         assert_almost_eq(right, -5.14285);
         assert_almost_eq(left, -12.0);
     }
     #[test]
     fn basic_negative_both() {
-        let basic_control = BasicControl {
+        let mut basic_control = BasicSteer {
             track_width: Length::from_inches(12.0),
             tolerance:   Length::from_inches(0.1),
         };
-        let ((left, right), _) = basic_control.control(
-            Length::from_inches(-15.0),
-            Length::from_inches(-15.0),
-            Length::from_inches(8.0),
-        );
+        let ((left, right), _) = basic_control
+            .steer(
+                Length::from_inches(-15.0),
+                Length::from_inches(-15.0),
+                Length::from_inches(8.0),
+                &StandardDifferential::empty(),
+            )
+            .unwrap();
         assert_almost_eq(left, -5.14285);
         assert_almost_eq(right, -12.0);
     }
     #[test]
     fn tolerance_check() {
-        let basic_control = BasicControl {
+        let mut basic_control = BasicSteer {
             track_width: Length::from_inches(12.0),
             tolerance:   Length::from_inches(5.1),
         };
-        let ((..), running) = basic_control.control(
-            Length::from_inches(4.0),
-            Length::from_inches(3.0),
-            Length::from_inches(8.0),
-        );
+        let ((..), running) = basic_control
+            .steer(
+                Length::from_inches(4.0),
+                Length::from_inches(3.0),
+                Length::from_inches(8.0),
+                &StandardDifferential::empty(),
+            )
+            .unwrap();
 
         assert!(!running);
     }

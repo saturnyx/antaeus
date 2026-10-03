@@ -14,7 +14,7 @@ pub async fn main_auton(robot: &mut Robot) {
     path.add(geo::Point::new(Length::from_inches(-20.0), Length::from_inches(20.0)));
     path.add(geo::Point::origin());
 
-    let basic_ctrl = control::basic::BasicControl {
+    let mut steering = control::basic::BasicSteer {
         track_width: Length::from_inches(13.9),
         tolerance:   Length::from_inches(0.5),
     };
@@ -43,6 +43,6 @@ pub async fn main_auton(robot: &mut Robot) {
         lookahead: Length::from_inches(10.0),
     };
     let _ = pursuit
-        .follow(&mut odomtrack, &robot.dt, &basic_ctrl, path.clone())
+        .follow(&mut odomtrack, &robot.dt, &mut steering, path.clone())
         .await;
 }
