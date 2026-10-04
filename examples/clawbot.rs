@@ -5,7 +5,7 @@
 //!
 //! [`v5-drivecode`]: https://github.com/jpearman/v5-drivecode
 
-use std::{num::NonZeroU32, time::Duration};
+use std::time::Duration;
 
 use antaeus::{
     motion::control::drive::DriveFeedbackControl,
@@ -13,6 +13,7 @@ use antaeus::{
         drivetrain::{Drivable, differential::StandardDifferential},
         mapper::{DigitalInput, motor::MotorMapper},
     },
+    prelude::differential::DifferentialConfig,
     utils::units::Length,
 };
 use vexide::prelude::*;
@@ -32,10 +33,6 @@ impl Compete for Clawbot {
             0.0,
             1000.0,
             Length::from_inches(3.25),
-            NonZeroU32::new(4).unwrap(),
-            NonZeroU32::new(4).unwrap(),
-            Length::from_inches(13.0),
-            Length::from_inches(0.0),
             Length::from_inches(0.5),
         );
 
@@ -80,6 +77,12 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
                 Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
             ],
+            DifferentialConfig::new(
+                Length::from_inches(12.0),
+                Length::from_inches(3.25),
+                1.0, // Direct Drive
+                1.0,
+            ),
         ),
         claw:       Motor::new(peripherals.port_5, Gearset::Green, Direction::Forward),
         arm:        Motor::new(peripherals.port_8, Gearset::Green, Direction::Forward),

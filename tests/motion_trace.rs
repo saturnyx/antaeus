@@ -5,7 +5,6 @@
 
 use std::{
     fs::{self, File},
-    num::NonZeroU32,
     time::Duration,
 };
 
@@ -22,7 +21,7 @@ use antaeus::{
         },
     },
     peripherals::drivetrain::Differential,
-    prelude::primitive::pid::Pid,
+    prelude::{differential::DifferentialConfig, primitive::pid::Pid},
     utils::units::Length,
 };
 use vexide::math::Angle;
@@ -151,8 +150,15 @@ async fn logs_multi_motion_odometry_trace(_peripherals: vexide::prelude::Periphe
         .expect("write trace header");
 
     let mut samples = Vec::new();
-
-    let drivetrain = SimDrive::new(200.0 * std::f64::consts::TAU / 60.0);
+    let drivetrain = SimDrive::new(
+        200.0 * std::f64::consts::TAU / 60.0,
+        DifferentialConfig::new(
+            Length::from_inches(TRACK_WIDTH_IN),
+            Length::from_inches(WHEEL_DIAMETER_IN),
+            1.0,
+            1.0,
+        ),
+    );
     let mut vertical_sensor = drivetrain.clone();
     let mut horizontal_sensor = StationaryTracker;
     let imu = make_cloneable(SimHeading::default());
@@ -180,11 +186,7 @@ async fn logs_multi_motion_odometry_trace(_peripherals: vexide::prelude::Periphe
         0.0,
         0.0,
         12.0,
-        Length::from_inches(WHEEL_DIAMETER_IN),
-        NonZeroU32::new(1).unwrap(),
-        NonZeroU32::new(1).unwrap(),
-        Length::from_inches(TRACK_WIDTH_IN),
-        Length::zero(),
+        Length::from_inches(0.0),
         Length::from_inches(0.1),
     );
 

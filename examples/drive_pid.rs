@@ -1,9 +1,9 @@
 // A Basic Drivetrain PID Example
-use std::{num::NonZeroU32, time::Duration};
+use std::time::Duration;
 
 use antaeus::{
     peripherals::drivetrain::differential::StandardDifferential,
-    prelude::{Length, drive::DriveFeedbackControl},
+    prelude::{Length, differential::DifferentialConfig, drive::DriveFeedbackControl},
 };
 use vexide::prelude::*;
 
@@ -21,20 +21,22 @@ async fn main(peripherals: Peripherals) {
             Motor::new(peripherals.port_3, Gearset::Green, Direction::Reverse),
             Motor::new(peripherals.port_4, Gearset::Green, Direction::Reverse),
         ],
+        DifferentialConfig::new(
+            Length::from_inches(12.0),
+            Length::from_inches(3.25),
+            1.0, // Direct Drive
+            1.0,
+        ),
     );
 
     // Next, declare your PID controller with the desired parameters
     let mut pid = DriveFeedbackControl::pid(
-        drivetrain,                  // The above drivetrain
+        drivetrain,                // The above drivetrain
         0.5,  // Kp (This is a default value, remember to tune this for your own drivetrain)
         0.0,  // Ki (This is a default value, remember to tune this for your own drivetrain)
         0.1,  // Kd (This is a default value, remember to tune this for your own drivetrain)
         12.0, // Maximum Power the PID controller can output [0-12V]
         Length::from_inches(3.25), // Wheel Diameter (This uses 3.25" wheels)
-        NonZeroU32::new(3).unwrap(), // Driving Gear (on motor axle) Teeth Count
-        NonZeroU32::new(4).unwrap(), // Driven Gear (on wheel axle) Teeth Count
-        Length::from_inches(12.0), // Track Width
-        Length::from_inches(10.0), // Default Target
         Length::from_inches(0.1), // Tolerance
     );
     // IMPORTANT: Autotick must be called for PID to run. But you can also do this manually by

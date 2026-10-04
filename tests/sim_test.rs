@@ -1,4 +1,4 @@
-use std::{num::NonZeroU32, time::Duration};
+use std::time::Duration;
 
 use antaeus::{
     make_cloneable,
@@ -13,6 +13,7 @@ use antaeus::{
         },
     },
     peripherals::drivetrain::Differential,
+    prelude::differential::DifferentialConfig,
     utils::units::Length,
 };
 use vexide::math::Angle;
@@ -91,17 +92,21 @@ impl Trackable for StationaryTracker {
 /// Verifies that both drivetrain PID loops settle at a relative forward target.
 #[test]
 fn pid_test() {
-    let drivetrain = SimDrive::new(200.0 * std::f64::consts::TAU / 60.0);
+    let drivetrain = SimDrive::new(
+        200.0 * std::f64::consts::TAU / 60.0,
+        DifferentialConfig::new(
+            Length::from_inches(TRACK_WIDTH_IN),
+            Length::from_inches(WHEEL_DIAMETER_IN),
+            1.0,
+            1.0,
+        ),
+    );
     let mut pid = DriveFeedbackControl::pid(
         drivetrain,
         0.5,
         0.0,
         0.0,
         12.0,
-        Length::from_inches(WHEEL_DIAMETER_IN),
-        NonZeroU32::new(1).unwrap(),
-        NonZeroU32::new(1).unwrap(),
-        Length::from_inches(TRACK_WIDTH_IN),
         Length::zero(),
         Length::from_inches(DISTANCE_TOLERANCE_IN),
     );
@@ -120,7 +125,15 @@ fn pid_test() {
 /// Verifies straight-line odometry using a drivetrain-backed vertical tracker.
 #[vexide::test]
 async fn odom_test(_peripherals: vexide::prelude::Peripherals) {
-    let drivetrain = SimDrive::new(200.0 * std::f64::consts::TAU / 60.0);
+    let drivetrain = SimDrive::new(
+        200.0 * std::f64::consts::TAU / 60.0,
+        DifferentialConfig::new(
+            Length::from_inches(TRACK_WIDTH_IN),
+            Length::from_inches(WHEEL_DIAMETER_IN),
+            1.0,
+            1.0,
+        ),
+    );
     let mut vertical_sensor = drivetrain.clone();
     let mut horizontal_sensor = StationaryTracker;
 
@@ -147,10 +160,6 @@ async fn odom_test(_peripherals: vexide::prelude::Peripherals) {
         0.0,
         0.0,
         12.0,
-        Length::from_inches(3.25),
-        NonZeroU32::new(1).unwrap(),
-        NonZeroU32::new(1).unwrap(),
-        Length::from_inches(13.0),
         Length::zero(),
         Length::from_inches(0.1),
     );
@@ -175,7 +184,15 @@ async fn odom_test(_peripherals: vexide::prelude::Peripherals) {
 /// robot.
 #[vexide::test]
 async fn odom_multiple_motions_test(_peripherals: vexide::prelude::Peripherals) {
-    let drivetrain = SimDrive::new(200.0 * std::f64::consts::TAU / 60.0);
+    let drivetrain = SimDrive::new(
+        200.0 * std::f64::consts::TAU / 60.0,
+        DifferentialConfig::new(
+            Length::from_inches(TRACK_WIDTH_IN),
+            Length::from_inches(WHEEL_DIAMETER_IN),
+            1.0,
+            1.0,
+        ),
+    );
     let mut vertical_sensor = drivetrain.clone();
     let mut horizontal_sensor = StationaryTracker;
     let imu = make_cloneable(SimHeading::new());
@@ -203,10 +220,6 @@ async fn odom_multiple_motions_test(_peripherals: vexide::prelude::Peripherals) 
         0.0,
         0.0,
         12.0,
-        Length::from_inches(WHEEL_DIAMETER_IN),
-        NonZeroU32::new(1).unwrap(),
-        NonZeroU32::new(1).unwrap(),
-        Length::from_inches(TRACK_WIDTH_IN),
         Length::zero(),
         Length::from_inches(0.1),
     );

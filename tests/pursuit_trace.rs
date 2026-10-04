@@ -23,6 +23,7 @@ use antaeus::{
         pursuit::{Pursuit, control::basic::BasicSteer},
     },
     peripherals::drivetrain::Differential,
+    prelude::differential::DifferentialConfig,
     utils::{
         geo::{Path, Point},
         units::Length,
@@ -161,7 +162,15 @@ async fn logs_candidate_based_pursuit_trace(_peripherals: vexide::prelude::Perip
 
     let mut samples = Vec::new();
 
-    let drivetrain = SimDrive::new(200.0 * std::f64::consts::TAU / 60.0);
+    let drivetrain = SimDrive::new(
+        200.0 * std::f64::consts::TAU / 60.0,
+        DifferentialConfig::new(
+            Length::from_inches(TRACK_WIDTH_IN),
+            Length::from_inches(WHEEL_DIAMETER_IN),
+            1.0,
+            1.0,
+        ),
+    );
     let mut vertical_sensor = drivetrain.clone();
     let mut horizontal_sensor = StationaryTracker;
     let imu = make_cloneable(SimHeading::default());
@@ -183,8 +192,7 @@ async fn logs_candidate_based_pursuit_trace(_peripherals: vexide::prelude::Perip
         Tracker::new(TrackerMech::new(vertical_tracker, horizontal_tracker, imu.clone()));
 
     let pursuit = Pursuit::new(Length::from_inches(4.0));
-    let mut steering =
-        BasicSteer::new(Length::from_inches(TRACK_WIDTH_IN), Length::from_inches(0.75));
+    let mut steering = BasicSteer::new(Length::from_inches(0.75));
 
     let mut completed = false;
     for step in 0..MAX_STEPS {

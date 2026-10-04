@@ -28,7 +28,7 @@
 #![doc = include_str!("../../../examples/drive_pid.rs")]
 //! ```
 
-use std::{num::NonZeroU32, time::Duration};
+use std::time::Duration;
 
 use snafu::Snafu;
 use vexide::{
@@ -54,19 +54,13 @@ use crate::{
 /// one for the left side and one for the right side.
 pub struct DriveFeedbackControl<D: Differential, F: Feedback> {
     /// Differential drivetrain interface used to read positions and command voltages.
-    pub drivetrain:        D,
+    pub drivetrain:     D,
     /// Left-side feedback controller.
-    pub feedback_left:     F,
+    pub feedback_left:  F,
     /// Right-side feedback controller.
-    pub feedback_right:    F,
-    /// Physical wheel diameter used for angle-to-distance conversion.
-    pub wheel_diameter:    Length,
-    /// Motor rotations per wheel rotation.
-    pub motor_wheel_ratio: f64,
-    /// Track width
-    pub track_width:       Length,
+    pub feedback_right: F,
     /// Timestamp of the previous update.
-    pub last_update:       Duration,
+    pub last_update:    Duration,
 }
 
 /// Drive Control Error type
@@ -116,24 +110,11 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
     /// Creates a [`DriveFeedbackControl`] from preconfigured left and right [`Feedback`] instances.
     ///
     /// Use this constructor when each side requires different gains or state.
-    pub fn new(
-        drivetrain: D,
-        feedback_left: F,
-        feedback: F,
-        wheel_diameter: Length,
-        motor_gear_teeth: NonZeroU32,
-        wheel_gear_teeth: NonZeroU32,
-        track_width: Length,
-    ) -> Self {
-        let motor_wheel_ratio = gears_to_motor_wheel_ratio(motor_gear_teeth, wheel_gear_teeth);
-
+    pub fn new(drivetrain: D, feedback_left: F, feedback_right: F) -> Self {
         Self {
             drivetrain,
             feedback_left,
-            feedback_right: feedback,
-            wheel_diameter,
-            motor_wheel_ratio,
-            track_width,
+            feedback_right,
             last_update: user_uptime(),
         }
     }
@@ -154,15 +135,24 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
         let left_power = self
             .feedback_left
             .tick(
-                arc_length(left_reading, self.wheel_diameter, self.motor_wheel_ratio).as_inches(),
+                arc_length(
+                    left_reading,
+                    self.drivetrain.get_wheel_diameter(),
+                    self.drivetrain.get_gearset_multiplier(),
+                )
+                .as_inches(),
                 dt,
             )
             .map_err(|source| DriveControlError::Feedback { source })?;
         let right_power = self
             .feedback_right
             .tick(
-                arc_length(right_reading.value(), self.wheel_diameter, self.motor_wheel_ratio)
-                    .as_inches(),
+                arc_length(
+                    right_reading.value(),
+                    self.drivetrain.get_wheel_diameter(),
+                    self.drivetrain.get_gearset_multiplier(),
+                )
+                .as_inches(),
                 dt,
             )
             .map_err(|source| DriveControlError::Feedback { source })?;
@@ -186,8 +176,8 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
                 left.as_inches() +
                     arc_length(
                         self.drivetrain.left_position().value(),
-                        self.wheel_diameter,
-                        self.motor_wheel_ratio,
+                        self.drivetrain.get_wheel_diameter(),
+                        self.drivetrain.get_gearset_multiplier(),
                     )
                     .as_inches(),
             )
@@ -197,8 +187,8 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
                 right.as_inches() +
                     arc_length(
                         self.drivetrain.right_position().value(),
-                        self.wheel_diameter,
-                        self.motor_wheel_ratio,
+                        self.drivetrain.get_wheel_diameter(),
+                        self.drivetrain.get_gearset_multiplier(),
                     )
                     .as_inches(),
             )
@@ -250,15 +240,15 @@ impl<D: Differential, F: Feedback> DriveFeedbackControl<D, F> {
         while self.feedback_left.is_active(
             arc_length(
                 self.drivetrain.left_position().value(),
-                self.wheel_diameter,
-                self.motor_wheel_ratio,
+                self.drivetrain.get_wheel_diameter(),
+                self.drivetrain.get_gearset_multiplier(),
             )
             .as_inches(),
         ) || self.feedback_right.is_active(
             arc_length(
                 self.drivetrain.right_position().value(),
-                self.wheel_diameter,
-                self.motor_wheel_ratio,
+                self.drivetrain.get_wheel_diameter(),
+                self.drivetrain.get_gearset_multiplier(),
             )
             .as_inches(),
         ) {
@@ -297,7 +287,7 @@ impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
         angle: Angle,
         timeout: Duration,
     ) -> Result<AutoTickOutcome, DriveControlError<F>> {
-        let len = track_rad_rotate(angle, self.track_width);
+        let len = track_rad_rotate(angle, self.drivetrain.get_track_width());
         self.set_relative_target(len, -len)?;
         self.autotick(timeout).await
     }
@@ -312,7 +302,7 @@ impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
         angle: Angle,
         timeout: Duration,
     ) -> Result<AutoTickOutcome, DriveControlError<F>> {
-        let len = track_rad_pivot(angle, self.track_width);
+        let len = track_rad_pivot(angle, self.drivetrain.get_track_width());
         if angle.as_degrees() > 0.0 {
             self.set_relative_target(len, Length::zero())?;
         } else if angle.as_degrees() < 0.0 {
@@ -365,19 +355,19 @@ impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
             }
 
             // Convert remaining heading error to side travel.
-            let len = track_rad_rotate(heading_error, self.track_width);
+            let len = track_rad_rotate(heading_error, self.drivetrain.get_track_width());
 
             // Current wheel travel (absolute, in inches).
             let left_now = arc_length(
                 self.drivetrain.left_position().value(),
-                self.wheel_diameter,
-                self.motor_wheel_ratio,
+                self.drivetrain.get_wheel_diameter(),
+                self.drivetrain.get_gearset_multiplier(),
             )
             .as_inches();
             let right_now = arc_length(
                 self.drivetrain.right_position().value(),
-                self.wheel_diameter,
-                self.motor_wheel_ratio,
+                self.drivetrain.get_wheel_diameter(),
+                self.drivetrain.get_gearset_multiplier(),
             )
             .as_inches();
 
@@ -448,19 +438,19 @@ impl<D: Differential, F: Feedback> DriveControl for DriveFeedbackControl<D, F> {
             }
 
             // Convert remaining heading error to travel needed for a pivot.
-            let len = track_rad_pivot(heading_error, self.track_width);
+            let len = track_rad_pivot(heading_error, self.drivetrain.get_track_width());
 
             // Current wheel travel (absolute, in inches).
             let left_now = arc_length(
                 self.drivetrain.left_position().value(),
-                self.wheel_diameter,
-                self.motor_wheel_ratio,
+                self.drivetrain.get_wheel_diameter(),
+                self.drivetrain.get_gearset_multiplier(),
             )
             .as_inches();
             let right_now = arc_length(
                 self.drivetrain.right_position().value(),
-                self.wheel_diameter,
-                self.motor_wheel_ratio,
+                self.drivetrain.get_wheel_diameter(),
+                self.drivetrain.get_gearset_multiplier(),
             )
             .as_inches();
 
@@ -496,15 +486,9 @@ impl<D: Differential> DriveFeedbackControl<D, Pid> {
         ki: f64,
         kd: f64,
         max: f64,
-        wheel_diameter: Length,
-        motor_gear_teeth: NonZeroU32,
-        wheel_gear_teeth: NonZeroU32,
-        track_width: Length,
         default_target: Length,
         tolerance: Length,
     ) -> Self {
-        let motor_wheel_ratio = gears_to_motor_wheel_ratio(motor_gear_teeth, wheel_gear_teeth);
-
         Self {
             drivetrain,
             feedback_left: Pid::new(
@@ -523,9 +507,6 @@ impl<D: Differential> DriveFeedbackControl<D, Pid> {
                 max,
                 tolerance.as_inches(),
             ),
-            wheel_diameter,
-            track_width,
-            motor_wheel_ratio,
             last_update: user_uptime(),
         }
     }
@@ -542,13 +523,6 @@ fn arc_length(motor_angle: Angle, wheel_diameter: Length, mw_ratio: f64) -> Leng
     let radius_in = wheel_diameter.as_inches() * 0.5;
     let wheel_angle_rad = motor_angle.as_radians() / mw_ratio;
     Length::from_inches(radius_in * wheel_angle_rad)
-}
-
-/// Computes motor-to-wheel rotation ratio.
-///
-/// Returns motor rotations per one wheel rotation.
-fn gears_to_motor_wheel_ratio(motor_gear_teeth: NonZeroU32, wheel_gear_teeth: NonZeroU32) -> f64 {
-    wheel_gear_teeth.get() as f64 / motor_gear_teeth.get() as f64
 }
 
 fn track_rad_rotate(angle: Angle, track_width: Length) -> Length {

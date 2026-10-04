@@ -45,8 +45,57 @@ use super::DrivetrainError;
 use crate::{
     motion::localization::tracker::devices::{Trackable, TrackingSensorError},
     peripherals::drivetrain::{Differential, Drivable},
+    prelude::{ConfiguredDifferential, Length},
     utils::error::Report,
 };
+
+/// Differential Drivetrain Configuration
+///
+/// Contains information about the drivetrain
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
+pub struct DifferentialConfig {
+    /// Track Width, the width between each track/side of the robot
+    pub track_width:    Length,
+    /// Diameter of wheel
+    pub wheel_diameter: Length,
+    /// Gear connected to Wheel
+    pub driven_gear:    f64,
+    /// Gear connected to Motor
+    pub driving_gear:   f64,
+}
+
+impl DifferentialConfig {
+    /// Create a new [`DrivetrainConfig`]
+    ///
+    /// # Arguments
+    /// - track_width: Distance between the right and left tracks on the
+    ///   drivetrain
+    /// - wheel_diameter: The diameter of the wheel
+    /// - driven_gear: The number of teeth (or gear size, in arbitrary units) of
+    ///   the gear connected to the wheel
+    /// - driving_gear: The number of teeth (or gear size, in arbitrary units) of
+    ///   the gear connected to the motor
+    pub fn new(
+        track_width: Length,
+        wheel_diameter: Length,
+        driven_gear: f64,
+        driving_gear: f64,
+    ) -> Self {
+        #[cfg(feature = "runtime_checks")]
+        {
+            assert!(
+                driven_gear > 0.0 && driving_gear > 0.0,
+                "Gear teeth counts must be positive"
+            );
+        }
+        Self {
+            track_width,
+            wheel_diameter,
+            driven_gear,
+            driving_gear,
+        }
+    }
+}
 
 /// A left/right (“tank”) drivetrain controller.
 ///
@@ -86,6 +135,9 @@ pub struct StandardDifferential {
     /// relative to each other (typically opposite to the left side for
     /// forward movement).
     pub right: Rc<RefCell<dyn AsMut<[Motor]>>>,
+
+    /// Drivetrain Configuration
+    pub config: DifferentialConfig,
 }
 
 impl StandardDifferential {
@@ -102,10 +154,12 @@ impl StandardDifferential {
     pub fn new<L: AsMut<[Motor]> + 'static, R: AsMut<[Motor]> + 'static>(
         left: L,
         right: R,
+        config: DifferentialConfig,
     ) -> Self {
         Self {
-            left:  Rc::new(RefCell::new(left)),
+            left: Rc::new(RefCell::new(left)),
             right: Rc::new(RefCell::new(right)),
+            config,
         }
     }
 
@@ -121,8 +175,13 @@ impl StandardDifferential {
     pub fn from_shared<L: AsMut<[Motor]> + 'static, R: AsMut<[Motor]> + 'static>(
         left: Rc<RefCell<L>>,
         right: Rc<RefCell<R>>,
+        config: DifferentialConfig,
     ) -> Self {
-        Self { left, right }
+        Self {
+            left,
+            right,
+            config,
+        }
     }
 
     /// Returns an empty drivetrain
@@ -130,8 +189,14 @@ impl StandardDifferential {
     /// Do not use this for actual programs. This is mainly used for unit testing.
     pub fn empty() -> Self {
         Self {
-            left:  Rc::new(RefCell::new([])),
-            right: Rc::new(RefCell::new([])),
+            left:   Rc::new(RefCell::new([])),
+            right:  Rc::new(RefCell::new([])),
+            config: DifferentialConfig {
+                track_width:    Length::from_inches(12.0),
+                wheel_diameter: Length::from_inches(1.0),
+                driven_gear:    1.0,
+                driving_gear:   1.0,
+            },
         }
     }
 }
@@ -484,4 +549,12 @@ impl Trackable for StandardDifferential {
             Err(e) => Err(TrackingSensorError::DrivetrainError { source: e }),
         }
     }
+}
+
+impl ConfiguredDifferential for StandardDifferential {
+    fn get_track_width(&self) -> Length { self.config.track_width }
+
+    fn get_wheel_diameter(&self) -> Length { self.config.wheel_diameter }
+
+    fn get_gearset_multiplier(&self) -> f64 { self.config.driven_gear / self.config.driving_gear }
 }

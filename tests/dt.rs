@@ -1,7 +1,8 @@
 use std::{cell::Cell, rc::Rc, time::Duration};
 
 use antaeus::{
-    peripherals::drivetrain::{Differential, DrivetrainError},
+    peripherals::drivetrain::{Differential, DrivetrainError, differential::DifferentialConfig},
+    prelude::{ConfiguredDifferential, Length},
     utils::error::Report,
 };
 use vexide::{math::Angle, smart::motor::BrakeMode};
@@ -31,10 +32,12 @@ pub struct SimDrive {
     /// cartridge you're simulating, e.g. a 200 rpm blue cartridge is
     /// `200.0 * std::f64::consts::TAU / 60.0`.
     max_angular_velocity: f64,
+
+    pub config: DifferentialConfig,
 }
 
 impl SimDrive {
-    pub fn new(max_angular_velocity: f64) -> Self {
+    pub fn new(max_angular_velocity: f64, config: DifferentialConfig) -> Self {
         Self {
             left_voltage: Rc::new(Cell::new(0.0)),
             right_voltage: Rc::new(Cell::new(0.0)),
@@ -44,6 +47,7 @@ impl SimDrive {
             right_offset: Rc::new(Cell::new(0.0)),
             brake_mode: Rc::new(Cell::new(BrakeMode::Coast)),
             max_angular_velocity,
+            config,
         }
     }
 
@@ -116,4 +120,12 @@ impl Differential for SimDrive {
         self.right_voltage.set(voltage.clamp(-12.0, 12.0));
         Ok(())
     }
+}
+
+impl ConfiguredDifferential for SimDrive {
+    fn get_track_width(&self) -> Length { self.config.track_width }
+
+    fn get_wheel_diameter(&self) -> Length { self.config.wheel_diameter }
+
+    fn get_gearset_multiplier(&self) -> f64 { self.config.driven_gear / self.config.driving_gear }
 }

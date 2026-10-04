@@ -13,7 +13,7 @@ use vexide::{
     smart::{PortError, motor::BrakeMode},
 };
 
-use crate::utils::error::Report;
+use crate::{prelude::Length, utils::error::Report};
 
 pub mod differential;
 
@@ -62,9 +62,41 @@ pub trait Drivable {
     fn reverse_arcade(&mut self, controller: &Controller) -> Result<(), DrivetrainError>;
 }
 
+/// Errors that can occur while commanding or reading from the drivetrain.
+#[derive(Debug, Snafu)]
+pub enum DrivetrainError {
+    /// An error occurred while accessing a motor port (e.g. invalid port
+    /// number, hardware failure, etc.).
+    #[snafu(transparent)]
+    PortError {
+        /// The underlying error from when trying to access a motor port.
+        source: PortError,
+    },
+    /// An error occurred while reading the controller state (e.g. disconnected
+    /// controller, communication error, etc.).
+    #[snafu(transparent)]
+    ControllerError {
+        /// The underlying error from when trying to read the controller
+        /// state.
+        source: ControllerError,
+    },
+    /// Failed to borrow the motor group mutably (e.g. already borrowed
+    /// elsewhere).
+    #[snafu(transparent)]
+    BorrowMutError {
+        /// The underlying error from trying to borrow the motor group mutably.
+        source: BorrowMutError,
+    },
+    /// An unknown error occurred (catch-all for unexpected issues).
+    Unknown {
+        /// A string describing the unknown error.
+        string: String,
+    },
+}
+
 /// A Differential Drivetrain (or tank drive) is a drivetrain that has 2
 /// separate sides that move independently to moe the robot.
-pub trait Differential {
+pub trait Differential: ConfiguredDifferential {
     /// Sets the brake mode for all motors in the drivetrain.
     ///
     /// The brake mode determines how motors behave when no voltage is applied:
@@ -102,34 +134,14 @@ pub trait Differential {
     fn set_right_voltage(&self, voltage: f64) -> Result<(), DrivetrainError>;
 }
 
-/// Errors that can occur while commanding or reading from the drivetrain.
-#[derive(Debug, Snafu)]
-pub enum DrivetrainError {
-    /// An error occurred while accessing a motor port (e.g. invalid port
-    /// number, hardware failure, etc.).
-    #[snafu(transparent)]
-    PortError {
-        /// The underlying error from when trying to access a motor port.
-        source: PortError,
-    },
-    /// An error occurred while reading the controller state (e.g. disconnected
-    /// controller, communication error, etc.).
-    #[snafu(transparent)]
-    ControllerError {
-        /// The underlying error from when trying to read the controller
-        /// state.
-        source: ControllerError,
-    },
-    /// Failed to borrow the motor group mutably (e.g. already borrowed
-    /// elsewhere).
-    #[snafu(transparent)]
-    BorrowMutError {
-        /// The underlying error from trying to borrow the motor group mutably.
-        source: BorrowMutError,
-    },
-    /// An unknown error occurred (catch-all for unexpected issues).
-    Unknown {
-        /// A string describing the unknown error.
-        string: String,
-    },
+/// A trait to get drivetrain data
+pub trait ConfiguredDifferential {
+    /// Get Track Width
+    fn get_track_width(&self) -> Length;
+
+    /// Get Wheel Diameter
+    fn get_wheel_diameter(&self) -> Length;
+
+    /// Get Gearset Multiplier (driven/driving)
+    fn get_gearset_multiplier(&self) -> f64;
 }

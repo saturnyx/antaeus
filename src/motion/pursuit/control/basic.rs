@@ -12,23 +12,16 @@ use crate::{motion::pursuit::control::ArcSteer, prelude::Differential, utils::un
 /// point relative to the robot.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct BasicSteer {
-    /// The width of the drivetrain
-    pub track_width: Length,
     /// A leeway at which the algorithm will end. Smaller tolerances mean more
     /// accuracy but more time spent.
-    pub tolerance:   Length,
+    pub tolerance: Length,
 }
 
 impl BasicSteer {
     /// Create a new instance of [`BasicSteer`]
     /// - `track_width`: The width of the drivetrain
     /// - `tolerance`: A leeway at which the algorithm will end. Smaller tolerances mean more accuracy but more time spent.
-    pub fn new(track_width: Length, tolerance: Length) -> Self {
-        Self {
-            track_width,
-            tolerance,
-        }
-    }
+    pub fn new(tolerance: Length) -> Self { Self { tolerance } }
 }
 
 impl ArcSteer for BasicSteer {
@@ -39,14 +32,14 @@ impl ArcSteer for BasicSteer {
         x: Length,
         y: Length,
         lookahead: Length,
-        _: &D,
+        drivetrain: &D,
     ) -> Result<((f64, f64), bool), Infallible> {
         // Your frame:
         // +x = right, +y = forward
         let x_in = x.as_inches();
         let y_in = y.as_inches();
 
-        let track_w_in = self.track_width.as_inches();
+        let track_w_in = drivetrain.get_track_width().as_inches();
         let lookahead_in = lookahead.as_inches();
 
         // Distance to the lookahead point
@@ -95,8 +88,7 @@ mod tests {
     #[test]
     fn basic_normal() {
         let mut basic_control = BasicSteer {
-            track_width: Length::from_inches(12.0),
-            tolerance:   Length::from_inches(0.1),
+            tolerance: Length::from_inches(0.1),
         };
         let ((left, right), _) = basic_control
             .steer(
@@ -112,8 +104,7 @@ mod tests {
     #[test]
     fn basic_negative_x() {
         let mut basic_control = BasicSteer {
-            track_width: Length::from_inches(12.0),
-            tolerance:   Length::from_inches(0.1),
+            tolerance: Length::from_inches(0.1),
         };
         let ((left, right), _) = basic_control
             .steer(
@@ -129,8 +120,7 @@ mod tests {
     #[test]
     fn basic_negative_y() {
         let mut basic_control = BasicSteer {
-            track_width: Length::from_inches(12.0),
-            tolerance:   Length::from_inches(0.1),
+            tolerance: Length::from_inches(0.1),
         };
         let ((left, right), _) = basic_control
             .steer(
@@ -146,8 +136,7 @@ mod tests {
     #[test]
     fn basic_negative_both() {
         let mut basic_control = BasicSteer {
-            track_width: Length::from_inches(12.0),
-            tolerance:   Length::from_inches(0.1),
+            tolerance: Length::from_inches(0.1),
         };
         let ((left, right), _) = basic_control
             .steer(
@@ -163,8 +152,7 @@ mod tests {
     #[test]
     fn tolerance_check() {
         let mut basic_control = BasicSteer {
-            track_width: Length::from_inches(12.0),
-            tolerance:   Length::from_inches(5.1),
+            tolerance: Length::from_inches(5.1),
         };
         let ((..), running) = basic_control
             .steer(

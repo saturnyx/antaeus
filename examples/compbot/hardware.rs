@@ -1,6 +1,9 @@
 use std::{cell::RefCell, rc::Rc};
 
-use antaeus::*;
+use antaeus::{
+    prelude::{Length, differential::DifferentialConfig},
+    *,
+};
 use vexide::prelude::*;
 
 pub struct Robot {
@@ -29,6 +32,12 @@ impl Robot {
                     Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
                 ],
+                DifferentialConfig::new(
+                    Length::from_inches(12.0),
+                    Length::from_inches(3.25),
+                    1.0, // Direct Drive
+                    1.0,
+                ),
             ),
             intake1:  Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
             intake2:  Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),

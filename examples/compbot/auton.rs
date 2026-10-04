@@ -15,8 +15,7 @@ pub async fn main_auton(robot: &mut Robot) {
     path.add(geo::Point::origin());
 
     let mut steering = control::basic::BasicSteer {
-        track_width: Length::from_inches(13.9),
-        tolerance:   Length::from_inches(0.5),
+        tolerance: Length::from_inches(0.5),
     };
 
     let vertical = localization::tracker::devices::TrackerPod {

@@ -8,6 +8,7 @@ use antaeus::{
         Path,
         Point,
         control::basic::BasicSteer,
+        differential::DifferentialConfig,
         tracker::{
             Tracker,
             devices::{TrackerMech, TrackerPod},
@@ -50,8 +51,7 @@ impl Compete for Robot {
         let mut odomtrack = Tracker::new(trackers);
 
         let mut steering = BasicSteer {
-            track_width: Length::from_inches(13.9),
-            tolerance:   Length::from_inches(0.5),
+            tolerance: Length::from_inches(0.5),
         };
 
         let pursuit = pursuit::Pursuit {
@@ -89,6 +89,12 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
                 Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
             ],
+            DifferentialConfig::new(
+                Length::from_inches(12.0),
+                Length::from_inches(3.25),
+                1.0, // Direct Drive
+                1.0,
+            ),
         ),
         intake1:  Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
         intake2:  Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
