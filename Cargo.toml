@@ -4,11 +4,12 @@ version = "0.3.12"
 edition = "2024"
 readme = "README.md"
 license = "MIT"
-authors = ["Harshal<saturnyx@disroot.org>"]
+authors = ["Harshal <saturnyx@disroot.org>"]
 description = "A Versatile Framework for Vexide"
 repository = "https://github.com/saturnyx/antaeus"
-categories = ["science::robotics"]
-keywords = ["Robotics", "bindings", "vex", "v5"]
+categories = ["science::robotics", "embedded", "algorithms"]
+keywords = ["robotics", "vex", "v5", "vexide"]
+homepage = "https://antaeus.saturnyx.dev"
 
 [lib]
 name = "antaeus"
