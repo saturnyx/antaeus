@@ -1,7 +1,7 @@
 use antaeus::{
     motion::{
         localization::{self},
-        pursuit::control,
+        pursuit::steer,
         *,
     },
     utils::{geo, units::Length},
@@ -14,7 +14,7 @@ pub async fn main_auton(robot: &mut Robot) {
     path.add(geo::Point::new(Length::from_inches(-20.0), Length::from_inches(20.0)));
     path.add(geo::Point::origin());
 
-    let mut steering = control::basic::BasicSteer {
+    let mut steering = steer::basic::BasicSteer {
         tolerance: Length::from_inches(0.5),
     };
 

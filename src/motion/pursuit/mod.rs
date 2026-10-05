@@ -25,13 +25,13 @@
 
 mod algorithm;
 
-pub mod control;
+pub mod steer;
 
 const LOOPRATE: Duration = Duration::from_millis(10);
 
 use std::time::Duration;
 
-use control::ArcSteer;
+use steer::ArcSteer;
 use snafu::Snafu;
 use vexide::time::sleep;
 

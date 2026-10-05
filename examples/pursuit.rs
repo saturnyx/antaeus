@@ -7,8 +7,8 @@ use antaeus::{
     prelude::{
         Path,
         Point,
-        control::basic::BasicSteer,
         differential::DifferentialConfig,
+        steer::basic::BasicSteer,
         tracker::{
             Tracker,
             devices::{TrackerMech, TrackerPod},

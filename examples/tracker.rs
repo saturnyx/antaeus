@@ -5,8 +5,8 @@ use antaeus::{
     peripherals::drivetrain::differential::StandardDifferential,
     prelude::{
         Localizer,
-        control::basic::BasicSteer,
         differential::DifferentialConfig,
+        steer::basic::BasicSteer,
         tracker::{
             Tracker,
             devices::{TrackerMech, TrackerPod},

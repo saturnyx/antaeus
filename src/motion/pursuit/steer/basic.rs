@@ -6,7 +6,7 @@
 
 use std::convert::Infallible;
 
-use crate::{motion::pursuit::control::ArcSteer, prelude::Differential, utils::units::Length};
+use crate::{motion::pursuit::steer::ArcSteer, prelude::Differential, utils::units::Length};
 
 /// A Basic Steering Algorithm that generates wheel velocities depending on a
 /// point relative to the robot.
@@ -80,7 +80,7 @@ impl ArcSteer for BasicSteer {
 #[cfg(test)]
 mod tests {
     use crate::{
-        motion::pursuit::control::{ArcSteer, basic::BasicSteer},
+        motion::pursuit::steer::{ArcSteer, basic::BasicSteer},
         prelude::differential::StandardDifferential,
         utils::units::{Length, assert_almost_eq},
     };

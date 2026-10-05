@@ -20,7 +20,7 @@ use antaeus::{
                 devices::{HeadingSensor, Trackable, TrackerMech, TrackerPod, TrackingSensorError},
             },
         },
-        pursuit::{Pursuit, control::basic::BasicSteer},
+        pursuit::{Pursuit, steer::basic::BasicSteer},
     },
     peripherals::drivetrain::Differential,
     prelude::differential::DifferentialConfig,
