@@ -4,7 +4,7 @@
 
 use std::convert::Infallible;
 
-use crate::prelude::primitive::Feedback;
+use crate::prelude::Feedback;
 
 /// Bang-Bang Algorithm with hysteresis
 pub struct BangBang {

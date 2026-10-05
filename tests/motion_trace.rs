@@ -21,7 +21,7 @@ use antaeus::{
         },
     },
     peripherals::drivetrain::Differential,
-    prelude::{differential::DifferentialConfig, primitive::pid::Pid},
+    prelude::{differential::DifferentialConfig, pid::Pid},
     utils::units::Length,
 };
 use vexide::math::Angle;

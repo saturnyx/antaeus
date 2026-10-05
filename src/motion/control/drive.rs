@@ -40,11 +40,7 @@ use vexide::{
 use crate::{
     motion::control::DriveControl,
     peripherals::drivetrain::Differential,
-    prelude::{
-        AutoTickOutcome,
-        DrivetrainError,
-        primitive::{Feedback, pid::Pid},
-    },
+    prelude::{AutoTickOutcome, DrivetrainError, Feedback, pid::Pid},
     utils::units::Length,
 };
 

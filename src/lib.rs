@@ -49,6 +49,8 @@ pub mod utils;
 
 pub mod logger;
 
+pub mod primitive;
+
 /// Makes an object cloneable by wrapping it in `Rc` and `RefCell`
 pub fn make_cloneable<T>(v: T) -> Rc<RefCell<T>> { Rc::new(RefCell::new(v)) }
 
@@ -63,6 +65,7 @@ pub mod prelude {
         logger::*,
         motion::{control::*, localization::*, pursuit::*},
         peripherals::{drivetrain::*, mapper::*, motorgroup::*, range_sensor::*},
+        primitive::*,
         utils::{
             error::Report,
             geo::*,
