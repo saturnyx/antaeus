@@ -64,7 +64,7 @@ pub mod prelude {
     pub use crate::{
         logger::*,
         motion::{control::*, localization::*, pursuit::*},
-        peripherals::{drivetrain::*, mapper::*, motorgroup::*, range_sensor::*},
+        peripherals::{drivetrain::*, mapper::*, motorgroup::*, ranger::*},
         primitive::*,
         utils::{
             error::Report,

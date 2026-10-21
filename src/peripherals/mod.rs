@@ -21,7 +21,7 @@
 
 pub mod drivetrain;
 
-pub mod range_sensor;
+pub mod ranger;
 
 pub mod mapper;
 
