@@ -20,11 +20,16 @@
             pkgs.cargo-binutils
             pkgs.SDL2.dev
             pkgs.zlib
+            pkgs.rust-analyzer
             (pkgs.rust-bin.nightly."2025-11-26".default.override {
               extensions = [ "rust-analyzer" "rust-src" "clippy" "llvm-tools" ];
               targets = [ "x86_64-pc-windows-gnu" "x86_64-apple-darwin" ];
             })
           ];
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.zlib ];
+          shellHook = ''
+                     export RUST_ANALYZER_PATH="$(which rust-analyzer)"
+                     '';
         };
       }));
 }
