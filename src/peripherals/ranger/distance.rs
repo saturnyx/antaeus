@@ -1,4 +1,6 @@
 //! Distance Sensor Implementation
+//!
+//! Implements [`Ranger`] for `vexide::prelude::DistanceSensor`
 
 use snafu::Snafu;
 use vexide::{prelude::DistanceSensor, smart::distance::DistanceObjectError};
@@ -6,7 +8,6 @@ use vexide::{prelude::DistanceSensor, smart::distance::DistanceObjectError};
 use crate::prelude::{Length, Ranger};
 
 #[derive(Snafu, Debug)]
-
 /// Error for RangerDistance
 pub enum RangerDistanceError {
     /// No object was found
@@ -29,4 +30,6 @@ impl Ranger for DistanceSensor {
             Some(obj) => Ok(Length::from_millimeters(obj.distance as f64)),
         }
     }
+
+    fn tick(&mut self) -> Result<(), Self::Error> { Ok(()) }
 }

@@ -1,4 +1,6 @@
 //! ADI Rangefinder Implementation
+//!
+//! Implements [`Ranger`] for `vexide::prelude::AdiRangeFinder`
 
 use snafu::Snafu;
 use vexide::{prelude::AdiRangeFinder, smart::PortError};
@@ -27,4 +29,6 @@ impl Ranger for AdiRangeFinder {
             Some(dist) => Ok(Length::from_centimeters(dist as f64)),
         }
     }
+
+    fn tick(&mut self) -> Result<(), Self::Error> { Ok(()) }
 }
